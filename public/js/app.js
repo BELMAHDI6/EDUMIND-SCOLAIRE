@@ -2124,9 +2124,6 @@ class EdumindApp {
   }
 
   switchView(viewName, forceReload = false) {
-    if (viewName === 'inscriptions' || viewName === 'paiements' || viewName === 'echeances') {
-      viewName = 'eleves';
-    }
     this.currentView = viewName;
 
     // Update active nav item
@@ -2169,7 +2166,7 @@ class EdumindApp {
       this.loadStudents();
     }
     else if (viewName === 'parents') this.loadParents();
-    else if (viewName === 'inscriptions') this.loadInscriptionsView();
+    else if (viewName === 'inscriptions') this.switchView('eleves');
     else if (viewName === 'paiements') this.loadPayments();
     else if (viewName === 'echeances') this.loadEcheances();
     else if (viewName === 'caisse') this.loadCaisse();
@@ -2407,7 +2404,7 @@ class EdumindApp {
       const search = document.getElementById('searchStudentInput')?.value || '';
       const levelId = document.getElementById('filterStudentLevel')?.value || '';
       const status = document.getElementById('filterStudentStatus')?.value || 'active';
-      const regime = document.getElementById('filterStudentRegime')?.value || 'all';
+      const paymentStatus = document.getElementById('filterStudentPayment')?.value || 'all';
 
       // Ensure levels are loaded
       if (!this.levels || this.levels.length === 0) {
@@ -2427,7 +2424,8 @@ class EdumindApp {
       const params = new URLSearchParams({
         search,
         level_id: levelId,
-        status
+        status,
+        payment_status: paymentStatus
       });
 
       const res = await fetch(`/api/students?${params.toString()}`);
@@ -2435,10 +2433,6 @@ class EdumindApp {
       if (!data.success) return;
 
       this.students = data.students || [];
-      if (regime !== 'all') {
-        this.students = this.students.filter(s => (s.regime || 'demi_pensionnaire') === regime);
-      }
-
       const tbody = document.getElementById('schoolarisStudentsTableBody');
       if (!tbody) return;
 
@@ -2459,11 +2453,6 @@ class EdumindApp {
         const avatarSvg = this.getStudentAvatarSvg(s.gender);
         const isActive = s.active === 1;
         const isChecked = this.selectedStudentIds && this.selectedStudentIds.has(s.id);
-        const regimeName = s.regime === 'externe'
-          ? (this.lang === 'ar' ? 'خارجي' : 'Externe')
-          : s.regime === 'interne'
-            ? (this.lang === 'ar' ? 'داخلي' : 'Interne')
-            : (this.lang === 'ar' ? 'نصف داخلي' : 'Demi-pension');
 
         return `
           <tr>
@@ -2491,26 +2480,27 @@ class EdumindApp {
                 <div style="font-size: 11px; color: #a78bfa; margin-top: 2px; display: flex; align-items: center; gap: 4px;">
                   <i class="fa-solid fa-people-roof" style="font-size: 10px;"></i>
                   <span>${this.escapeHtml(s.parent_name)}</span>
+                  ${s.parent_discount_percent > 0 ? `<span class="badge" style="background: rgba(16,185,129,0.15); color:#10b981; font-size:10px; padding:1px 4px; border-radius:3px;">-${s.parent_discount_percent}%</span>` : ''}
                 </div>
               ` : ''}
             </td>
             <td style="text-align: center;">
-              <span class="badge-pill" style="${s.regime === 'externe' ? 'background: rgba(148, 163, 184, 0.15); color: #94a3b8;' : 'background: rgba(16, 185, 129, 0.15); color: #10b981;'} font-weight: 700;">
-                ${regimeName}
-              </span>
+              ${(s.regime === 'interne')
+                ? `<span class="badge-pill" style="background: rgba(139, 92, 246, 0.15); color: #a78bfa; font-weight: 700;">داخلي</span>`
+                : (s.regime === 'externe')
+                  ? `<span class="badge-pill" style="background: rgba(100, 116, 139, 0.15); color: #94a3b8; font-weight: 700;">خارجي</span>`
+                  : `<span class="badge-pill" style="background: rgba(16, 185, 129, 0.15); color: #10b981; font-weight: 700;">نصف داخلي</span>`
+              }
             </td>
             <td>
               <span class="badge-status-pill ${isActive ? 'active' : 'inactive'}" 
                     onclick="app.openStudentProfile(${s.id})" 
                     title="${this.lang === 'ar' ? 'عرض تفاصيل وملف التلميذ' : 'Voir la fiche élève'}">
-                ${isActive ? (this.lang === 'ar' ? 'متمدرس' : 'Scolarisé') : (this.lang === 'ar' ? 'غير نشط' : 'Inactif')}
+                ${isActive ? (this.lang === 'ar' ? 'نشط' : 'Actif') : (this.lang === 'ar' ? 'غير نشط' : 'Inactif')}
               </span>
             </td>
             <td style="text-align: right;">
               <div style="display: inline-flex; gap: 6px; align-items: center;">
-                <button class="btn-action-badge" title="${this.lang === 'ar' ? 'الملف المدرسي' : 'Fiche élève'}" onclick="app.openStudentProfile(${s.id})">
-                  <i class="fa-solid fa-address-card"></i>
-                </button>
                 <button class="btn-action-badge" title="${this.lang === 'ar' ? 'بطاقة التلميذ' : 'Badge élève'}" onclick="app.showStudentCard(${s.id})">
                   <i class="fa-solid fa-id-card"></i>
                 </button>
