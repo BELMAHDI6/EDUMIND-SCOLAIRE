@@ -1,0 +1,30 @@
+{
+  "name": "edumind-scolaire",
+  "productName": "EDUMIND Scolaire",
+  "version": "1.0.0",
+  "description": "EDUMIND Scolaire — Système de Gestion des Établissements Publics (CEM & Lycée) - Algérie",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "desktop": "electron .",
+    "dev": "electron .",
+    "server": "node server.js"
+  },
+  "keywords": [
+    "education-algerie",
+    "cem",
+    "lycee",
+    "cantine-scolaire",
+    "demi-pension",
+    "cpe",
+    "edumind"
+  ],
+  "author": "EDUMIND Team",
+  "license": "ISC",
+  "dependencies": {
+    "cors": "^2.8.6",
+    "express": "^4.22.2",
+    "qrcode": "^1.5.4",
+    "xlsx": "^0.18.5"
+  }
+}

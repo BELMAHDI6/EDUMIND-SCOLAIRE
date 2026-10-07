@@ -1,0 +1,19 @@
+node_modules/
+EDUMIND_Scolaire_Setup*.exe
+*.exe
+bin/
+
+# Temporary and staging
+temp_*
+*.zip
+!updates/*.zip
+
+# Client databases & secrets
+*.sqlite
+*.sqlite-wal
+*.sqlite-shm
+backups/
+
+# Excel test files
+*.xlsx
+*.xls
