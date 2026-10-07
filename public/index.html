@@ -662,11 +662,12 @@
             <select id="filterStudentLevel" class="schoolaris-select" onchange="app.loadStudents()">
               <option value="">Tous niveaux</option>
             </select>
-            <select id="filterStudentPayment" class="schoolaris-select" style="max-width: 160px;"
+            <select id="filterStudentRegime" class="schoolaris-select" style="max-width: 180px;"
               onchange="app.loadStudents()">
-              <option value="all">Tous paiements</option>
-              <option value="paid">À jour</option>
-              <option value="unpaid">En retard / Dette</option>
+              <option value="all">جميع الصفات (Régimes)</option>
+              <option value="demi_pensionnaire">نصف داخلي (Demi-pension)</option>
+              <option value="externe">خارجي (Externe)</option>
+              <option value="interne">داخلي (Interne)</option>
             </select>
             <div style="display: flex; gap: 10px; margin-left: auto;">
               <button class="btn-badges-header" onclick="app.openBatchBadgesModal()" title="Imprimer les badges (Impression groupée)">
@@ -695,7 +696,7 @@
                   <th data-i18n="th_prenom">PRÉNOM</th>
                   <th data-i18n="th_niveau">NIVEAU</th>
                   <th data-i18n="th_phone">TÉLÉPHONE</th>
-                  <th style="text-align: center;">INSCRIPTIONS</th>
+                  <th style="text-align: center;">الصفة (RÉGIME)</th>
                   <th>STATUT</th>
                   <th style="text-align: right; width: 170px;">ACTIONS</th>
                 </tr>
@@ -2540,8 +2541,8 @@
       </div>
     </section>
 
-    <!-- ==================== 10. INSCRIPTIONS VIEW (STYLE SCHOOLARIS) ==================== -->
-    <section class="view-container" id="view-inscriptions">
+    <!-- ==================== 10. INSCRIPTIONS VIEW (DESACTIVER POUR ECOLES PUBLIQUES) ==================== -->
+    <section class="view-container" id="view-inscriptions" style="display: none !important;">
       <!-- Top Schoolaris Header -->
       <div class="schoolaris-header" style="margin-bottom: 24px;">
         <div>
