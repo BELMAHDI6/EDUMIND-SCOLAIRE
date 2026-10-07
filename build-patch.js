@@ -116,7 +116,7 @@ async function main() {
   // 4. Update updates/version.json
   const versionJsonPath = path.join(UPDATES_DIR, 'version.json');
   const releaseDate = new Date().toISOString().split('T')[0];
-  const repoName = 'BELMAHDI6/EDUMIND_SCOLAIRE';
+  const repoName = 'BELMAHDI6/EDUMIND-SCOLAIRE';
   const zipUrl = `https://raw.githubusercontent.com/${repoName}/main/updates/${zipFileName}`;
 
   const manifest = {

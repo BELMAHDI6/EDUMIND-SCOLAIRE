@@ -3,7 +3,7 @@ const path = require('path');
 const os = require('os');
 const { execSync, spawn } = require('child_process');
 
-const DEFAULT_UPDATE_URL = 'https://raw.githubusercontent.com/BELMAHDI6/EDUMIND_SCOLAIRE/main/updates/version.json';
+const DEFAULT_UPDATE_URL = 'https://raw.githubusercontent.com/BELMAHDI6/EDUMIND-SCOLAIRE/main/updates/version.json';
 
 class Updater {
   constructor(projectDir = __dirname) {
