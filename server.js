@@ -469,20 +469,43 @@ app.get('/api/students/:id', (req, res) => {
     const totalPaid = payments.reduce((sum, p) => sum + Number(p.paid_amount || 0), 0);
     const remainingDue = Math.max(0, totalBilled - totalPaid);
 
-    // 4. Attendance Stats
+    // 4. Attendance & Absences Stats
     const attStats = DB.queryOne(`
       SELECT 
         COUNT(*) as total_sessions,
         COALESCE(SUM(CASE WHEN status = 'present' THEN 1 ELSE 0 END), 0) as present_count,
         COALESCE(SUM(CASE WHEN status = 'late' THEN 1 ELSE 0 END), 0) as late_count,
-        COALESCE(SUM(CASE WHEN status = 'absent' THEN 1 ELSE 0 END), 0) as absent_count
+        COALESCE(SUM(CASE WHEN status = 'absent' THEN 1 ELSE 0 END), 0) as absent_count,
+        COALESCE(SUM(CASE WHEN status = 'excused' THEN 1 ELSE 0 END), 0) as excused_count
       FROM attendance
       WHERE student_id = ?
-    `, [id]);
+    `, [id]) || {};
 
-    const totalSessions = attStats?.total_sessions || 0;
-    const presentCount = attStats?.present_count || 0;
+    const totalSessions = attStats.total_sessions || 0;
+    const presentCount = attStats.present_count || 0;
     const attendanceRate = totalSessions > 0 ? Math.round((presentCount / totalSessions) * 100) : 100;
+
+    // 5. Canteen attendance stats
+    let canteenMeals = 0;
+    try {
+      canteenMeals = DB.queryOne("SELECT COUNT(*) as count FROM canteen_attendance WHERE student_id = ?", [id])?.count || 0;
+    } catch (e) {}
+
+    // 6. Absences & Discipline list
+    let absences = [];
+    try {
+      absences = DB.queryAll(`
+        SELECT a.id, a.session_date as date, a.check_in_time as time, a.status,
+               COALESCE(sub.name, g.name, 'Séance générale') as subject_name,
+               a.notes
+        FROM attendance a
+        LEFT JOIN groups g ON a.group_id = g.id
+        LEFT JOIN subjects sub ON g.subject_id = sub.id
+        WHERE a.student_id = ? AND a.status IN ('absent', 'late', 'excused')
+        ORDER BY a.session_date DESC, a.id DESC
+        LIMIT 100
+      `, [id]);
+    } catch (e) {}
 
     res.json({
       success: true,
@@ -493,11 +516,18 @@ app.get('/api/students/:id', (req, res) => {
         remaining_due: remainingDue,
         payments_count: payments.length,
         enrollments_count: enrollments.filter(e => e.enrollment_status === 'active').length,
-        status_text: remainingDue <= 0 ? 'À jour' : 'En retard',
+        status_text: 'Scolarisé',
         attendance_rate: attendanceRate,
         total_sessions: totalSessions,
-        present_count: presentCount
+        present_count: presentCount,
+        absent_count: attStats.absent_count || 0,
+        late_count: attStats.late_count || 0,
+        excused_count: attStats.excused_count || 0,
+        canteen_meals: canteenMeals,
+        regime: student.regime || 'demi_pensionnaire',
+        canteen_active: student.canteen_active !== 0
       },
+      absences,
       enrollments,
       payments
     });

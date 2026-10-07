@@ -732,27 +732,23 @@
         <div class="profile-toolbar">
           <button class="btn-profile-back" onclick="app.backToStudentsList()">
             <i class="fa-solid fa-arrow-left"></i>
-            <span>Retour</span>
+            <span data-i18n="btn_back">Retour</span>
           </button>
           <button class="btn-profile-edit" id="btnProfileEdit" onclick="app.editCurrentProfileStudent()">
             <i class="fa-solid fa-pen-to-square"></i>
-            <span>Modifier</span>
-          </button>
-          <button class="btn-profile-enroll" id="btnProfileEnroll" onclick="app.enrollCurrentProfileStudent()">
-            <i class="fa-solid fa-file-circle-plus"></i>
-            <span>Inscrire aux matières</span>
+            <span data-i18n="btn_edit">Modifier</span>
           </button>
           <button class="btn-profile-print" onclick="app.printStudentFiche()">
             <i class="fa-solid fa-print"></i>
-            <span>Imprimer fiche</span>
+            <span>استمارة التلميذ</span>
           </button>
           <button class="btn-profile-badge" id="btnProfileBadge" onclick="app.badgeCurrentProfileStudent()">
             <i class="fa-solid fa-id-card"></i>
-            <span>Badge</span>
+            <span>بطاقة التلميذ</span>
           </button>
           <button class="btn-profile-report" id="btnProfileReport" onclick="app.reportCurrentProfileStudent()">
             <i class="fa-solid fa-clipboard-user"></i>
-            <span>Rapport d'assiduité</span>
+            <span>كشف المواظبة</span>
           </button>
         </div>
 
@@ -766,113 +762,133 @@
             <h1 class="student-hero-name" id="profileHeroName">Nom Prénom</h1>
             <div class="student-hero-level" id="profileHeroLevel">Niveau scolaire</div>
             <div class="student-hero-pills">
-              <span class="hero-pill hero-pill-status up-to-date" id="profileHeroStatusPill">À jour</span>
-              <span class="hero-pill hero-pill-info" id="profileHeroEnrollmentsPill">0 inscriptions</span>
-              <span class="hero-pill hero-pill-info" id="profileHeroPaymentsPill">0 paiements</span>
+              <span class="hero-pill hero-pill-status up-to-date" id="profileHeroStatusPill">متمدرس</span>
+              <span class="hero-pill hero-pill-info" id="profileHeroRegimePill">نصف داخلي</span>
+              <span class="hero-pill hero-pill-info" id="profileHeroCanteenPill">مطعم مدرسي</span>
             </div>
           </div>
         </div>
 
-        <!-- 4 Financial KPI Cards -->
+        <!-- 4 Educational KPI Cards -->
         <div class="profile-kpis-grid">
           <div class="profile-kpi-card">
-            <span class="profile-kpi-label" data-i18n="profile_kpi_billed">Total facturé</span>
-            <div class="profile-kpi-value" id="profileKpiBilled">0 DA</div>
+            <span class="profile-kpi-label">الصفة المدرسية (Régime)</span>
+            <div class="profile-kpi-value" id="profileKpiRegime" style="font-size: 20px;">نصف داخلي</div>
           </div>
           <div class="profile-kpi-card">
-            <span class="profile-kpi-label" data-i18n="profile_kpi_paid">Total payé</span>
-            <div class="profile-kpi-value green" id="profileKpiPaid">0 DA</div>
+            <span class="profile-kpi-label">المطعم المدرسي (Cantine)</span>
+            <div class="profile-kpi-value green" id="profileKpiCanteen" style="font-size: 20px;">مستفيد</div>
           </div>
           <div class="profile-kpi-card">
-            <span class="profile-kpi-label" data-i18n="profile_kpi_remaining">Reste dû</span>
-            <div class="profile-kpi-value" id="profileKpiRemaining">0 DA</div>
+            <span class="profile-kpi-label">مجموع الغيابات (Absences)</span>
+            <div class="profile-kpi-value" id="profileKpiAbsences">0</div>
           </div>
           <div class="profile-kpi-card">
-            <span class="profile-kpi-label" data-i18n="profile_kpi_payments">Paiements</span>
-            <div class="profile-kpi-value" id="profileKpiPayments">0</div>
+            <span class="profile-kpi-label">التأخرات المسجلة (Retards)</span>
+            <div class="profile-kpi-value red" id="profileKpiLate">0</div>
           </div>
         </div>
 
-        <!-- 2 Columns: Informations Personnelles & Inscriptions -->
+        <!-- 2 Columns: Informations Personnelles & Situation Scolaire -->
         <div class="profile-details-grid">
           <!-- Left: Personal Info -->
           <div class="schoolaris-card" style="padding: 24px;">
             <h3 style="font-size: 16px; font-weight: 700; color: var(--text-heading); margin-bottom: 16px;">
               <i class="fa-regular fa-user" style="color: #3b82f6; margin-right: 8px;"></i>
-              Informations personnelles
+              المعلومات الشخصية
             </h3>
             <div class="profile-info-row">
-              <span class="profile-info-label">SEXE</span>
-              <span class="profile-info-val" id="profileInfoGender">Masculin</span>
+              <span class="profile-info-label">الجنس (Sexe)</span>
+              <span class="profile-info-val" id="profileInfoGender">ذكر</span>
             </div>
             <div class="profile-info-row">
-              <span class="profile-info-label">NIVEAU</span>
+              <span class="profile-info-label">تاريخ الازدياد</span>
+              <span class="profile-info-val" id="profileInfoBirthDate">-</span>
+            </div>
+            <div class="profile-info-row">
+              <span class="profile-info-label">مكان الازدياد</span>
+              <span class="profile-info-val" id="profileInfoBirthPlace">-</span>
+            </div>
+            <div class="profile-info-row">
+              <span class="profile-info-label">المستوى الدراسي</span>
               <span class="profile-info-val" id="profileInfoLevel">-</span>
             </div>
             <div class="profile-info-row">
-              <span class="profile-info-label">DATE INSCRIPTION</span>
-              <span class="profile-info-val" id="profileInfoDate">-</span>
-            </div>
-            <div class="profile-info-row">
-              <span class="profile-info-label">TÉL. ÉLÈVE</span>
-              <span class="profile-info-val" id="profileInfoPhone">-</span>
-            </div>
-            <div class="profile-info-row">
-              <span class="profile-info-label">TÉL. PARENT</span>
-              <span class="profile-info-val" id="profileInfoParentPhone">-</span>
-            </div>
-            <div class="profile-info-row">
-              <span class="profile-info-label">NOM DU TUTEUR</span>
+              <span class="profile-info-label">ولي الأمر (Tuteur)</span>
               <span class="profile-info-val" id="profileInfoParentName">-</span>
             </div>
             <div class="profile-info-row">
-              <span class="profile-info-label">ADRESSE</span>
+              <span class="profile-info-label">هاتف ولي الأمر</span>
+              <span class="profile-info-val" id="profileInfoParentPhone">-</span>
+            </div>
+            <div class="profile-info-row">
+              <span class="profile-info-label">العنوان</span>
               <span class="profile-info-val" id="profileInfoAddress">-</span>
             </div>
           </div>
 
-          <!-- Right: Inscriptions -->
+          <!-- Right: Situation Scolaire & Cantine -->
           <div class="schoolaris-card" style="padding: 24px;">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
-              <h3 style="font-size: 16px; font-weight: 700; color: var(--text-heading); margin: 0;">
-                <i class="fa-solid fa-graduation-cap" style="color: #10b981; margin-right: 8px;"></i>
-                <span id="profileInscriptionsTitle">Inscriptions (0)</span>
-              </h3>
-              <button class="btn-link"
-                style="font-size: 12px; color: #3b82f6; cursor: pointer; text-decoration: underline;"
-                onclick="app.enrollCurrentProfileStudent()">
-                + Inscrire
-              </button>
+            <h3 style="font-size: 16px; font-weight: 700; color: var(--text-heading); margin-bottom: 16px;">
+              <i class="fa-solid fa-school" style="color: #10b981; margin-right: 8px;"></i>
+              الوضعية المدرسية والمطعم
+            </h3>
+            <div class="profile-info-row">
+              <span class="profile-info-label">رقم التعريف الوطني / الرقمنة</span>
+              <span class="profile-info-val" id="profileInfoNationalId" style="font-family: monospace; font-weight: 600;">-</span>
             </div>
-            <div id="profileInscriptionsContainer" style="max-height: 280px; overflow-y: auto;">
-              <!-- Injected via JS -->
+            <div class="profile-info-row">
+              <span class="profile-info-label">الصفة (Régime)</span>
+              <span class="profile-info-val" id="profileInfoRegime">نصف داخلي</span>
+            </div>
+            <div class="profile-info-row">
+              <span class="profile-info-label">المطعم المدرسي</span>
+              <span class="profile-info-val" id="profileInfoCanteenStatus">مستفيد من الوجبة</span>
+            </div>
+            <div class="profile-info-row">
+              <span class="profile-info-label">وجبات تم تناولها بالمطعم</span>
+              <span class="profile-info-val" id="profileInfoCanteenMeals">0 وجبة</span>
+            </div>
+            <div class="profile-info-row">
+              <span class="profile-info-label">تاريخ التسجيل بالمؤسسة</span>
+              <span class="profile-info-val" id="profileInfoDate">-</span>
+            </div>
+            <div class="profile-info-row">
+              <span class="profile-info-label">هاتف التلميذ</span>
+              <span class="profile-info-val" id="profileInfoPhone">-</span>
+            </div>
+            <div class="profile-info-row">
+              <span class="profile-info-label">ملاحظات إدارية</span>
+              <span class="profile-info-val" id="profileInfoNotes">-</span>
             </div>
           </div>
         </div>
 
-        <!-- Bottom: Historique des paiements -->
+        <!-- Bottom: Suivi des absences et discipline -->
         <div class="schoolaris-card">
           <div class="schoolaris-card-header">
-            <span class="schoolaris-card-title" id="profilePaymentsTitle">Historique des paiements (0)</span>
-            <button class="btn-secondary" style="padding: 6px 14px; font-size: 12.5px;" onclick="window.print()">
+            <span class="schoolaris-card-title" id="profileAbsencesTitle">
+              <i class="fa-solid fa-clipboard-check" style="color: #3b82f6; margin-right: 8px;"></i>
+              سجل الغيابات والتأخرات المدرسية (0)
+            </span>
+            <button class="btn-secondary" style="padding: 6px 14px; font-size: 12.5px;" onclick="app.reportCurrentProfileStudent()">
               <i class="fa-solid fa-print"></i>
-              <span>Imprimer</span>
+              <span>طباعة كشف المواظبة</span>
             </button>
           </div>
           <div class="table-responsive">
             <table class="schoolaris-table">
               <thead>
                 <tr>
-                  <th>N° REÇU</th>
-                  <th>PÉRIODE / MOIS</th>
-                  <th>GROUPE / MATIÈRE</th>
-                  <th>MODE</th>
-                  <th>MONTANT PAYÉ</th>
-                  <th>DATE</th>
-                  <th style="text-align: right;">REÇU</th>
+                  <th>التاريخ</th>
+                  <th>الحصة / التوقيت</th>
+                  <th>المادة / الفوج</th>
+                  <th>نوع السجل</th>
+                  <th>الحالة / التبرير</th>
+                  <th>الملاحظات</th>
                 </tr>
               </thead>
-              <tbody id="profilePaymentsTableBody">
+              <tbody id="profileAbsencesTableBody">
                 <!-- Injected via JS -->
               </tbody>
             </table>

@@ -2549,120 +2549,151 @@ class EdumindApp {
 
       document.getElementById('profileHeroMatricule').textContent = student.matricule;
       document.getElementById('profileHeroName').textContent = `${student.first_name} ${student.last_name}`;
-      document.getElementById('profileHeroLevel').textContent = student.level_name || 'Niveau non défini';
+      document.getElementById('profileHeroLevel').textContent = student.level_name || 'المستوى غير محدد';
+
+      // Hero Pills
+      const regimeLabel = (student.regime === 'interne')
+        ? (this.lang === 'ar' ? 'داخلي' : 'Interne')
+        : (student.regime === 'externe')
+          ? (this.lang === 'ar' ? 'خارجي' : 'Externe')
+          : (this.lang === 'ar' ? 'نصف داخلي' : 'Demi-pensionnaire');
+
+      const isCanteenActive = student.canteen_active !== 0 && student.regime !== 'externe';
 
       const statusPill = document.getElementById('profileHeroStatusPill');
-      if (stats.remaining_due <= 0) {
+      if (statusPill) {
         statusPill.className = 'hero-pill hero-pill-status up-to-date';
-        statusPill.textContent = this.lang === 'ar' ? 'مستوفٍ / لا توجد ديون' : 'À jour';
-      } else {
-        statusPill.className = 'hero-pill hero-pill-status late';
-        statusPill.textContent = this.lang === 'ar' ? `متأخر (${stats.remaining_due.toLocaleString()} دج)` : `En retard (${stats.remaining_due.toLocaleString()} DA)`;
+        statusPill.textContent = this.lang === 'ar' ? 'متمدرس' : 'Scolarisé';
       }
 
-      document.getElementById('profileHeroEnrollmentsPill').textContent = this.lang === 'ar'
-        ? `${stats.enrollments_count} تسجيلات`
-        : `${stats.enrollments_count} inscription(s)`;
+      const regimePill = document.getElementById('profileHeroRegimePill');
+      if (regimePill) regimePill.textContent = regimeLabel;
 
-      document.getElementById('profileHeroPaymentsPill').textContent = this.lang === 'ar'
-        ? `${stats.payments_count} وصولات دفع`
-        : `${stats.payments_count} paiement(s)`;
-
-      // 2. 4 Financial KPIs
-      document.getElementById('profileKpiBilled').textContent = `${Number(stats.total_billed).toLocaleString()} DA`;
-      document.getElementById('profileKpiPaid').textContent = `${Number(stats.total_paid).toLocaleString()} DA`;
-      const remEl = document.getElementById('profileKpiRemaining');
-      remEl.textContent = `${Number(stats.remaining_due).toLocaleString()} DA`;
-      if (stats.remaining_due > 0) {
-        remEl.className = 'profile-kpi-value red';
-      } else {
-        remEl.className = 'profile-kpi-value';
+      const canteenPill = document.getElementById('profileHeroCanteenPill');
+      if (canteenPill) {
+        canteenPill.textContent = isCanteenActive
+          ? (this.lang === 'ar' ? 'مطعم مدرسي نشط' : 'Cantine active')
+          : (this.lang === 'ar' ? 'بدون إطعام' : 'Sans cantine');
       }
-      document.getElementById('profileKpiPayments').textContent = stats.payments_count;
+
+      // 2. Educational & School KPIs
+      const kpiRegime = document.getElementById('profileKpiRegime');
+      if (kpiRegime) kpiRegime.textContent = regimeLabel;
+
+      const kpiCanteen = document.getElementById('profileKpiCanteen');
+      if (kpiCanteen) {
+        kpiCanteen.textContent = isCanteenActive
+          ? (this.lang === 'ar' ? 'مستفيد' : 'Bénéficiaire')
+          : (this.lang === 'ar' ? 'غير مستفيد' : 'Non inscrit');
+        kpiCanteen.className = isCanteenActive ? 'profile-kpi-value green' : 'profile-kpi-value';
+      }
+
+      const totalAbsences = stats.absent_count || (data.absences ? data.absences.filter(a => a.status === 'absent').length : 0);
+      const totalLate = stats.late_count || (data.absences ? data.absences.filter(a => a.status === 'late').length : 0);
+
+      const kpiAbsences = document.getElementById('profileKpiAbsences');
+      if (kpiAbsences) kpiAbsences.textContent = totalAbsences;
+
+      const kpiLate = document.getElementById('profileKpiLate');
+      if (kpiLate) kpiLate.textContent = totalLate;
 
       // 3. Personal Information Table
-      document.getElementById('profileInfoGender').textContent = (student.gender || '').toUpperCase() === 'F'
-        ? (this.lang === 'ar' ? 'أنثى' : 'Féminin')
-        : (this.lang === 'ar' ? 'ذكر' : 'Masculin');
-      document.getElementById('profileInfoLevel').textContent = student.level_name || '-';
-      document.getElementById('profileInfoDate').textContent = student.created_at ? student.created_at.slice(0, 10) : '-';
-      document.getElementById('profileInfoPhone').textContent = student.phone || '-';
-      document.getElementById('profileInfoParentPhone').textContent = student.parent_phone || '-';
-      document.getElementById('profileInfoParentName').textContent = student.parent_name || '-';
-      document.getElementById('profileInfoAddress').textContent = student.address || '-';
-
-      // 4. Inscriptions Container
-      document.getElementById('profileInscriptionsTitle').textContent = this.lang === 'ar'
-        ? `الاشتراكات (${enrollments.length})`
-        : `Inscriptions (${enrollments.length})`;
-
-      const enrollContainer = document.getElementById('profileInscriptionsContainer');
-      if (enrollments.length === 0) {
-        enrollContainer.innerHTML = `
-          <div style="text-align: center; color: var(--text-muted); padding: 30px;">
-            ${this.lang === 'ar' ? 'لا يوجد أي اشتراك مسجل حالياً' : 'Aucune inscription'}
-          </div>
-        `;
-      } else {
-        enrollContainer.innerHTML = enrollments.map(e => `
-          <div class="profile-group-item">
-            <div>
-              <div style="font-weight: 700; color: var(--text-heading); font-size: 14px;">
-                <span class="subject-dot" style="background-color: ${e.subject_color || '#3b82f6'};"></span>
-                ${this.escapeHtml(e.group_name)}
-              </div>
-              <div style="font-size: 12px; color: var(--text-muted); margin-top: 4px;">
-                <i class="fa-solid fa-chalkboard-user"></i> ${this.escapeHtml(e.teacher_name || '-')} • 
-                <i class="fa-regular fa-clock"></i> ${this.escapeHtml(e.day_of_week || '')} ${this.escapeHtml(e.start_time || '')}
-              </div>
-            </div>
-            <div style="display: flex; align-items: center; gap: 10px;">
-              <div style="text-align: right;">
-                <div style="font-weight: 700; color: #10b981; font-size: 13.5px;">${Number(e.price_monthly).toLocaleString()} DA</div>
-                ${Number(e.discount_amount) > 0 ? `<div style="font-size: 11px; color: #f59e0b;">Remise: -${Number(e.discount_amount)} DA</div>` : ''}
-              </div>
-              <button class="btn-icon" title="${this.lang === 'ar' ? 'إلغاء التسجيل' : 'Désinscrire de ce groupe'}" 
-                      onclick="app.cancelEnrollment(${e.enrollment_id}, ${student.id})"
-                      style="color: #f87171; padding: 6px;"
-                      onmouseover="this.style.color='#ef4444'" 
-                      onmouseout="this.style.color='#f87171'">
-                <i class="fa-solid fa-trash-can"></i>
-              </button>
-            </div>
-          </div>
-        `).join('');
+      const infoGender = document.getElementById('profileInfoGender');
+      if (infoGender) {
+        infoGender.textContent = (student.gender || '').toUpperCase() === 'F'
+          ? (this.lang === 'ar' ? 'أنثى' : 'Féminin')
+          : (this.lang === 'ar' ? 'ذكر' : 'Masculin');
       }
 
-      // 5. Payments History
-      document.getElementById('profilePaymentsTitle').textContent = this.lang === 'ar'
-        ? `سجل المدفوعات (${payments.length})`
-        : `Historique des paiements (${payments.length})`;
+      const infoBirthDate = document.getElementById('profileInfoBirthDate');
+      if (infoBirthDate) infoBirthDate.textContent = student.birth_date ? student.birth_date.slice(0, 10) : '-';
 
-      const paymentsTbody = document.getElementById('profilePaymentsTableBody');
-      if (payments.length === 0) {
-        paymentsTbody.innerHTML = `
-          <tr>
-            <td colspan="7" style="text-align: center; color: var(--text-muted); padding: 30px;">
-              ${this.lang === 'ar' ? 'لا توجد مدفوعات مسجلة.' : 'Aucun paiement.'}
-            </td>
-          </tr>
-        `;
-      } else {
-        paymentsTbody.innerHTML = payments.map(p => `
-          <tr>
-            <td><strong style="color: #60a5fa;">${this.escapeHtml(p.receipt_no)}</strong></td>
-            <td>${this.escapeHtml(p.month_period)}</td>
-            <td><strong>${this.escapeHtml(p.group_name)}</strong></td>
-            <td><span class="badge-pill" style="text-transform: uppercase;">${this.escapeHtml(p.payment_method)}</span></td>
-            <td><strong style="color: #10b981;">${Number(p.paid_amount).toLocaleString()} DA</strong></td>
-            <td>${p.payment_date ? p.payment_date.slice(0, 10) : '-'}</td>
-            <td style="text-align: right;">
-              <button class="btn-icon" title="Voir / Imprimer le reçu" onclick="app.showReceipt(${p.id})">
-                <i class="fa-solid fa-receipt" style="color: #10b981;"></i>
-              </button>
-            </td>
-          </tr>
-        `).join('');
+      const infoBirthPlace = document.getElementById('profileInfoBirthPlace');
+      if (infoBirthPlace) infoBirthPlace.textContent = student.birth_place || '-';
+
+      const infoLevel = document.getElementById('profileInfoLevel');
+      if (infoLevel) infoLevel.textContent = student.level_name || '-';
+
+      const infoParentName = document.getElementById('profileInfoParentName');
+      if (infoParentName) infoParentName.textContent = student.parent_name || '-';
+
+      const infoParentPhone = document.getElementById('profileInfoParentPhone');
+      if (infoParentPhone) infoParentPhone.textContent = student.parent_phone || '-';
+
+      const infoAddress = document.getElementById('profileInfoAddress');
+      if (infoAddress) infoAddress.textContent = student.address || '-';
+
+      // 4. Situation Scolaire & Cantine Card
+      const infoNationalId = document.getElementById('profileInfoNationalId');
+      if (infoNationalId) infoNationalId.textContent = student.national_id || student.matricule || '-';
+
+      const infoRegime = document.getElementById('profileInfoRegime');
+      if (infoRegime) infoRegime.textContent = regimeLabel;
+
+      const infoCanteenStatus = document.getElementById('profileInfoCanteenStatus');
+      if (infoCanteenStatus) {
+        infoCanteenStatus.textContent = isCanteenActive
+          ? (this.lang === 'ar' ? 'مستفيد من الوجبة المدرسية' : 'Bénéficiaire de la cantine')
+          : (this.lang === 'ar' ? 'غير مسجل بالمطعم' : 'Non inscrit');
+      }
+
+      const infoCanteenMeals = document.getElementById('profileInfoCanteenMeals');
+      if (infoCanteenMeals) {
+        const mealsCount = stats.canteen_meals || 0;
+        infoCanteenMeals.textContent = `${mealsCount} ${this.lang === 'ar' ? 'وجبة مستفاد منها' : 'repas servi(s)'}`;
+      }
+
+      const infoDate = document.getElementById('profileInfoDate');
+      if (infoDate) infoDate.textContent = student.created_at ? student.created_at.slice(0, 10) : '-';
+
+      const infoPhone = document.getElementById('profileInfoPhone');
+      if (infoPhone) infoPhone.textContent = student.phone || '-';
+
+      const infoNotes = document.getElementById('profileInfoNotes');
+      if (infoNotes) infoNotes.textContent = student.notes || '-';
+
+      // 5. Absences & Discipline Table
+      const absencesList = data.absences || [];
+      const absencesTitle = document.getElementById('profileAbsencesTitle');
+      if (absencesTitle) {
+        absencesTitle.innerHTML = `<i class="fa-solid fa-clipboard-check" style="color: #3b82f6; margin-right: 8px;"></i> ${
+          this.lang === 'ar' ? `سجل الغيابات والتأخرات المدرسية (${absencesList.length})` : `Suivi des absences et assiduité (${absencesList.length})`
+        }`;
+      }
+
+      const absencesTbody = document.getElementById('profileAbsencesTableBody');
+      if (absencesTbody) {
+        if (absencesList.length === 0) {
+          absencesTbody.innerHTML = `
+            <tr>
+              <td colspan="6" style="text-align: center; color: var(--text-muted); padding: 30px;">
+                <i class="fa-regular fa-circle-check" style="color: #10b981; font-size: 24px; display: block; margin-bottom: 8px;"></i>
+                ${this.lang === 'ar' ? 'سجل نظيف — لا توجد أي غيابات أو تأخرات مسجلة لهذا التلميذ' : 'Aucune absence ou retard enregistré pour cet élève.'}
+              </td>
+            </tr>
+          `;
+        } else {
+          absencesTbody.innerHTML = absencesList.map(a => {
+            const isLate = a.status === 'late';
+            const isExcused = a.status === 'excused';
+            const typeBadge = isLate
+              ? `<span class="badge-pill" style="background: rgba(239, 68, 68, 0.15); color: #ef4444;">تأخر</span>`
+              : isExcused
+                ? `<span class="badge-pill" style="background: rgba(59, 130, 246, 0.15); color: #3b82f6;">غياب مبرر</span>`
+                : `<span class="badge-pill" style="background: rgba(245, 158, 11, 0.15); color: #f59e0b;">غياب</span>`;
+
+            return `
+              <tr>
+                <td><strong>${a.date ? a.date.slice(0, 10) : '-'}</strong></td>
+                <td>${this.escapeHtml(a.time || 'الحصة الصباحية/المسائية')}</td>
+                <td><strong>${this.escapeHtml(a.subject_name || 'عام')}</strong></td>
+                <td>${typeBadge}</td>
+                <td>${isExcused ? '<span style="color: #10b981;">مبرر رسمياً</span>' : '<span style="color: #ef4444;">غير مبرر</span>'}</td>
+                <td style="color: var(--text-muted);">${this.escapeHtml(a.notes || '-')}</td>
+              </tr>
+            `;
+          }).join('');
+        }
       }
 
       window.scrollTo({ top: 0, behavior: 'smooth' });
