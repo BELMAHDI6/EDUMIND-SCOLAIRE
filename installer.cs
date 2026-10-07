@@ -26,6 +26,9 @@ namespace EdumindScolaireSetup
         private Label lblStatus;
         private Label lblTitle;
         private Label lblSubtitle;
+        private Label lblPath;
+        private TextBox txtPath;
+        private Button btnBrowse;
         private Button btnAction;
         private CheckBox chkLaunch;
         private string installPath;
@@ -35,7 +38,7 @@ namespace EdumindScolaireSetup
         {
             // Configure Form
             this.Text = "EDUMIND Scolaire — تثبيت نظام المدارس العمومية";
-            this.Size = new Size(540, 360);
+            this.Size = new Size(560, 420);
             this.StartPosition = FormStartPosition.CenterScreen;
             this.FormBorderStyle = FormBorderStyle.FixedDialog;
             this.MaximizeBox = false;
@@ -44,7 +47,7 @@ namespace EdumindScolaireSetup
             this.ForeColor = Color.White;
             this.Font = new Font("Segoe UI", 9.5f, FontStyle.Regular);
 
-            // Install directory: %LocalAppData%\Programs\EDUMIND_Scolaire
+            // Default Install directory: %LocalAppData%\Programs\EDUMIND_Scolaire
             string localAppData = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
             installPath = Path.Combine(localAppData, "Programs", "EDUMIND_Scolaire");
             installedExe = Path.Combine(installPath, "EDUMIND_Scolaire.exe");
@@ -54,7 +57,7 @@ namespace EdumindScolaireSetup
             lblTitle.Text = "EDUMIND Scolaire";
             lblTitle.Font = new Font("Segoe UI", 16f, FontStyle.Bold);
             lblTitle.ForeColor = Color.FromArgb(56, 189, 248);
-            lblTitle.Location = new Point(35, 25);
+            lblTitle.Location = new Point(35, 20);
             lblTitle.AutoSize = true;
             this.Controls.Add(lblTitle);
 
@@ -63,30 +66,64 @@ namespace EdumindScolaireSetup
             lblSubtitle.Text = "تسيير المتوسطات والثانويات والمطعم المدرسي (CEM & Lycée)";
             lblSubtitle.Font = new Font("Segoe UI", 9.5f, FontStyle.Regular);
             lblSubtitle.ForeColor = Color.FromArgb(148, 163, 184);
-            lblSubtitle.Location = new Point(36, 60);
-            lblSubtitle.Size = new Size(460, 25);
+            lblSubtitle.Location = new Point(36, 55);
+            lblSubtitle.Size = new Size(475, 25);
             this.Controls.Add(lblSubtitle);
 
             // Separator Line
             Panel sep = new Panel();
             sep.BackColor = Color.FromArgb(30, 41, 59);
-            sep.Location = new Point(35, 95);
-            sep.Size = new Size(455, 1);
+            sep.Location = new Point(35, 88);
+            sep.Size = new Size(475, 1);
             this.Controls.Add(sep);
+
+            // Path Selection Label
+            lblPath = new Label();
+            lblPath.Text = "مسار التثبيت / Dossier d'installation :";
+            lblPath.Font = new Font("Segoe UI", 9f, FontStyle.Regular);
+            lblPath.ForeColor = Color.FromArgb(203, 213, 225);
+            lblPath.Location = new Point(35, 105);
+            lblPath.Size = new Size(475, 20);
+            this.Controls.Add(lblPath);
+
+            // Path TextBox
+            txtPath = new TextBox();
+            txtPath.Text = installPath;
+            txtPath.Font = new Font("Segoe UI", 9.5f, FontStyle.Regular);
+            txtPath.BackColor = Color.FromArgb(15, 23, 42);
+            txtPath.ForeColor = Color.White;
+            txtPath.BorderStyle = BorderStyle.FixedSingle;
+            txtPath.Location = new Point(35, 130);
+            txtPath.Size = new Size(370, 26);
+            this.Controls.Add(txtPath);
+
+            // Browse Button
+            btnBrowse = new Button();
+            btnBrowse.Text = "استعراض...";
+            btnBrowse.Font = new Font("Segoe UI", 9f, FontStyle.Regular);
+            btnBrowse.BackColor = Color.FromArgb(51, 65, 85);
+            btnBrowse.ForeColor = Color.White;
+            btnBrowse.FlatStyle = FlatStyle.Flat;
+            btnBrowse.FlatAppearance.BorderSize = 0;
+            btnBrowse.Location = new Point(415, 129);
+            btnBrowse.Size = new Size(95, 28);
+            btnBrowse.Cursor = Cursors.Hand;
+            btnBrowse.Click += BtnBrowse_Click;
+            this.Controls.Add(btnBrowse);
 
             // Status Label
             lblStatus = new Label();
             lblStatus.Text = "جاهز لتثبيت EDUMIND Scolaire على جهاز الكمبيوتر...";
             lblStatus.Font = new Font("Segoe UI", 9f, FontStyle.Regular);
             lblStatus.ForeColor = Color.FromArgb(203, 213, 225);
-            lblStatus.Location = new Point(35, 125);
-            lblStatus.Size = new Size(455, 25);
+            lblStatus.Location = new Point(35, 172);
+            lblStatus.Size = new Size(475, 22);
             this.Controls.Add(lblStatus);
 
             // Progress Bar
             progressBar = new ProgressBar();
-            progressBar.Location = new Point(35, 155);
-            progressBar.Size = new Size(455, 26);
+            progressBar.Location = new Point(35, 198);
+            progressBar.Size = new Size(475, 24);
             progressBar.Style = ProgressBarStyle.Continuous;
             this.Controls.Add(progressBar);
 
@@ -95,8 +132,8 @@ namespace EdumindScolaireSetup
             chkLaunch.Text = "تشغيل البرنامج مباشرة بعد اكتمال التثبيت";
             chkLaunch.Checked = true;
             chkLaunch.ForeColor = Color.FromArgb(226, 232, 240);
-            chkLaunch.Location = new Point(35, 205);
-            chkLaunch.Size = new Size(455, 25);
+            chkLaunch.Location = new Point(35, 238);
+            chkLaunch.Size = new Size(475, 25);
             this.Controls.Add(chkLaunch);
 
             // Action Button
@@ -107,8 +144,8 @@ namespace EdumindScolaireSetup
             btnAction.ForeColor = Color.White;
             btnAction.FlatStyle = FlatStyle.Flat;
             btnAction.FlatAppearance.BorderSize = 0;
-            btnAction.Location = new Point(290, 260);
-            btnAction.Size = new Size(200, 38);
+            btnAction.Location = new Point(310, 290);
+            btnAction.Size = new Size(200, 40);
             btnAction.Cursor = Cursors.Hand;
             btnAction.Click += BtnAction_Click;
             this.Controls.Add(btnAction);
@@ -123,6 +160,33 @@ namespace EdumindScolaireSetup
                 }
             }
             catch {}
+        }
+
+        private void BtnBrowse_Click(object sender, EventArgs e)
+        {
+            using (FolderBrowserDialog fbd = new FolderBrowserDialog())
+            {
+                fbd.Description = "اختر المجلد الذي ترغب بتثبيت EDUMIND Scolaire داخله :";
+                try
+                {
+                    string current = txtPath.Text.Trim();
+                    if (Directory.Exists(current))
+                    {
+                        fbd.SelectedPath = current;
+                    }
+                }
+                catch {}
+
+                if (fbd.ShowDialog() == DialogResult.OK)
+                {
+                    string chosen = fbd.SelectedPath;
+                    if (!chosen.EndsWith("EDUMIND_Scolaire", StringComparison.OrdinalIgnoreCase))
+                    {
+                        chosen = Path.Combine(chosen, "EDUMIND_Scolaire");
+                    }
+                    txtPath.Text = chosen;
+                }
+            }
         }
 
         private bool isFinished = false;
@@ -148,6 +212,25 @@ namespace EdumindScolaireSetup
                 return;
             }
 
+            installPath = txtPath.Text.Trim();
+            if (string.IsNullOrEmpty(installPath))
+            {
+                MessageBox.Show("يرجى تحديد مسار صالح للتثبيت.", "تنبيه", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
+            }
+
+            try
+            {
+                installedExe = Path.Combine(installPath, "EDUMIND_Scolaire.exe");
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show("مسار التثبيت غير صالح : " + ex.Message, "تنبيه", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
+            }
+
+            txtPath.Enabled = false;
+            btnBrowse.Enabled = false;
             btnAction.Enabled = false;
             btnAction.Text = "جاري التثبيت...";
 
@@ -233,7 +316,7 @@ namespace EdumindScolaireSetup
                 {
                     lblTitle.Text = "EDUMIND Scolaire جاهز!";
                     lblTitle.ForeColor = Color.FromArgb(74, 222, 128);
-                    lblStatus.Text = "تم تثبيت البرنامج بنجاح على جهازك.";
+                    lblStatus.Text = "تم تثبيت البرنامج بنجاح في: " + installPath;
                     lblStatus.ForeColor = Color.FromArgb(74, 222, 128);
                     btnAction.Text = "إنهاء وتشغيل";
                     btnAction.BackColor = Color.FromArgb(22, 163, 74);
@@ -268,6 +351,8 @@ namespace EdumindScolaireSetup
             MessageBox.Show(this, message, "خطأ في التثبيت", MessageBoxButtons.OK, MessageBoxIcon.Error);
             btnAction.Enabled = true;
             btnAction.Text = "إعادة المحاولة";
+            txtPath.Enabled = true;
+            btnBrowse.Enabled = true;
         }
 
         private void CreateShortcuts()
