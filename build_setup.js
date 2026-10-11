@@ -9,7 +9,9 @@ async function main() {
   console.log('========================================================\n');
 
   const projectDir = __dirname;
-  const rootDir = path.resolve(__dirname, '..');
+  const rootCandidate1 = path.resolve(__dirname, '..');
+  const rootCandidate2 = path.join(rootCandidate1, 'EDUMIND');
+  const rootDir = fs.existsSync(path.join(rootCandidate1, 'node_modules', 'electron', 'dist')) ? rootCandidate1 : rootCandidate2;
   const electronDist = path.join(rootDir, 'node_modules', 'electron', 'dist');
   const bundledNode = path.join(rootDir, 'bin', 'node.exe');
   const outputExe = path.join(projectDir, 'EDUMIND_Scolaire_Setup.exe');

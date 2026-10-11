@@ -1,14 +1,15 @@
 {
   "name": "edumind-scolaire",
   "productName": "EDUMIND Scolaire",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "EDUMIND Scolaire — Système de Gestion des Établissements Publics (CEM & Lycée) - Algérie",
   "main": "main.js",
   "scripts": {
     "start": "electron .",
     "desktop": "electron .",
     "dev": "electron .",
-    "server": "node server.js"
+    "server": "node server.js",
+    "keygen": "node keygen.js"
   },
   "keywords": [
     "education-algerie",

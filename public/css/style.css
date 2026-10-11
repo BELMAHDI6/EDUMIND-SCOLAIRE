@@ -6653,3 +6653,313 @@ body.entrance-kiosk-active #attendanceEntranceView {
 .groupes-tab-btn:hover {
   background: rgba(255, 255, 255, 0.05);
 }
+
+/* ==========================================================================
+   BORNE D'ENTRÉE DEFAULT VIEW ON LOGIN SCREEN
+   ========================================================================== */
+.login-container {
+  transition: max-width 0.35s cubic-bezier(0.16, 1, 0.3, 1) !important;
+}
+.login-container.borne-mode {
+  max-width: 660px !important;
+}
+
+.login-tabs-nav {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 20px;
+  background: rgba(15, 23, 42, 0.75);
+  padding: 5px;
+  border-radius: 14px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+.login-tabs-nav .login-tab-btn {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 10px 14px;
+  border-radius: 10px;
+  border: 1px solid transparent;
+  background: transparent;
+  color: var(--text-muted);
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  user-select: none;
+}
+.login-tabs-nav .login-tab-btn:hover {
+  color: #fff;
+  background: rgba(255, 255, 255, 0.06);
+}
+.login-tabs-nav .login-tab-btn.active {
+  background: rgba(37, 99, 235, 0.24);
+  border-color: rgba(59, 130, 246, 0.5);
+  color: #ffffff;
+  box-shadow: 0 4px 14px rgba(37, 99, 235, 0.25);
+}
+.login-tabs-nav .login-tab-btn#loginTabBorne.active {
+  background: rgba(16, 185, 129, 0.22);
+  border-color: rgba(16, 185, 129, 0.6);
+  color: #ffffff;
+  box-shadow: 0 4px 14px rgba(16, 185, 129, 0.25);
+}
+
+.btn-switch-login-mode {
+  background: transparent;
+  border: 1px dashed rgba(255, 255, 255, 0.2);
+  color: #94a3b8;
+  padding: 8px 16px;
+  border-radius: 10px;
+  font-size: 12.5px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+.btn-switch-login-mode:hover {
+  background: rgba(255, 255, 255, 0.08) !important;
+  color: #fff !important;
+  transform: translateY(-1px);
+}
+
+/* ==============================================================
+   CYCLE FILTER TABS & SUBJECTS MANAGEMENT MODERN STYLING
+   ============================================================== */
+.cycle-filter-toolbar {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  margin-bottom: 22px;
+  background: rgba(15, 23, 42, 0.55);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 18px;
+  padding: 16px 20px;
+  backdrop-filter: blur(16px);
+  box-shadow: 0 8px 32px -4px rgba(0, 0, 0, 0.35);
+  position: relative;
+  overflow: hidden;
+}
+
+.cycle-filter-toolbar::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: linear-gradient(90deg, #10b981, #3b82f6, #8b5cf6, #f59e0b);
+  opacity: 0.8;
+}
+
+.cycle-filter-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.cycle-school-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 13.5px;
+  color: #cbd5e1;
+  background: rgba(255, 255, 255, 0.04);
+  padding: 6px 14px;
+  border-radius: 20px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.cycle-school-badge i {
+  color: #10b981;
+}
+
+.cycle-school-badge strong {
+  color: #38bdf8;
+  font-weight: 700;
+}
+
+.cycle-notice-link {
+  color: #a78bfa;
+  font-size: 12.5px;
+  font-weight: 600;
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  border-radius: 8px;
+  background: rgba(167, 139, 250, 0.12);
+  border: 1px solid rgba(167, 139, 250, 0.25);
+  transition: all 0.2s ease;
+}
+
+.cycle-notice-link:hover {
+  background: rgba(167, 139, 250, 0.25);
+  color: #ffffff;
+  transform: translateY(-1px);
+  border-color: rgba(167, 139, 250, 0.5);
+}
+
+.cycle-tabs-container {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.cycle-tab-btn {
+  appearance: none;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.04);
+  color: #94a3b8;
+  padding: 10px 18px;
+  border-radius: 12px;
+  font-family: inherit;
+  font-size: 13.5px;
+  font-weight: 600;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  position: relative;
+  user-select: none;
+  outline: none;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+}
+
+.cycle-tab-btn i {
+  font-size: 14.5px;
+  transition: transform 0.25s ease;
+}
+
+.cycle-tab-btn:hover {
+  background: rgba(255, 255, 255, 0.09);
+  border-color: rgba(255, 255, 255, 0.22);
+  color: #ffffff;
+  transform: translateY(-2px);
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.25);
+}
+
+.cycle-tab-btn:hover i {
+  transform: scale(1.15);
+}
+
+.cycle-tab-btn:active {
+  transform: translateY(0);
+}
+
+/* Tab Count Badge */
+.cycle-tab-count {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 22px;
+  height: 20px;
+  padding: 0 7px;
+  border-radius: 10px;
+  font-size: 11.5px;
+  font-weight: 700;
+  background: rgba(255, 255, 255, 0.08);
+  color: #94a3b8;
+  transition: all 0.25s ease;
+}
+
+/* 1. All Tab (جميع المواد) */
+.cycle-tab-btn.tab-all.active {
+  background: linear-gradient(135deg, rgba(99, 102, 241, 0.28) 0%, rgba(79, 70, 229, 0.5) 100%);
+  border-color: #818cf8;
+  color: #ffffff;
+  box-shadow: 0 4px 20px rgba(99, 102, 241, 0.45), inset 0 1px 0 rgba(255, 255, 255, 0.25);
+}
+.cycle-tab-btn.tab-all.active .cycle-tab-count {
+  background: #6366f1;
+  color: #ffffff;
+}
+
+/* 2. Primaire Tab (الطور الابتدائي) */
+.cycle-tab-btn.tab-primaire.active {
+  background: linear-gradient(135deg, rgba(16, 185, 129, 0.28) 0%, rgba(5, 150, 105, 0.5) 100%);
+  border-color: #34d399;
+  color: #ffffff;
+  box-shadow: 0 4px 20px rgba(16, 185, 129, 0.45), inset 0 1px 0 rgba(255, 255, 255, 0.25);
+}
+.cycle-tab-btn.tab-primaire.active .cycle-tab-count {
+  background: #10b981;
+  color: #ffffff;
+}
+
+/* 3. CEM Tab (الطور المتوسط) */
+.cycle-tab-btn.tab-cem.active {
+  background: linear-gradient(135deg, rgba(59, 130, 246, 0.28) 0%, rgba(37, 99, 235, 0.5) 100%);
+  border-color: #60a5fa;
+  color: #ffffff;
+  box-shadow: 0 4px 20px rgba(59, 130, 246, 0.45), inset 0 1px 0 rgba(255, 255, 255, 0.25);
+}
+.cycle-tab-btn.tab-cem.active .cycle-tab-count {
+  background: #3b82f6;
+  color: #ffffff;
+}
+
+/* 4. Lycee Tab (الطور الثانوي) */
+.cycle-tab-btn.tab-lycee.active {
+  background: linear-gradient(135deg, rgba(168, 85, 247, 0.28) 0%, rgba(126, 34, 206, 0.5) 100%);
+  border-color: #c084fc;
+  color: #ffffff;
+  box-shadow: 0 4px 20px rgba(168, 85, 247, 0.45), inset 0 1px 0 rgba(255, 255, 255, 0.25);
+}
+.cycle-tab-btn.tab-lycee.active .cycle-tab-count {
+  background: #a855f7;
+  color: #ffffff;
+}
+
+/* 5. Communes Tab (مواد مشتركة) */
+.cycle-tab-btn.tab-commune.active {
+  background: linear-gradient(135deg, rgba(245, 158, 11, 0.28) 0%, rgba(217, 119, 6, 0.5) 100%);
+  border-color: #fbbf24;
+  color: #ffffff;
+  box-shadow: 0 4px 20px rgba(245, 158, 11, 0.45), inset 0 1px 0 rgba(255, 255, 255, 0.25);
+}
+.cycle-tab-btn.tab-commune.active .cycle-tab-count {
+  background: #f59e0b;
+  color: #ffffff;
+}
+
+/* Light Theme Adjustments */
+[data-theme="light"] .cycle-filter-toolbar {
+  background: #ffffff;
+  border-color: #e2e8f0;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
+}
+[data-theme="light"] .cycle-filter-header {
+  border-bottom-color: #f1f5f9;
+}
+[data-theme="light"] .cycle-school-badge {
+  background: #f8fafc;
+  border-color: #e2e8f0;
+  color: #334155;
+}
+[data-theme="light"] .cycle-tab-btn {
+  background: #f8fafc;
+  border-color: #e2e8f0;
+  color: #64748b;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+}
+[data-theme="light"] .cycle-tab-btn:hover {
+  background: #f1f5f9;
+  border-color: #cbd5e1;
+  color: #0f172a;
+}
+[data-theme="light"] .cycle-tab-count {
+  background: #e2e8f0;
+  color: #475569;
+}

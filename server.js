@@ -150,12 +150,23 @@ function toNullableId(val) {
   return Number.isNaN(num) ? null : num;
 }
 
+function sanitizePhone(val) {
+  if (val === undefined || val === null || val === '') return null;
+  const digits = String(val).replace(/\D/g, '').slice(0, 10);
+  return digits || null;
+}
+
+function sanitizeLettersOnly(val) {
+  if (val === undefined || val === null || val === '') return '';
+  return String(val).replace(/[^a-zA-Z\u00C0-\u024F\u0600-\u06FF\s'\-]/g, '').trim();
+}
+
 // -------------------------------------------------------------
 // 1. DASHBOARD & STATS API
 // -------------------------------------------------------------
 app.get('/api/dashboard/stats', (req, res) => {
   try {
-    const activeYear = DB.queryOne("SELECT value FROM settings WHERE key = 'active_year'")?.value || '2025-2026';
+    const activeYear = DB.queryOne("SELECT value FROM settings WHERE key = 'active_year'")?.value || '2026-2027';
 
     // 1. Active Students
     const activeStudents = DB.queryOne("SELECT COUNT(*) as count FROM students WHERE active = 1").count;
@@ -361,7 +372,8 @@ app.get('/api/students', (req, res) => {
       WITH student_enr AS (
         SELECT e.student_id,
                COUNT(*) as active_groups_count,
-               COALESCE(SUM(g.price_monthly - e.discount_amount), 0) as total_billed
+               COALESCE(SUM(g.price_monthly - e.discount_amount), 0) as total_billed,
+               GROUP_CONCAT(DISTINCT g.name) as groups_names
         FROM enrollments e
         JOIN groups g ON e.group_id = g.id
         WHERE e.status = 'active'
@@ -375,6 +387,7 @@ app.get('/api/students', (req, res) => {
       )
       SELECT s.*,
              COALESCE(l.name, '-') as level_name,
+             se.groups_names as group_name,
              COALESCE(pr.full_name, s.parent_name) as parent_name,
              COALESCE(pr.phone, s.parent_phone) as parent_phone,
              COALESCE(pr.discount_percent, 0) as parent_discount_percent,
@@ -449,6 +462,10 @@ app.get('/api/students/:id', (req, res) => {
       WHERE e.student_id = ?
       ORDER BY e.id DESC
     `, [id]);
+
+    const activeEnr = enrollments.find(e => e.enrollment_status === 'active') || enrollments[0];
+    student.group_id = activeEnr ? activeEnr.group_id : null;
+    student.group_name = activeEnr ? activeEnr.group_name : null;
 
     // 2. Payments history
     const payments = DB.queryAll(`
@@ -569,12 +586,92 @@ app.patch('/api/students/:id/toggle-status', (req, res) => {
   }
 });
 
+function resolveAndEnrollStudentGroup(studentId, targetGroupId, groupNum, targetLevelId, activeYear) {
+  let resolvedGroupId = toNullableId(targetGroupId);
+  const cleanNum = groupNum ? String(groupNum).trim() : '';
+
+  // 1. Validate provided targetGroupId against targetLevelId and cleanNum
+  if (resolvedGroupId) {
+    const existingGroup = DB.queryOne("SELECT id, name, level_id FROM groups WHERE id = ?", [resolvedGroupId]);
+    if (existingGroup) {
+      if (targetLevelId && existingGroup.level_id !== targetLevelId) {
+        resolvedGroupId = null; // level changed, ignore stale group from previous level
+      } else if (cleanNum) {
+        const gnum = existingGroup.name.match(/\d+$/)?.[0] || existingGroup.name.match(/[-_](\d+)/)?.[1] || existingGroup.name.match(/\s(\d+)\s/)?.[1];
+        if (gnum && String(gnum).trim() !== cleanNum) {
+          resolvedGroupId = null; // group number explicitly changed by user
+        }
+      }
+    } else {
+      resolvedGroupId = null;
+    }
+  }
+
+  // 2. Resolve by cleanNum and targetLevelId if needed
+  if (!resolvedGroupId && cleanNum && targetLevelId) {
+    const allLvlGroups = DB.queryAll("SELECT id, name FROM groups WHERE level_id = ?", [targetLevelId]);
+    const numMatched = allLvlGroups.find(g => {
+      const gnum = g.name.match(/\d+$/)?.[0] || g.name.match(/[-_](\d+)/)?.[1] || g.name.match(/\s(\d+)\s/)?.[1];
+      return gnum === cleanNum || g.name.endsWith(cleanNum) || g.name.includes(`-${cleanNum})`) || g.name.includes(` ${cleanNum}`);
+    });
+    if (numMatched) {
+      resolvedGroupId = numMatched.id;
+    } else {
+      const lvl = DB.queryOne("SELECT name FROM levels WHERE id = ?", [targetLevelId]);
+      let newName = `قسم ${cleanNum}`;
+      if (lvl) {
+        if (lvl.name.includes('1AM')) newName = `1 متوسط ${cleanNum} (1AM-${cleanNum})`;
+        else if (lvl.name.includes('2AM')) newName = `2 متوسط ${cleanNum} (2AM-${cleanNum})`;
+        else if (lvl.name.includes('3AM')) newName = `3 متوسط ${cleanNum} (3AM-${cleanNum})`;
+        else if (lvl.name.includes('4AM')) newName = `4 متوسط ${cleanNum} (4AM-${cleanNum})`;
+        else if (lvl.name.includes('1AS')) newName = `1 ثانوي ${cleanNum} (1AS-${cleanNum})`;
+        else if (lvl.name.includes('2AS')) newName = `2 ثانوي ${cleanNum} (2AS-${cleanNum})`;
+        else if (lvl.name.includes('3AS')) newName = `3 ثانوي ${cleanNum} (3AS-${cleanNum})`;
+        else if (lvl.name.includes('1AP')) newName = `1 ابتدائي ${cleanNum} (1AP-${cleanNum})`;
+        else if (lvl.name.includes('2AP')) newName = `2 ابتدائي ${cleanNum} (2AP-${cleanNum})`;
+        else if (lvl.name.includes('3AP')) newName = `3 ابتدائي ${cleanNum} (3AP-${cleanNum})`;
+        else if (lvl.name.includes('4AP')) newName = `4 ابتدائي ${cleanNum} (4AP-${cleanNum})`;
+        else if (lvl.name.includes('5AP')) newName = `5 ابتدائي ${cleanNum} (5AP-${cleanNum})`;
+      }
+      const defaultSub = DB.queryOne("SELECT id FROM subjects LIMIT 1")?.id || 1;
+      const defaultTeach = DB.queryOne("SELECT id FROM teachers LIMIT 1")?.id || 1;
+      const defaultRm = DB.queryOne("SELECT id FROM rooms LIMIT 1")?.id || 1;
+      const r = DB.run("INSERT INTO groups (name, level_id, subject_id, teacher_id, room_id, school_year, max_students, active) VALUES (?, ?, ?, ?, ?, ?, 35, 1)",
+        [newName, targetLevelId, defaultSub, defaultTeach, defaultRm, activeYear]);
+      resolvedGroupId = r.lastInsertRowid;
+    }
+  }
+
+  // 3. Update or insert enrollment for this student
+  if (resolvedGroupId && studentId) {
+    const existingEnr = DB.queryOne("SELECT id, group_id FROM enrollments WHERE student_id = ? AND school_year = ?", [studentId, activeYear]);
+    if (existingEnr) {
+      DB.run("UPDATE enrollments SET group_id = ?, status = 'active' WHERE id = ?", [resolvedGroupId, existingEnr.id]);
+    } else {
+      DB.run("INSERT INTO enrollments (student_id, group_id, school_year, registration_date, status, discount_amount) VALUES (?, ?, ?, DATE('now'), 'active', 0)",
+        [studentId, resolvedGroupId, activeYear]);
+    }
+  } else if (!resolvedGroupId && studentId && (targetGroupId === '' || targetGroupId === null) && !cleanNum) {
+    // Student un-enrolled from division
+    DB.run("UPDATE enrollments SET status = 'inactive' WHERE student_id = ? AND school_year = ?", [studentId, activeYear]);
+  }
+  return resolvedGroupId;
+}
+
 app.post('/api/students', (req, res) => {
   try {
-    const { matricule: customMatricule, first_name, last_name, gender, birth_date, birth_place, phone, parent_id, parent_name, parent_phone, address, level_id, notes } = req.body;
-    if (!first_name || !last_name) {
-      return res.status(400).json({ success: false, error: 'Nom et Prénom sont requis' });
+    const { matricule: customMatricule, first_name, last_name, gender, birth_date, birth_place, phone, parent_id, parent_name, parent_phone, address, level_id, group_id, group_num, regime = 'demi_pensionnaire', notes } = req.body;
+    
+    const cleanFirstName = sanitizeLettersOnly(first_name);
+    const cleanLastName = sanitizeLettersOnly(last_name);
+    if (!cleanFirstName || !cleanLastName) {
+      return res.status(400).json({ success: false, error: 'Nom et Prénom doivent contenir des lettres valides (حروف فقط)' });
     }
+
+    const cleanPhone = sanitizePhone(phone);
+    const activeYearSetting = DB.queryOne("SELECT value FROM settings WHERE key = 'active_year'")?.value || '2026-2027';
+    const yearMatch = activeYearSetting.match(/\d{4}$/) || [new Date().getFullYear().toString()];
+    const currentYear = yearMatch[0];
 
     const newStudent = DB.transaction(() => {
       let matricule = (customMatricule || '').trim();
@@ -585,10 +682,6 @@ app.post('/api/students', (req, res) => {
           throw new Error(`Le matricule "${matricule}" est déjà utilisé par un autre élève.`);
         }
       } else {
-        const activeYearSetting = DB.queryOne("SELECT value FROM settings WHERE key = 'active_year'")?.value || '2025-2026';
-        const yearMatch = activeYearSetting.match(/\d{4}$/) || [new Date().getFullYear().toString()];
-        const currentYear = yearMatch[0];
-
         let candidateNum = (DB.queryOne("SELECT MAX(id) as max_id FROM students")?.max_id || 0) + 1;
         matricule = `EDU-${currentYear}-${String(candidateNum).padStart(4, '0')}`;
         while (DB.queryOne("SELECT id FROM students WHERE matricule = ? COLLATE NOCASE", [matricule])) {
@@ -601,8 +694,8 @@ app.post('/api/students', (req, res) => {
 
       // Resolve parent linkage
       let parentId = toNullableId(parent_id);
-      let pName = parent_name ? parent_name.trim() : null;
-      let pPhone = parent_phone ? parent_phone.trim() : null;
+      let pName = parent_name ? sanitizeLettersOnly(parent_name) : null;
+      let pPhone = parent_phone ? sanitizePhone(parent_phone) : null;
 
       if (parentId) {
         const pRecord = DB.queryOne("SELECT full_name, phone FROM parents WHERE id = ?", [parentId]);
@@ -624,12 +717,18 @@ app.post('/api/students', (req, res) => {
         }
       }
 
-      const result = DB.run(`
-        INSERT INTO students (matricule, first_name, last_name, gender, birth_date, birth_place, phone, parent_id, parent_name, parent_phone, address, level_id, qr_code, notes)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-      `, [matricule, first_name.trim(), last_name.trim(), gender || 'M', birth_date || null, birth_place || null, phone || null, parentId, pName, pPhone, address || null, toNullableId(level_id), qr_code, notes || null]);
+      const finalRegime = regime || 'demi_pensionnaire';
+      const canteenActive = finalRegime !== 'externe' ? 1 : 0;
 
-      return DB.queryOne("SELECT * FROM students WHERE id = ?", [result.lastInsertRowid]);
+      const result = DB.run(`
+        INSERT INTO students (matricule, first_name, last_name, gender, birth_date, birth_place, phone, parent_id, parent_name, parent_phone, address, level_id, qr_code, notes, regime, canteen_active)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      `, [matricule, cleanFirstName, cleanLastName, gender || 'M', birth_date || null, birth_place || null, cleanPhone, parentId, pName, pPhone, address || null, toNullableId(level_id), qr_code, notes || null, finalRegime, canteenActive]);
+
+      const insertedId = result.lastInsertRowid;
+      resolveAndEnrollStudentGroup(insertedId, group_id, group_num, toNullableId(level_id), activeYearSetting);
+
+      return DB.queryOne("SELECT * FROM students WHERE id = ?", [insertedId]);
     });
 
     res.json({ success: true, student: newStudent });
@@ -641,11 +740,17 @@ app.post('/api/students', (req, res) => {
 app.put('/api/students/:id', (req, res) => {
   try {
     const { id } = req.params;
-    const { matricule: customMatricule, first_name, last_name, gender, birth_date, birth_place, phone, parent_id, parent_name, parent_phone, address, level_id, notes, photo_url } = req.body;
+    const { matricule: customMatricule, first_name, last_name, gender, birth_date, birth_place, phone, parent_id, parent_name, parent_phone, address, level_id, group_id, group_num, regime, notes, photo_url } = req.body;
     
     const currentStudent = DB.queryOne("SELECT * FROM students WHERE id = ?", [id]);
     if (!currentStudent) {
       return res.status(404).json({ success: false, error: 'Élève non trouvé' });
+    }
+
+    const cleanFirstName = first_name !== undefined ? sanitizeLettersOnly(first_name) : currentStudent.first_name;
+    const cleanLastName = last_name !== undefined ? sanitizeLettersOnly(last_name) : currentStudent.last_name;
+    if (!cleanFirstName || !cleanLastName) {
+      return res.status(400).json({ success: false, error: 'Nom et Prénom doivent contenir des lettres valides (حروف فقط)' });
     }
 
     let matricule = currentStudent.matricule;
@@ -660,8 +765,9 @@ app.put('/api/students/:id', (req, res) => {
 
     // Resolve parent linkage
     let parentId = toNullableId(parent_id);
-    let pName = parent_name !== undefined ? (parent_name ? parent_name.trim() : null) : currentStudent.parent_name;
-    let pPhone = parent_phone !== undefined ? (parent_phone ? parent_phone.trim() : null) : currentStudent.parent_phone;
+    let pName = parent_name !== undefined ? (parent_name ? sanitizeLettersOnly(parent_name) : null) : currentStudent.parent_name;
+    let pPhone = parent_phone !== undefined ? (parent_phone ? sanitizePhone(parent_phone) : null) : currentStudent.parent_phone;
+    const cleanPhone = phone !== undefined ? sanitizePhone(phone) : currentStudent.phone;
 
     if (parentId) {
       const pRecord = DB.queryOne("SELECT full_name, phone FROM parents WHERE id = ?", [parentId]);
@@ -683,12 +789,20 @@ app.put('/api/students/:id', (req, res) => {
       }
     }
 
+    const finalRegime = regime !== undefined ? regime : (currentStudent.regime || 'demi_pensionnaire');
+    const canteenActive = finalRegime !== 'externe' ? 1 : 0;
+    const finalLevelId = toNullableId(level_id !== undefined ? level_id : currentStudent.level_id);
+
     DB.run(`
       UPDATE students 
       SET matricule = ?, qr_code = ?, first_name = ?, last_name = ?, gender = ?, birth_date = ?, birth_place = ?, phone = ?, 
-          parent_id = ?, parent_name = ?, parent_phone = ?, address = ?, level_id = ?, notes = ?, photo_url = COALESCE(?, photo_url)
+          parent_id = ?, parent_name = ?, parent_phone = ?, address = ?, level_id = ?, notes = ?, photo_url = COALESCE(?, photo_url),
+          regime = ?, canteen_active = ?
       WHERE id = ?
-    `, [matricule, matricule, first_name.trim(), last_name.trim(), gender || 'M', birth_date || null, birth_place || null, phone || null, parentId, pName, pPhone, address || null, toNullableId(level_id), notes || null, photo_url || null, id]);
+    `, [matricule, matricule, cleanFirstName, cleanLastName, gender || 'M', birth_date || null, birth_place || null, cleanPhone, parentId, pName, pPhone, address || null, finalLevelId, notes || null, photo_url || null, finalRegime, canteenActive, id]);
+
+    const activeYearSetting = DB.queryOne("SELECT value FROM settings WHERE key = 'active_year'")?.value || '2026-2027';
+    resolveAndEnrollStudentGroup(id, group_id, group_num, finalLevelId, activeYearSetting);
 
     res.json({ success: true, message: 'Élève mis à jour avec succès', matricule });
   } catch (err) {
@@ -696,11 +810,65 @@ app.put('/api/students/:id', (req, res) => {
   }
 });
 
+function deleteStudentCompletely(studentId) {
+  // 1. Delete treasury entries related to this student's payments
+  const payments = DB.queryAll("SELECT id FROM payments WHERE student_id = ?", [studentId]);
+  for (const p of payments) {
+    try { DB.run("DELETE FROM caisse WHERE payment_id = ?", [p.id]); } catch (e) {}
+  }
+  // 2. Delete payments
+  try { DB.run("DELETE FROM payments WHERE student_id = ?", [studentId]); } catch (e) {}
+  // 3. Delete attendance records
+  try { DB.run("DELETE FROM attendance WHERE student_id = ?", [studentId]); } catch (e) {}
+  // 4. Delete group enrollments
+  try { DB.run("DELETE FROM enrollments WHERE student_id = ?", [studentId]); } catch (e) {}
+  // 5. Delete canteen logs & subscriptions
+  try { DB.run("DELETE FROM canteen_attendance WHERE student_id = ?", [studentId]); } catch (e) {}
+  try { DB.run("DELETE FROM canteen_subscriptions WHERE student_id = ?", [studentId]); } catch (e) {}
+  // 6. Delete discipline / absences records if any
+  try { DB.run("DELETE FROM discipline_absences WHERE student_id = ?", [studentId]); } catch (e) {}
+  // 7. Delete entrance barcode logs if any
+  try { DB.run("DELETE FROM entrance_attendance WHERE student_id = ?", [studentId]); } catch (e) {}
+  // 8. Delete student record itself
+  DB.run("DELETE FROM students WHERE id = ?", [studentId]);
+}
+
 app.delete('/api/students/:id', (req, res) => {
   try {
     const { id } = req.params;
-    DB.run("UPDATE students SET active = 0 WHERE id = ?", [id]);
-    res.json({ success: true, message: 'Élève désactivé avec succès' });
+    const { permanent } = req.query;
+    if (permanent === '0' || permanent === 'false') {
+      DB.run("UPDATE students SET active = 0 WHERE id = ?", [id]);
+      return res.json({ success: true, message: 'Élève désactivé avec succès' });
+    }
+    DB.transaction(() => {
+      deleteStudentCompletely(id);
+    });
+    res.json({ success: true, message: 'Élève supprimé définitivement avec succès' });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+// Batch delete students (Permanent or Deactivation)
+app.post('/api/students/batch-delete', (req, res) => {
+  try {
+    const { ids = [], permanent = true } = req.body;
+    if (!Array.isArray(ids) || ids.length === 0) {
+      return res.status(400).json({ success: false, error: 'Aucun élève fourni pour la suppression' });
+    }
+
+    DB.transaction(() => {
+      for (const id of ids) {
+        if (!permanent) {
+          DB.run("UPDATE students SET active = 0 WHERE id = ?", [id]);
+        } else {
+          deleteStudentCompletely(id);
+        }
+      }
+    });
+
+    res.json({ success: true, count: ids.length, message: `${ids.length} élève(s) supprimé(s) avec succès` });
   } catch (err) {
     res.status(500).json({ success: false, error: err.message });
   }
@@ -714,7 +882,7 @@ app.post('/api/students/import-batch', (req, res) => {
       return res.status(400).json({ success: false, error: 'Aucun élève fourni pour l\'importation' });
     }
 
-    const activeYearSetting = DB.queryOne("SELECT value FROM settings WHERE key = 'active_year'")?.value || '2025-2026';
+    const activeYearSetting = DB.queryOne("SELECT value FROM settings WHERE key = 'active_year'")?.value || '2026-2027';
     const yearMatch = activeYearSetting.match(/\d{4}$/) || [new Date().getFullYear().toString()];
     const currentYear = yearMatch[0];
 
@@ -727,12 +895,18 @@ app.post('/api/students/import-batch', (req, res) => {
       return cand;
     }
 
-    const allLevels = DB.queryAll("SELECT id, name FROM levels");
-    const allGroups = DB.queryAll("SELECT id, name, level_id FROM groups WHERE active = 1");
+    let allLevels = DB.queryAll("SELECT id, name FROM levels");
+    let allGroups = DB.queryAll("SELECT id, name, level_id FROM groups WHERE active = 1");
+    const defaultSubjectId = DB.queryOne("SELECT id FROM subjects ORDER BY id ASC LIMIT 1")?.id || 1;
+    const defaultTeacherId = DB.queryOne("SELECT id FROM teachers ORDER BY id ASC LIMIT 1")?.id || 1;
+    const defaultRoomId = DB.queryOne("SELECT id FROM rooms ORDER BY id ASC LIMIT 1")?.id || null;
 
     let importedCount = 0;
     let updatedCount = 0;
     let skippedCount = 0;
+    let parentsCreatedCount = 0;
+    let groupsCreatedCount = 0;
+    let enrollmentsCount = 0;
     const errors = [];
     const processed = [];
 
@@ -741,8 +915,8 @@ app.post('/api/students/import-batch', (req, res) => {
     try {
       for (let i = 0; i < students.length; i++) {
         const item = students[i];
-        const firstName = (item.first_name || '').trim();
-        const lastName = (item.last_name || '').trim();
+        const firstName = sanitizeLettersOnly(item.first_name);
+        const lastName = sanitizeLettersOnly(item.last_name);
 
         if (!firstName && !lastName) {
           errors.push({ row: i + 1, error: 'الاسم واللقب فارغان' });
@@ -768,69 +942,190 @@ app.post('/api/students/import-batch', (req, res) => {
         }
 
         const birthPlace = (item.birth_place || '').trim() || null;
-        const parentName = (item.parent_name || '').trim() || null;
-        const parentPhone = (item.parent_phone || item.phone || '').trim() || null;
-        const phone = (item.phone || '').trim() || null;
+        const phone = sanitizePhone(item.phone);
         const address = (item.address || '').trim() || null;
-        
-        let notes = (item.notes || '').trim();
-        if (item.statut && !notes.includes(item.statut)) {
-          notes = notes ? `${notes} | الصفة: ${item.statut}` : `الصفة: ${item.statut}`;
-        }
-        if (item.raw_group && !notes.includes(item.raw_group)) {
-          notes = notes ? `${notes} | الفوج المدرسي: ${item.raw_group}` : `الفوج المدرسي: ${item.raw_group}`;
-        }
-        notes = notes || null;
+        const nationalId = (item.national_id || '').trim() || null;
 
-        // Resolve level
+        // Régime & Cantine detection (نصف داخلي / خارجي)
+        const rawStatut = String(item.statut || '').trim().toLowerCase();
+        let regime = 'demi_pensionnaire';
+        let canteenActive = 1;
+        if (rawStatut.includes('خارجي') || rawStatut.includes('externe')) {
+          regime = 'externe';
+          canteenActive = 0;
+        } else if (rawStatut.includes('نصف') || rawStatut.includes('demi') || rawStatut.includes('مطعم')) {
+          regime = 'demi_pensionnaire';
+          canteenActive = 1;
+        }
+
+        // Compile notes (civil status, mother, statut, raw group)
+        let notesParts = [];
+        if (item.mother_name && item.mother_name.trim()) {
+          notesParts.push(`الأم: ${item.mother_name.trim()}`);
+        }
+        if (item.statut && item.statut.trim()) {
+          notesParts.push(`الصفة: ${item.statut.trim()}`);
+        }
+        if (item.raw_group && item.raw_group.trim()) {
+          notesParts.push(`فوج الرقمنة: ${item.raw_group.trim()}`);
+        }
+        if (item.notes && item.notes.trim()) {
+          notesParts.push(item.notes.trim());
+        }
+        const notes = notesParts.length > 0 ? notesParts.join(' | ') : null;
+
+        // ==============================================================
+        // 1. RESOLVE LEVEL
+        // ==============================================================
         let levelId = toNullableId(item.level_id) || toNullableId(defaultLevelId);
-        if (!levelId && item.level_name) {
-          const rawL = item.level_name.trim().toLowerCase();
+        const searchLevelText = `${item.level_name || ''} ${item.group_name || ''} ${item.raw_group || ''}`.trim().toLowerCase();
+
+        if (!levelId && searchLevelText) {
           let matchedL = allLevels.find(l => {
             const dbL = l.name.toLowerCase();
-            return dbL === rawL || rawL.includes(dbL) || dbL.includes(rawL);
+            return searchLevelText.includes(dbL) || dbL.includes(searchLevelText);
           });
           if (!matchedL) {
-            if (rawL.includes('1am') || rawL.includes('1 am') || (rawL.includes('1') && rawL.includes('متوسط'))) {
-              matchedL = allLevels.find(l => l.name.includes('1AM'));
-            } else if (rawL.includes('2am') || rawL.includes('2 am') || (rawL.includes('2') && rawL.includes('متوسط'))) {
-              matchedL = allLevels.find(l => l.name.includes('2AM'));
-            } else if (rawL.includes('3am') || rawL.includes('3 am') || (rawL.includes('3') && rawL.includes('متوسط'))) {
-              matchedL = allLevels.find(l => l.name.includes('3AM'));
-            } else if (rawL.includes('4am') || rawL.includes('4 am') || (rawL.includes('4') && rawL.includes('متوسط')) || rawL.includes('bem') || rawL.includes('بيام')) {
-              matchedL = allLevels.find(l => l.name.includes('4AM') || l.name.includes('BEM'));
-            } else if (rawL.includes('1as') || rawL.includes('1 as') || (rawL.includes('1') && rawL.includes('ثانوي'))) {
-              matchedL = allLevels.find(l => l.name.includes('1AS'));
-            } else if (rawL.includes('2as') || rawL.includes('2 as') || (rawL.includes('2') && rawL.includes('ثانوي'))) {
-              matchedL = allLevels.find(l => l.name.includes('2AS'));
-            } else if (rawL.includes('3as') || rawL.includes('3 as') || (rawL.includes('3') && rawL.includes('ثانوي')) || rawL.includes('bac') || rawL.includes('باك')) {
-              matchedL = allLevels.find(l => l.name.includes('3AS') || l.name.includes('BAC'));
-            } else if (rawL.includes('1ap') || (rawL.includes('1') && rawL.includes('ابتدائي'))) {
+            if (searchLevelText.includes('1am') || searchLevelText.includes('1 am') || searchLevelText.includes('1م') || (searchLevelText.includes('1') && searchLevelText.includes('متوسط'))) {
+              matchedL = allLevels.find(l => l.name.includes('1AM') || l.name.includes('1ère Année Moyenne'));
+            } else if (searchLevelText.includes('2am') || searchLevelText.includes('2 am') || searchLevelText.includes('2م') || (searchLevelText.includes('2') && searchLevelText.includes('متوسط'))) {
+              matchedL = allLevels.find(l => l.name.includes('2AM') || l.name.includes('2ème Année Moyenne'));
+            } else if (searchLevelText.includes('3am') || searchLevelText.includes('3 am') || searchLevelText.includes('3م') || (searchLevelText.includes('3') && searchLevelText.includes('متوسط'))) {
+              matchedL = allLevels.find(l => l.name.includes('3AM') || l.name.includes('3ème Année Moyenne'));
+            } else if (searchLevelText.includes('4am') || searchLevelText.includes('4 am') || searchLevelText.includes('4م') || (searchLevelText.includes('4') && searchLevelText.includes('متوسط')) || searchLevelText.includes('bem') || searchLevelText.includes('بيام')) {
+              matchedL = allLevels.find(l => l.name.includes('4AM') || l.name.includes('4ème Année Moyenne') || l.name.includes('BEM'));
+            } else if (searchLevelText.includes('1as') || searchLevelText.includes('1 as') || searchLevelText.includes('1ث') || (searchLevelText.includes('1') && searchLevelText.includes('ثانوي'))) {
+              matchedL = allLevels.find(l => l.name.includes('1AS') || l.name.includes('1ère Année Secondaire'));
+            } else if (searchLevelText.includes('2as') || searchLevelText.includes('2 as') || searchLevelText.includes('2ث') || (searchLevelText.includes('2') && searchLevelText.includes('ثانوي'))) {
+              matchedL = allLevels.find(l => l.name.includes('2AS') || l.name.includes('2ème Année Secondaire'));
+            } else if (searchLevelText.includes('3as') || searchLevelText.includes('3 as') || searchLevelText.includes('3ث') || (searchLevelText.includes('3') && searchLevelText.includes('ثانوي')) || searchLevelText.includes('bac') || searchLevelText.includes('باك')) {
+              matchedL = allLevels.find(l => l.name.includes('3AS') || l.name.includes('3ème Année Secondaire') || l.name.includes('BAC'));
+            } else if (searchLevelText.includes('1ap') || (searchLevelText.includes('1') && searchLevelText.includes('ابتدائي'))) {
               matchedL = allLevels.find(l => l.name.includes('1AP'));
-            } else if (rawL.includes('2ap') || (rawL.includes('2') && rawL.includes('ابتدائي'))) {
+            } else if (searchLevelText.includes('2ap') || (searchLevelText.includes('2') && searchLevelText.includes('ابتدائي'))) {
               matchedL = allLevels.find(l => l.name.includes('2AP'));
-            } else if (rawL.includes('3ap') || (rawL.includes('3') && rawL.includes('ابتدائي'))) {
+            } else if (searchLevelText.includes('3ap') || (searchLevelText.includes('3') && searchLevelText.includes('ابتدائي'))) {
               matchedL = allLevels.find(l => l.name.includes('3AP'));
-            } else if (rawL.includes('4ap') || (rawL.includes('4') && rawL.includes('ابتدائي'))) {
+            } else if (searchLevelText.includes('4ap') || (searchLevelText.includes('4') && searchLevelText.includes('ابتدائي'))) {
               matchedL = allLevels.find(l => l.name.includes('4AP'));
-            } else if (rawL.includes('5ap') || (rawL.includes('5') && rawL.includes('ابتدائي'))) {
+            } else if (searchLevelText.includes('5ap') || (searchLevelText.includes('5') && searchLevelText.includes('ابتدائي'))) {
               matchedL = allLevels.find(l => l.name.includes('5AP'));
             }
           }
           if (matchedL) levelId = matchedL.id;
         }
 
-        // Resolve group
-        let groupId = toNullableId(item.group_id) || toNullableId(defaultGroupId);
-        if (!groupId && item.group_name) {
-          const cleanGName = String(item.group_name).trim().toLowerCase();
-          const matchedG = allGroups.find(g => g.name.toLowerCase() === cleanGName || g.name.toLowerCase().includes(cleanGName) || (cleanGName.match(/\d+/) && g.name.includes(cleanGName.match(/\d+/)[0])));
-          if (matchedG) groupId = matchedG.id;
+        // ==============================================================
+        // 2. AUTO-RESOLVE & AUTO-CREATE PARENT (parents table)
+        // ==============================================================
+        let rawParentName = sanitizeLettersOnly(item.parent_name || item.father_name || '');
+        let parentPhone = sanitizePhone(item.parent_phone) || phone;
+        let parentFullName = rawParentName;
+
+        if (rawParentName) {
+          // If parent name is just the father's first name (e.g. "أحمد") and does not contain family name:
+          if (!rawParentName.includes(lastName) && rawParentName.split(/\s+/).length <= 2) {
+            parentFullName = `${lastName} ${rawParentName}`.trim();
+          }
+        } else if (parentPhone) {
+          parentFullName = `ولي أمر التلميذ ${lastName} ${firstName}`.trim();
         }
 
+        let parentId = null;
+
+        if (parentFullName || parentPhone) {
+          let cleanPhone = parentPhone ? parentPhone.replace(/[\s\-\.]/g, '') : '';
+          let existingParent = null;
+
+          if (cleanPhone.length >= 8) {
+            existingParent = DB.queryOne(`
+              SELECT * FROM parents 
+              WHERE REPLACE(REPLACE(REPLACE(phone, ' ', ''), '-', ''), '.', '') = ? 
+              LIMIT 1
+            `, [cleanPhone]);
+          }
+
+          if (!existingParent && parentFullName) {
+            existingParent = DB.queryOne(`
+              SELECT * FROM parents 
+              WHERE LOWER(TRIM(full_name)) = LOWER(TRIM(?))
+              LIMIT 1
+            `, [parentFullName]);
+          }
+
+          if (existingParent) {
+            parentId = existingParent.id;
+            parentFullName = existingParent.full_name;
+            parentPhone = existingParent.phone || parentPhone;
+            if (!existingParent.address && address) {
+              DB.run("UPDATE parents SET address = ? WHERE id = ?", [address, parentId]);
+            }
+          } else if (parentFullName) {
+            const resPar = DB.run(`
+              INSERT INTO parents (full_name, phone, address, discount_percent, notes, active)
+              VALUES (?, ?, ?, 0, 'تم التسجيل تلقائياً عبر استيراد ملف الرقمنة', 1)
+            `, [parentFullName, parentPhone || '', address || '']);
+            parentId = resPar.lastInsertRowid;
+            parentsCreatedCount++;
+          }
+        }
+
+        // ==============================================================
+        // 3. AUTO-RESOLVE & AUTO-CREATE GROUP / CLASSE (groups table)
+        // ==============================================================
+        let groupId = toNullableId(item.group_id) || toNullableId(defaultGroupId);
+        let rawGroupName = (item.group_name || item.raw_group || '').trim();
+
+        if (!groupId && rawGroupName) {
+          const cleanG = rawGroupName.toLowerCase();
+          let matchedG = allGroups.find(g => {
+            const dbG = g.name.toLowerCase();
+            return dbG === cleanG || dbG.includes(cleanG) || cleanG.includes(dbG);
+          });
+
+          // Match by level + group number (e.g. group "1" with level 1AM -> "1 متوسط 1")
+          if (!matchedG && levelId) {
+            const numMatch = rawGroupName.match(/\d+/);
+            if (numMatch) {
+              const num = numMatch[0];
+              matchedG = allGroups.find(g => g.level_id === levelId && (g.name.includes(num) || g.name.endsWith(num)));
+            }
+          }
+
+          if (matchedG) {
+            groupId = matchedG.id;
+          } else {
+            // Auto-create new group in database
+            let newGroupName = rawGroupName;
+            const levelObj = allLevels.find(l => l.id === levelId);
+            if (levelObj) {
+              const numMatch = rawGroupName.match(/\d+/);
+              const gNum = numMatch ? numMatch[0] : rawGroupName;
+              if (levelObj.name.includes('1AM')) newGroupName = `1 متوسط ${gNum}`;
+              else if (levelObj.name.includes('2AM')) newGroupName = `2 متوسط ${gNum}`;
+              else if (levelObj.name.includes('3AM')) newGroupName = `3 متوسط ${gNum}`;
+              else if (levelObj.name.includes('4AM')) newGroupName = `4 متوسط ${gNum}`;
+              else if (levelObj.name.includes('1AS')) newGroupName = `1 ثانوي ${gNum}`;
+              else if (levelObj.name.includes('2AS')) newGroupName = `2 ثانوي ${gNum}`;
+              else if (levelObj.name.includes('3AS')) newGroupName = `3 ثانوي ${gNum}`;
+            }
+
+            const resNewG = DB.run(`
+              INSERT INTO groups (name, level_id, subject_id, teacher_id, room_id, school_year, day_of_week, start_time, end_time, price_monthly, max_students, active)
+              VALUES (?, ?, ?, ?, ?, ?, 'Dimanche', '08:00', '16:30', 0, 40, 1)
+            `, [newGroupName, levelId || 1, defaultSubjectId, defaultTeacherId, defaultRoomId, activeYearSetting]);
+
+            groupId = resNewG.lastInsertRowid;
+            groupsCreatedCount++;
+            allGroups.push({ id: groupId, name: newGroupName, level_id: levelId || 1 });
+          }
+        }
+
+        // ==============================================================
+        // 4. DUPLICATE CHECK & STUDENT RECORD SAVE
+        // ==============================================================
         let customMatricule = (item.matricule ? String(item.matricule).trim() : '');
 
-        // Duplicate lookup: First by matricule if available, otherwise by (first_name + last_name + birth_date)
         let existingStudent = null;
         if (customMatricule) {
           existingStudent = DB.queryOne("SELECT * FROM students WHERE matricule = ? COLLATE NOCASE", [customMatricule]);
@@ -845,7 +1140,6 @@ app.post('/api/students/import-batch', (req, res) => {
         let studentId = null;
 
         if (existingStudent) {
-          // If the student was archived/deleted (active = 0), reactivate and update them!
           if (existingStudent.active === 0) {
             studentId = existingStudent.id;
             const updatedMatricule = customMatricule || existingStudent.matricule;
@@ -856,16 +1150,22 @@ app.post('/api/students/import-batch', (req, res) => {
                   birth_date = COALESCE(?, birth_date),
                   birth_place = COALESCE(?, birth_place),
                   phone = COALESCE(?, phone),
+                  parent_id = COALESCE(?, parent_id),
                   parent_name = COALESCE(?, parent_name),
                   parent_phone = COALESCE(?, parent_phone),
                   address = COALESCE(?, address),
                   level_id = COALESCE(?, level_id),
+                  regime = ?,
+                  canteen_active = ?,
+                  national_id = COALESCE(?, national_id),
                   notes = CASE WHEN ? IS NOT NULL THEN (COALESCE(notes || ' | ', '') || ?) ELSE notes END
               WHERE id = ?
             `, [
               firstName, lastName, gender,
-              birthDate, birthPlace, phone, parentName, parentPhone, address,
-              toNullableId(levelId), notes, notes, studentId
+              birthDate, birthPlace, phone,
+              toNullableId(parentId), parentFullName, parentPhone, address,
+              toNullableId(levelId), regime, canteenActive, nationalId,
+              notes, notes, studentId
             ]);
             importedCount++;
             processed.push({ id: studentId, matricule: updatedMatricule, first_name: firstName, last_name: lastName, action: 'created' });
@@ -874,7 +1174,7 @@ app.post('/api/students/import-batch', (req, res) => {
             processed.push({ id: existingStudent.id, matricule: existingStudent.matricule, first_name: firstName, last_name: lastName, action: 'skipped' });
             continue;
           } else {
-            // Update existing active student
+            // Update active student
             studentId = existingStudent.id;
             const updatedMatricule = customMatricule || existingStudent.matricule;
             DB.run(`
@@ -884,32 +1184,39 @@ app.post('/api/students/import-batch', (req, res) => {
                   birth_date = COALESCE(?, birth_date),
                   birth_place = COALESCE(?, birth_place),
                   phone = COALESCE(?, phone),
+                  parent_id = COALESCE(?, parent_id),
                   parent_name = COALESCE(?, parent_name),
                   parent_phone = COALESCE(?, parent_phone),
                   address = COALESCE(?, address),
                   level_id = COALESCE(?, level_id),
+                  regime = ?,
+                  canteen_active = ?,
+                  national_id = COALESCE(?, national_id),
                   notes = CASE WHEN ? IS NOT NULL THEN (COALESCE(notes || ' | ', '') || ?) ELSE notes END
               WHERE id = ?
             `, [
               firstName, lastName, gender,
-              birthDate, birthPlace, phone, parentName, parentPhone, address,
-              toNullableId(levelId), notes, notes, studentId
+              birthDate, birthPlace, phone,
+              toNullableId(parentId), parentFullName, parentPhone, address,
+              toNullableId(levelId), regime, canteenActive, nationalId,
+              notes, notes, studentId
             ]);
             updatedCount++;
             processed.push({ id: studentId, matricule: updatedMatricule, first_name: firstName, last_name: lastName, action: 'updated' });
           }
         } else {
-          // Insert new
+          // Insert new student
           const finalMatricule = customMatricule || generateUniqueMatricule();
           const qrCode = finalMatricule;
 
           const resInsert = DB.run(`
-            INSERT INTO students (matricule, first_name, last_name, gender, birth_date, birth_place, phone, parent_name, parent_phone, address, level_id, qr_code, notes, active)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1)
+            INSERT INTO students (matricule, first_name, last_name, gender, birth_date, birth_place, phone, parent_id, parent_name, parent_phone, address, level_id, qr_code, notes, regime, canteen_active, national_id, active)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1)
           `, [
             finalMatricule, firstName, lastName, gender,
-            birthDate, birthPlace, phone, parentName, parentPhone, address,
-            toNullableId(levelId), qrCode, notes
+            birthDate, birthPlace, phone,
+            toNullableId(parentId), parentFullName, parentPhone, address,
+            toNullableId(levelId), qrCode, notes, regime, canteenActive, nationalId
           ]);
 
           studentId = resInsert.lastInsertRowid;
@@ -917,15 +1224,30 @@ app.post('/api/students/import-batch', (req, res) => {
           processed.push({ id: studentId, matricule: finalMatricule, first_name: firstName, last_name: lastName, action: 'created' });
         }
 
-        // Automatic group enrollment if group resolved
+        // ==============================================================
+        // 5. AUTOMATIC ENROLLMENT IN CLASS (enrollments table)
+        // ==============================================================
         if (groupId && studentId) {
-          const isEnrolled = DB.queryOne("SELECT id FROM enrollments WHERE student_id = ? AND group_id = ? AND status = 'active'", [studentId, groupId]);
+          const isEnrolled = DB.queryOne("SELECT id FROM enrollments WHERE student_id = ? AND group_id = ? AND school_year = ?", [studentId, groupId, activeYearSetting]);
           if (!isEnrolled) {
             DB.run(`
               INSERT INTO enrollments (student_id, group_id, school_year, registration_date, status, discount_amount)
               VALUES (?, ?, ?, DATE('now'), 'active', 0)
             `, [studentId, groupId, activeYearSetting]);
+            enrollmentsCount++;
           }
+        }
+
+        // ==============================================================
+        // 6. AUTO-SUBSCRIBE TO CANTINE IF DEMI-PENSION
+        // ==============================================================
+        if (canteenActive === 1 && studentId) {
+          try {
+            DB.run(`
+              INSERT OR IGNORE INTO canteen_subscriptions (student_id, school_year, trimester, amount, is_paid, receipt_no, paid_date)
+              VALUES (?, ?, 1, 600, 1, 'TARBIYA-IMPORT', DATE('now'))
+            `, [studentId, activeYearSetting]);
+          } catch (eCanteen) {}
         }
       }
 
@@ -941,6 +1263,9 @@ app.post('/api/students/import-batch', (req, res) => {
       imported: importedCount,
       updated: updatedCount,
       skipped: skippedCount,
+      parentsCreated: parentsCreatedCount,
+      groupsCreated: groupsCreatedCount,
+      enrollmentsCount,
       errors,
       processed
     });
@@ -1114,19 +1439,22 @@ app.get('/api/parents/:id', (req, res) => {
 app.post('/api/parents', (req, res) => {
   try {
     const { full_name, phone, phone_secondary, email, address, discount_percent, notes } = req.body;
-    if (!full_name || !full_name.trim()) {
-      return res.status(400).json({ success: false, error: 'Nom complet du parent requis' });
+    const cleanFullName = sanitizeLettersOnly(full_name);
+    if (!cleanFullName) {
+      return res.status(400).json({ success: false, error: 'Nom complet du parent requis (حروف فقط)' });
     }
-    if (!phone || !phone.trim()) {
-      return res.status(400).json({ success: false, error: 'Numéro de téléphone requis' });
+    const cleanPhone = sanitizePhone(phone);
+    if (!cleanPhone) {
+      return res.status(400).json({ success: false, error: 'Numéro de téléphone valide requis (أرقام فقط، لا يتجاوز 10 أرقام)' });
     }
+    const cleanPhoneSec = sanitizePhone(phone_secondary);
 
     const disc = Math.min(100, Math.max(0, parseFloat(discount_percent) || 0));
 
     const result = DB.run(`
       INSERT INTO parents (full_name, phone, phone_secondary, email, address, discount_percent, notes, active)
       VALUES (?, ?, ?, ?, ?, ?, ?, 1)
-    `, [full_name.trim(), phone.trim(), phone_secondary?.trim() || null, email?.trim() || null, address?.trim() || null, disc, notes?.trim() || null]);
+    `, [cleanFullName, cleanPhone, cleanPhoneSec, email?.trim() || null, address?.trim() || null, disc, notes?.trim() || null]);
 
     const newParent = DB.queryOne("SELECT * FROM parents WHERE id = ?", [result.lastInsertRowid]);
     res.json({ success: true, parent: newParent, message: 'Parent enregistré avec succès' });
@@ -1139,9 +1467,13 @@ app.put('/api/parents/:id', (req, res) => {
   try {
     const { id } = req.params;
     const { full_name, phone, phone_secondary, email, address, discount_percent, notes } = req.body;
-    if (!full_name || !full_name.trim()) {
-      return res.status(400).json({ success: false, error: 'Nom complet du parent requis' });
+    const cleanFullName = sanitizeLettersOnly(full_name);
+    if (!cleanFullName) {
+      return res.status(400).json({ success: false, error: 'Nom complet du parent requis (حروف فقط)' });
     }
+
+    const cleanPhone = sanitizePhone(phone) || '';
+    const cleanPhoneSec = sanitizePhone(phone_secondary);
 
     const disc = Math.min(100, Math.max(0, parseFloat(discount_percent) || 0));
 
@@ -1149,14 +1481,14 @@ app.put('/api/parents/:id', (req, res) => {
       UPDATE parents
       SET full_name = ?, phone = ?, phone_secondary = ?, email = ?, address = ?, discount_percent = ?, notes = ?
       WHERE id = ?
-    `, [full_name.trim(), phone?.trim() || '', phone_secondary?.trim() || null, email?.trim() || null, address?.trim() || null, disc, notes?.trim() || null, id]);
+    `, [cleanFullName, cleanPhone, cleanPhoneSec, email?.trim() || null, address?.trim() || null, disc, notes?.trim() || null, id]);
 
     // Update parent_name and parent_phone on linked students
     DB.run(`
       UPDATE students
       SET parent_name = ?, parent_phone = ?
       WHERE parent_id = ?
-    `, [full_name.trim(), phone?.trim() || '', id]);
+    `, [cleanFullName, cleanPhone, id]);
 
     res.json({ success: true, message: 'Parent mis à jour avec succès' });
   } catch (err) {
@@ -1315,15 +1647,47 @@ app.get('/api/groups/:id/students', (req, res) => {
 
     const students = DB.queryAll(`
       SELECT e.id as enrollment_id, e.registration_date, e.discount_amount, e.status as enrollment_status,
-             s.id as student_id, s.matricule, s.first_name, s.last_name, s.phone, s.parent_phone,
+             s.id as student_id, s.matricule, s.first_name, s.last_name, s.phone, s.parent_phone, s.parent_name,
+             s.gender, s.regime, s.birth_date, s.birth_place,
              (SELECT COUNT(*) FROM payments WHERE student_id = s.id AND group_id = ?) as payments_count
       FROM enrollments e
       JOIN students s ON e.student_id = s.id
-      WHERE e.group_id = ?
-      ORDER BY s.last_name ASC
+      WHERE e.group_id = ? AND e.status = 'active' AND s.active = 1
+      ORDER BY s.last_name ASC, s.first_name ASC
     `, [id, id]);
 
     res.json({ success: true, group, students });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+app.post('/api/groups/:id/students', (req, res) => {
+  try {
+    const { id } = req.params;
+    const { student_id } = req.body;
+    if (!student_id) return res.status(400).json({ success: false, error: 'student_id est requis' });
+    const group = DB.queryOne("SELECT * FROM groups WHERE id = ?", [id]);
+    if (!group) return res.status(404).json({ success: false, error: 'Groupe introuvable' });
+
+    const activeYearSetting = DB.queryOne("SELECT value FROM settings WHERE key = 'active_year'")?.value || '2026-2027';
+    resolveAndEnrollStudentGroup(student_id, id, null, group.level_id, activeYearSetting);
+
+    if (group.level_id) {
+      DB.run("UPDATE students SET level_id = ? WHERE id = ?", [group.level_id, student_id]);
+    }
+
+    res.json({ success: true, message: 'Élève ajouté au groupe avec succès' });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+app.delete('/api/groups/:id/students/:studentId', (req, res) => {
+  try {
+    const { id, studentId } = req.params;
+    DB.run("UPDATE enrollments SET status = 'inactive' WHERE group_id = ? AND student_id = ?", [id, studentId]);
+    res.json({ success: true, message: 'Élève retiré du groupe avec succès' });
   } catch (err) {
     res.status(500).json({ success: false, error: err.message });
   }
@@ -1461,9 +1825,9 @@ app.get('/api/planning/rooms-availability', (req, res) => {
 
 app.post('/api/groups', (req, res) => {
   try {
-    const { name, level_id, subject_id, teacher_id, room_id, day_of_week, start_time, end_time, price_monthly, max_students, force } = req.body;
+    const { name, level_id, specialite, school_year, subject_id, teacher_id, room_id, day_of_week, start_time, end_time, price_monthly, max_students, force } = req.body;
 
-    if (!force) {
+    if (!force && room_id && teacher_id && day_of_week && start_time && end_time) {
       const conflicts = checkScheduleConflicts({
         day_of_week,
         start_time,
@@ -1481,9 +1845,22 @@ app.post('/api/groups', (req, res) => {
     }
 
     const result = DB.run(`
-      INSERT INTO groups (name, level_id, subject_id, teacher_id, room_id, day_of_week, start_time, end_time, price_monthly, max_students)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-    `, [name, toNullableId(level_id), toNullableId(subject_id), toNullableId(teacher_id), toNullableId(room_id), day_of_week, start_time, end_time, parseFloat(price_monthly) || 2000, parseInt(max_students) || 25]);
+      INSERT INTO groups (name, level_id, specialite, school_year, subject_id, teacher_id, room_id, day_of_week, start_time, end_time, price_monthly, max_students)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `, [
+      name, 
+      toNullableId(level_id), 
+      specialite || null,
+      school_year || '2026-2027',
+      toNullableId(subject_id) || 1, 
+      toNullableId(teacher_id) || 1, 
+      toNullableId(room_id), 
+      day_of_week || null, 
+      start_time || null, 
+      end_time || null, 
+      parseFloat(price_monthly) || 0, 
+      parseInt(max_students) || 35
+    ]);
     res.json({ success: true, groupId: result.lastInsertRowid });
   } catch (err) {
     res.status(500).json({ success: false, error: err.message });
@@ -1493,9 +1870,9 @@ app.post('/api/groups', (req, res) => {
 app.put('/api/groups/:id', (req, res) => {
   try {
     const { id } = req.params;
-    const { name, level_id, subject_id, teacher_id, room_id, day_of_week, start_time, end_time, price_monthly, max_students, force } = req.body;
+    const { name, level_id, specialite, school_year, subject_id, teacher_id, room_id, day_of_week, start_time, end_time, price_monthly, max_students, force } = req.body;
 
-    if (!force) {
+    if (!force && room_id && teacher_id && day_of_week && start_time && end_time) {
       const conflicts = checkScheduleConflicts({
         day_of_week,
         start_time,
@@ -1515,10 +1892,25 @@ app.put('/api/groups/:id', (req, res) => {
 
     DB.run(`
       UPDATE groups
-      SET name = ?, level_id = ?, subject_id = ?, teacher_id = ?, room_id = ?, 
-          day_of_week = ?, start_time = ?, end_time = ?, price_monthly = ?, max_students = ?
+      SET name = ?, level_id = ?, specialite = ?, school_year = COALESCE(?, school_year), 
+          subject_id = COALESCE(?, subject_id), teacher_id = COALESCE(?, teacher_id), 
+          room_id = ?, day_of_week = ?, start_time = ?, end_time = ?, price_monthly = ?, max_students = ?
       WHERE id = ?
-    `, [name, toNullableId(level_id), toNullableId(subject_id), toNullableId(teacher_id), toNullableId(room_id), day_of_week, start_time, end_time, parseFloat(price_monthly) || 2000, parseInt(max_students) || 25, id]);
+    `, [
+      name, 
+      toNullableId(level_id), 
+      specialite || null,
+      school_year || null,
+      toNullableId(subject_id), 
+      toNullableId(teacher_id), 
+      toNullableId(room_id), 
+      day_of_week || null, 
+      start_time || null, 
+      end_time || null, 
+      parseFloat(price_monthly) || 0, 
+      parseInt(max_students) || 35, 
+      id
+    ]);
     res.json({ success: true, message: 'Groupe mis à jour avec succès' });
   } catch (err) {
     res.status(500).json({ success: false, error: err.message });
@@ -1582,7 +1974,7 @@ app.get('/api/enrollments', (req, res) => {
 app.post('/api/enrollments', (req, res) => {
   try {
     const { student_id, group_id, school_year, discount_amount } = req.body;
-    const year = school_year || '2025-2026';
+    const year = school_year || '2026-2027';
     
     const result = DB.transaction(() => {
       const existing = DB.queryOne("SELECT id FROM enrollments WHERE student_id = ? AND group_id = ? AND school_year = ?", [student_id, group_id, year]);
@@ -1638,7 +2030,7 @@ app.post('/api/enrollments/batch', (req, res) => {
       return res.status(400).json({ success: false, error: 'Veuillez sélectionner au moins un groupe.' });
     }
 
-    const activeYearSetting = school_year || DB.queryOne("SELECT value FROM settings WHERE key = 'active_year'")?.value || '2025-2026';
+    const activeYearSetting = school_year || DB.queryOne("SELECT value FROM settings WHERE key = 'active_year'")?.value || '2026-2027';
     const regDate = registration_date || new Date().toISOString().split('T')[0];
     const discount = parseFloat(discount_amount) || 0;
 
@@ -3494,9 +3886,12 @@ app.get('/api/teachers', (req, res) => {
 app.post('/api/teachers', (req, res) => {
   try {
     const { matricule: customMatricule, first_name, last_name, phone, email, subject_id, grade, remuneration_type, remuneration_rate, tarif_heure, tarif_seance, salaire_fixe, tarif_par_eleve } = req.body;
-    if (!first_name || !last_name) {
-      return res.status(400).json({ success: false, error: 'Nom et Prénom de l’enseignant sont requis' });
+    const cleanFirstName = sanitizeLettersOnly(first_name);
+    const cleanLastName = sanitizeLettersOnly(last_name);
+    if (!cleanFirstName || !cleanLastName) {
+      return res.status(400).json({ success: false, error: 'Nom et Prénom de l’enseignant doivent contenir des lettres valides (حروف فقط)' });
     }
+    const cleanPhone = sanitizePhone(phone);
 
     const newTeacher = DB.transaction(() => {
       let matricule = (customMatricule || '').trim();
@@ -3525,7 +3920,7 @@ app.post('/api/teachers', (req, res) => {
         INSERT INTO teachers (matricule, first_name, last_name, phone, email, subject_id, grade, remuneration_type, remuneration_rate, tarif_heure, tarif_seance, salaire_fixe, tarif_par_eleve, active)
         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1)
       `, [
-        matricule, first_name.trim(), last_name.trim(), phone || null, email || null, validSubId,
+        matricule, cleanFirstName, cleanLastName, cleanPhone, email || null, validSubId,
         grade || 'prof_titulaire',
         remuneration_type || 'percent', parseFloat(remuneration_rate) || 50.0,
         parseFloat(tarif_heure) || 0, parseFloat(tarif_seance) || 0,
@@ -3551,6 +3946,13 @@ app.put('/api/teachers/:id', (req, res) => {
       return res.status(404).json({ success: false, error: 'Enseignant non trouvé' });
     }
 
+    const cleanFirstName = first_name !== undefined ? sanitizeLettersOnly(first_name) : currentTeacher.first_name;
+    const cleanLastName = last_name !== undefined ? sanitizeLettersOnly(last_name) : currentTeacher.last_name;
+    if (!cleanFirstName || !cleanLastName) {
+      return res.status(400).json({ success: false, error: 'Nom et Prénom de l’enseignant doivent contenir des lettres valides (حروف فقط)' });
+    }
+    const cleanPhone = phone !== undefined ? sanitizePhone(phone) : currentTeacher.phone;
+
     let matricule = currentTeacher.matricule;
     if (customMatricule && customMatricule.trim()) {
       const cleanMatricule = customMatricule.trim();
@@ -3569,7 +3971,7 @@ app.put('/api/teachers/:id', (req, res) => {
           tarif_heure = ?, tarif_seance = ?, salaire_fixe = ?, tarif_par_eleve = ?
       WHERE id = ?
     `, [
-      matricule, first_name.trim(), last_name.trim(), phone || null, email || null, toNullableId(subject_id),
+      matricule, cleanFirstName, cleanLastName, cleanPhone, email || null, toNullableId(subject_id),
       grade || currentTeacher.grade || 'prof_titulaire',
       remuneration_type || 'percent', parseFloat(remuneration_rate) || 50.0,
       parseFloat(tarif_heure) || 0, parseFloat(tarif_seance) || 0,
@@ -4072,16 +4474,29 @@ app.delete('/api/levels/:id', (req, res) => {
 });
 
 app.get('/api/subjects', (req, res) => {
-  const subjects = DB.queryAll("SELECT * FROM subjects ORDER BY name ASC");
-  res.json({ success: true, subjects });
+  try {
+    const { category } = req.query;
+    let subjects;
+    if (category && category !== 'all') {
+      subjects = DB.queryAll(
+        "SELECT * FROM subjects WHERE category = ? OR category = 'all' OR category IS NULL ORDER BY name ASC",
+        [category]
+      );
+    } else {
+      subjects = DB.queryAll("SELECT * FROM subjects ORDER BY name ASC");
+    }
+    res.json({ success: true, subjects });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
 });
 
 app.post('/api/subjects', (req, res) => {
   try {
-    const { name, code, color } = req.body;
+    const { name, code, color, category, icon } = req.body;
     const result = DB.run(
-      "INSERT INTO subjects (name, code, color) VALUES (?, ?, ?)",
-      [name, code || name.slice(0, 4).toUpperCase(), color || '#3b82f6']
+      "INSERT INTO subjects (name, code, color, category, icon) VALUES (?, ?, ?, ?, ?)",
+      [name, code || name.slice(0, 4).toUpperCase(), color || '#3b82f6', category || 'all', icon || 'book']
     );
     res.json({ success: true, subjectId: result.lastInsertRowid });
   } catch (err) {
@@ -4091,9 +4506,11 @@ app.post('/api/subjects', (req, res) => {
 
 app.put('/api/subjects/:id', (req, res) => {
   try {
-    const { name, code, color } = req.body;
-    DB.run("UPDATE subjects SET name = ?, code = ?, color = ? WHERE id = ?",
-      [name, code, color, req.params.id]);
+    const { name, code, color, category, icon } = req.body;
+    DB.run(
+      "UPDATE subjects SET name = ?, code = ?, color = ?, category = ?, icon = COALESCE(?, icon, 'book') WHERE id = ?",
+      [name, code, color, category || 'all', icon || null, req.params.id]
+    );
     res.json({ success: true, message: 'Matière mise à jour' });
   } catch (err) {
     res.status(500).json({ success: false, error: err.message });
@@ -4630,7 +5047,8 @@ app.get('/api/cantine/report', (req, res) => {
 
 // Serve frontend for all client routes
 app.get('*', (req, res) => {
-  res.sendFile(path.join(__dirname, 'public', 'index.html'));
+  res.set({'Cache-Control': 'no-store, no-cache, must-revalidate', 'Pragma': 'no-cache'});
+    res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
 
 // Server Lifecycle Management

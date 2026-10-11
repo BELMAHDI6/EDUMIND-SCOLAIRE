@@ -4,6 +4,40 @@
 
 const i18n = {
   fr: {
+            // Dashboard Keys
+            dash_kpi_students: "Total des Élèves",
+            dash_kpi_students_sub: "Élèves scolarisés inscrits",
+            dash_kpi_demi_pension: "Demi-Pension (Cantine)",
+            dash_kpi_demi_pension_sub: "Bénéficiaires de la cantine",
+            dash_kpi_externe: "Régime Externe",
+            dash_kpi_externe_sub: "Élèves externes (Sans cantine)",
+            dash_kpi_meals: "Repas Servis Aujourd'hui",
+            dash_kpi_teachers: "Corps Enseignant",
+            dash_kpi_teachers_sub: "Enseignants inscrits",
+            dash_kpi_classes: "Divisions Pédagogiques",
+            dash_kpi_classes_sub: "Divisions et classes pédagogiques",
+            dash_kpi_caisse: "Solde de la Caisse",
+            dash_kpi_caisse_sub: "Intendance et finances",
+            dash_action_cantine: "Scan des Cartes Cantine (Code-barres)",
+            dash_action_import: "Importer la Numérisation (Excel)",
+            dash_action_caisse: "Registre de Caisse et Dépenses",
+            dash_action_pointage: "Vie Scolaire et Assiduité",
+            dash_recent_meals_title: "Derniers Repas Enregistrés Aujourd'hui",
+            dash_btn_open_scan: "Ouvrir l'écran de Scan",
+            dash_th_time: "Heure",
+            dash_th_student: "Élève",
+            dash_th_classe: "Division / Classe",
+            dash_th_status: "Statut",
+            dash_no_meals: "Aucun repas enregistré aujourd'hui",
+            dash_system_status_title: "État du Système et Notifications",
+            dash_db_status: "Base de données connectée et sécurisée",
+            dash_db_desc: "Sauvegarde quotidienne automatique active et sécurisée.",
+            dash_scanner_status: "Lecteur Code-barres (Douchette) Prêt",
+            dash_scanner_desc: "Prêt pour le scan des badges à la cantine et à la vie scolaire.",
+            btn_back: "Retour",
+            btn_edit: "Modifier",
+            title_cantine: "Cantine Scolaire (Demi-Pension)",
+            title_groupes_salles: "Divisions et Salles de cours",
     tagline: 'Établissements Publics (CEM & Lycée)',
     nav_dashboard: 'Tableau de bord',
     cat_quotidien: 'GESTION SCOLAIRE',
@@ -13,6 +47,8 @@ const i18n = {
     nav_caisse: 'Intendance & Caisse',
     cat_configuration: 'STRUCTURE & PARAMÈTRES',
     nav_groupes: 'Divisions & Salles',
+    nav_matieres: 'Matières Enseignées',
+    nav_niveaux: 'Niveaux & Cycles',
     nav_enseignants: 'Corps Enseignant',
     nav_settings: 'Paramètres',
     title_salles: 'Salles de Cours',
@@ -90,7 +126,7 @@ const i18n = {
     planning_kpi_hours: 'VOLUME HEBDOMADAIRE',
     planning_kpi_teachers: 'ENSEIGNANTS PROGRAMMÉS',
     planning_kpi_rooms: 'SALLES UTILISÉES',
-    th_parent_nom: 'PARENT / RESPONSABLE',
+    th_parent_nom: "PARENTS D'ÉLÈVES",
     th_enfants_count: 'ENFANTS INSCRITS',
     th_reduction_pct: 'RÉDUCTION (%)',
     th_parent_solde: 'DETTES FAMILIALES',
@@ -198,7 +234,7 @@ const i18n = {
     title_live_scanned: "Élèves pointés dans cette séance",
     tip_barcode_autofocus: "Le champ reste toujours actif pour enchaîner les scans au scanner",
     th_heure: "HEURE",
-    login_tagline: "Système de Gestion Scolaire Professionnel",
+    login_tagline: "Système de Gestion des Établissements Scolaires Publics (CEM & Lycée)",
     login_lbl_role: "Compte utilisateur",
     login_role_admin: "Administrateur",
     login_role_auto: "Sélectionné automatiquement",
@@ -207,6 +243,10 @@ const i18n = {
     login_password_ph: "Entrez votre mot de passe...",
     login_btn_submit: "Se connecter",
     login_secured: "Accès sécurisé & chiffré",
+    login_tab_borne: "Borne d'Entrée (Pointage Rapide)",
+    login_tab_manual: "Connexion Manuelle (Administration)",
+    login_btn_switch_manual: "Passer à la connexion administrative manuelle",
+    login_btn_switch_borne: "Retour à la Borne d'Entrée",
     btn_logout: "Déconnexion",
     login_err_empty: "Veuillez saisir votre mot de passe",
     login_err_invalid: "Mot de passe incorrect. Veuillez réessayer.",
@@ -214,7 +254,7 @@ const i18n = {
     dev_phone_label: "Téléphone Support",
     tab_apropos: "À propos & Support",
     about_title: "À propos d'EDUMIND & Développeur",
-    about_desc: "Système professionnel complet pour la gestion scolaire, cours de soutien, élèves, paiements et présences.",
+    about_desc: "Système complet de gestion des établissements scolaires publics (CEM et Lycée) : divisions pédagogiques, élèves, cantine, demi-pension, assiduité et finances.",
     about_contact_btn: "Appeler",
     about_whatsapp_btn: "WhatsApp",
     admin_developer_lbl: "Développé par",
@@ -324,7 +364,7 @@ const i18n = {
     th_tarif: "TARIF NET (DA)",
     lbl_filter_month: "Mois :",
     btn_prev: "Précédent",
-    wizard_title: "Inscrire un Élève dans un Groupe",
+    wizard_title: "Affecter un Élève dans une Division / Classe",
     wizard_subtitle: "Assistant en 3 étapes simples et rapides",
     wizard_step1_title: "1. Élève",
     wizard_step1_sub: "Rechercher l'élève",
@@ -390,9 +430,9 @@ const i18n = {
     th_statut_col: "STATUT",
     import_btn_confirm: "Confirmer et enregistrer l'importation",
     import_btn_executing: "Importation en cours...",
-    btn_bulk_enrollment: "Inscription dans les groupes (Multi-inscriptions)",
-    bulk_enroll_title: "Inscription dans les Groupes (Multi-inscriptions)",
-    bulk_enroll_subtitle: "Sélectionnez les élèves et les groupes cibles pour les inscrire en un seul clic",
+    btn_bulk_enrollment: "Affectation dans les divisions",
+    bulk_enroll_title: "Affectation des Élèves dans les Divisions",
+    bulk_enroll_subtitle: "Sélectionnez les élèves et les divisions pour les affecter en un clic",
     bulk_panel_students: "1. Sélection des élèves",
     bulk_select_all_students: "Tout sélectionner",
     bulk_panel_groups: "2. Sélection des groupes",
@@ -409,7 +449,7 @@ const i18n = {
     fast_pay_mode_student: "دفع لتلميذ",
     fast_pay_mode_parent: "دفع عائلي (بالولي)",
     fast_pay_no_student_hint: "Tapez le nom ou matricule de l'élève pour ouvrir ses cours et cotisations",
-    fast_pay_no_parent_hint: "ابحث باسم الولي لعرض جميع أبنائه وأفواجهم وتسديد المستحقات دفعة واحدة أو دفع جزء من المبلغ",
+    fast_pay_no_parent_hint: "ابحث باسم الولي لعرض جميع أبنائه وأقسامهم وتسديد المستحقات دفعة واحدة",
     fast_pay_no_parent_sub: "يمكنك إدخال أي مبلغ جزئي وتوزيعه تلقائياً على الأبناء، مع حفظ أي متبقي كدين وإصدار وصل دفع عائلي موحد.",
     fast_pay_selected_courses: "Cours et groupes inscrits",
     fast_pay_lbl_selected_groups: "Groupes sélectionnés",
@@ -432,7 +472,7 @@ const i18n = {
     th_enseignant: "ENSEIGNANT",
     lbl_filter_category: "Catégorie :",
     batch_selected_text: "élève(s) sélectionné(s)",
-    modal_payroll_slip_title: "Bulletin de Paie / Fiche d'Honoraires",
+    modal_payroll_slip_title: "Fiche de Suivi et des Heures de l'Enseignant",
     fast_pay_no_student_sub: "Les résultats et groupes s'afficheront instantanément avec la possibilité d'imprimer un reçu unifié.",
     opt_all_months: "Tous les mois",
     opt_all_flux: "Tous les flux (Entrées & Dépenses)",
@@ -452,9 +492,299 @@ const i18n = {
     btn_download_excel: "Exporter Excel (CSV)",
     btn_export_caisse: "Exporter la Caisse",
     btn_export_payments: "Exporter les Paiements",
-    btn_quick_excel: "Excel Rapide"
+    btn_quick_excel: "Excel Rapide",
+    // Modal Student Keys (FR)
+    modal_student_title_new: "Inscrire un Nouvel Élève",
+    modal_student_title_edit: "Modifier l'Élève",
+    modal_student_subtitle: "Fiche d'identification et scolarité de l'élève",
+    modal_student_matricule_lbl: "Identifiant Scolaire / Code-barres",
+    modal_student_matricule_hint: "Laisser vide pour génération automatique",
+    modal_student_matricule_placeholder: "Automatique (ex: ELE-2026-0001)",
+    modal_student_sec_identity: "Identité & Scolarité de l'Élève",
+    modal_student_lastname: "Nom de famille *",
+    modal_student_lastname_placeholder: "Nom de famille de l'élève...",
+    modal_student_firstname: "Prénom *",
+    modal_student_firstname_placeholder: "Prénom de l'élève...",
+    modal_student_level: "Niveau scolaire",
+    modal_student_gender: "Genre / Sexe",
+    modal_student_gender_m: "Masculin (Garçon)",
+    modal_student_gender_f: "Féminin (Fille)",
+    modal_student_phone: "Téléphone de l'élève (Optionnel)",
+    modal_student_phone_placeholder: "05 / 06 / 07... (Optionnel)",
+    modal_student_sec_parent: "Parents d'Élèves",
+    modal_student_parent_select: "Parent d'élève déjà enregistré",
+    modal_student_discount_lbl: "Remise fratrie :",
+    modal_student_parent_name: "Nom complet du parent d'élève",
+    modal_student_parent_name_placeholder: "Nom et prénom du parent d'élève...",
+    modal_student_parent_phone: "Téléphone du parent d'élève",
+    modal_student_parent_phone_placeholder: "05 / 06 / 07...",
+    modal_student_address: "Adresse de résidence",
+    modal_student_address_placeholder: "Commune, quartier, ville...",
+    btn_save_student: "Enregistrer l'Élève",
+    btn_update_student: "Mettre à jour l'Élève",
+    th_num_col: "#",
+    th_matricule_col: "MATRICULE / ID",
+    th_nom_col: "NOM",
+    th_prenom_col: "PRÉNOM",
+    th_genre_col: "GENRE",
+    th_niveau_col: "NIVEAU SCOLAIRE",
+    th_naissance_col: "DATE NAISSANCE",
+    th_lieu_col: "LIEU NAISSANCE",
+    th_parent_col: "PARENT / TUTEUR",
+    th_adresse_col: "ADRESSE",
+    th_groupe_col: "GROUPE / CLASSE",
+    th_regime_col: "RÉGIME",
+    th_statut_col: "STATUT",
+    import_modal_title: "Importer le Fichier de Numérisation (الرقمنة)",
+    import_modal_sub: "Importation intelligente et liaison automatique des élèves, parents et divisions pédagogiques",
+    import_preview_heading: "Aperçu direct avant enregistrement",
+    import_btn_confirm: "Confirmer et enregistrer l'importation",
+    th_classe_niveau: "Classe / Niveau",
+    th_classes_assignees: "Classes Assignées",
+    th_groupe_name: "Division / Classe",
+    th_salle: "Salle Assignée",
+    th_matiere_enseignant: "Matière / Enseignant",
+    th_grade: "Grade / Statut",
+    th_email: "Email",
+    th_enseignant: "Enseignant",
+    th_jour_heure: "Jour & Heure",
+    th_duree: "Durée",
+    th_prix_mensuel: "Prix Mensuel",
+    th_effectif: "Effectif",
+    modal_student_group_lbl: "Division / Classe pédagogique",
+    modal_student_group_hint: "Affectation dans la classe",
+    modal_student_group_num_lbl: "N° Division",
+    modal_student_group_num_placeholder: "Ex: 1 ou 2",
+    modal_student_regime_lbl: "Régime scolaire & Cantine",
+    opt_regime_demi: "Demi-pensionnaire (Cantine)",
+    opt_regime_externe: "Externe (Sans cantine)",
+    opt_regime_interne: "Interne",
+    btn_add_to_group: "Ajouter à la classe",
+    btn_print_group_list: "Imprimer la liste officielle",
+    th_nom_prenom: "Nom & Prénom",
+    th_genre: "Genre",
+    btn_save: "Enregistrer",
+    btn_add: "Ajouter",
+    btn_delete: "Supprimer",
+    btn_edit: "Modifier",
+    th_periode: "PÉRIODE",
+    th_recu_num: "N° REÇU",
+    th_filiere: "FILIÈRE / SPÉCIALITÉ",
+    th_effectif_eleves: "NOMBRE D'ÉLÈVES",
+    th_matiere: "MATIÈRE",
+    th_code: "CODE",
+    th_cycle: "CYCLE SCOLAIRE",
+    school_year_badge: "Année Scolaire 2026-2027",
+    th_regime_cantine: "Régime / Cantine",
+    btn_fiche_student: "Fiche de l'élève",
+    btn_badge_student: "Carte scolaire",
+    btn_report_student: "Bilan d'assiduité",
+    profile_kpi_regime: "Régime scolaire",
+    profile_kpi_canteen: "Cantine scolaire",
+    profile_kpi_absences: "Total des absences",
+    profile_kpi_retards: "Retards enregistrés",
+    profile_title_perso: "Informations Personnelles",
+    profile_lbl_gender: "Genre",
+    profile_lbl_birthdate: "Date de naissance",
+    profile_lbl_birthplace: "Lieu de naissance",
+    profile_lbl_level: "Niveau scolaire",
+    profile_lbl_tuteur: "Tuteur légal (Parent)",
+    profile_lbl_tuteur_phone: "Téléphone du tuteur",
+    profile_lbl_address: "Adresse de résidence",
+    profile_title_situation: "Situation Scolaire & Cantine",
+    profile_lbl_national_id: "N° Identification National (Rakmana)",
+    profile_lbl_regime: "Régime scolaire",
+    profile_lbl_canteen_status: "Statut Cantine",
+    profile_lbl_canteen_meals: "Repas consommés",
+    profile_lbl_reg_date: "Date d'inscription",
+    cantine_subtitle: "Contrôle d'accès par code-barres, vérification demi-pension et prévention des doublons",
+    cantine_btn_sheet: "Feuille de présence cantine",
+    cantine_btn_refresh: "Actualiser",
+    cantine_kpi_inscrits: "Inscrits Demi-pension",
+    cantine_kpi_inscrits_sub: "Bénéficiaires de la cantine",
+    cantine_kpi_served: "Repas servis aujourd'hui",
+    cantine_kpi_remaining: "Restants à servir",
+    cantine_kpi_remaining_sub: "En attente de passage",
+    cantine_kpi_rate: "Taux de service",
+    cantine_scan_box_lbl: "Scanner le badge élève (Douchette ou Code)",
+    cantine_scanner_ready: "Lecteur code-barres connecté et prêt",
+    cantine_btn_confirm: "Valider le repas",
+    cantine_scan_hint: "Accepte le matricule, le badge imprimé ou le smartphone avec vérification instantanée",
+    cantine_lbl_matricule: "N° Matricule :",
+    cantine_lbl_class: "Division / Classe :",
+    cantine_badge_demi: "Demi-pensionnaire (Bénéficiaire)",
+    cantine_live_title: "Journal en direct des repas du jour",
+    cantine_no_meals_sub: "Commencez à scanner les cartes des élèves.",
+    login_role_admin: "Directeur de l'établissement",
+    login_role_caisse: "Intendant (Gestion financière)",
+    login_role_cpe: "Conseiller principal d'éducation (CPE)",
+    login_role_secretariat: "Secrétariat & Numérisation (Rakmana)",
+    login_admin_badge: "Directeur (Administrateur)",
+    login_admin_perms: "Accès complet et autorisations de gestion",
+    login_err_wrong_pass: "Mot de passe incorrect",
+    login_update_badge: "NOUVELLE VERSION DISPONIBLE",
+    login_support_txt: "Veloce Craft — Support & Licences",
+    groupes_main_title: "Divisions Pédagogiques & Classes",
+    groupes_main_subtitle: "Gestion des divisions pédagogiques, effectifs scolaires et répartition des élèves",
+    btn_new_division: "+ Nouvelle division",
+    groupes_kpi_active: "Divisions pédagogiques actives",
+    groupes_kpi_total_students: "Total des élèves dans les divisions",
+    groupes_kpi_avg_per_class: "Moyenne d'élèves par division",
+    groupes_list_title: "Liste des divisions pédagogiques",
+    modal_group_title: "Ajouter une Division Pédagogique",
+    modal_group_name_lbl: "Nom de la division / classe *",
+    modal_group_level_lbl: "Niveau Scolaire *",
+    modal_group_filiere_lbl: "Filière / Spécialité",
+    modal_group_year_lbl: "Année Scolaire",
+    btn_save_group: "Enregistrer la division",
+    modal_group_students_title: "Liste des élèves de la division",
+    caisse_title: "Intendance & Registre de Caisse",
+    caisse_subtitle: "Suivi des mouvements financiers, recettes, dépenses et justificatifs de l'intendance",
+    caisse_btn_in: "Entrée de Caisse",
+    caisse_btn_out: "Sortie (Dépense)",
+    caisse_kpi_in: "Recettes Encaissées",
+    caisse_kpi_out: "Sorties & Dépenses",
+    caisse_kpi_net: "Solde Net Disponible",
+    caisse_lbl_filter_type: "Type :",
+    caisse_lbl_filter_cat: "Catégorie :",
+    th_caisse_piece: "N° PIÈCE",
+    th_caisse_type: "TYPE",
+    th_caisse_cat: "CATÉGORIE",
+    th_caisse_motif: "LIBELLÉ / MOTIF",
+    th_caisse_montant: "MONTANT",
+    th_caisse_mode: "MODE DE PAIEMENT",
+    modal_caisse_title: "Nouveau Mouvement de Caisse",
+    modal_caisse_type_lbl: "Type de mouvement",
+    modal_caisse_motif_lbl: "Désignation / Motif *",
+    modal_caisse_cat_lbl: "Catégorie",
+    modal_caisse_montant_lbl: "Montant (DA) *",
+    modal_caisse_mode_lbl: "Mode de paiement",
+    modal_caisse_date_lbl: "Date du mouvement",
+    modal_caisse_ref_lbl: "N° Pièce / Référence",
+    btn_save_movement: "Enregistrer le mouvement",
+    modal_expense_title: "Enregistrer une Dépense",
+    modal_expense_motif_lbl: "Désignation de la dépense *",
+    modal_expense_cat_lbl: "Catégorie",
+    modal_expense_montant_lbl: "Montant (DA) *",
+    btn_save_expense: "Enregistrer la Dépense",
+    planning_title: "Emploi du Temps & Planning Pédagogique",
+    planning_subtitle: "Organisation des plannings par classe, enseignant, matière et salle",
+    planning_view_grid: "Grille Hebdomadaire",
+    planning_btn_print: "Imprimer le Planning",
+    planning_btn_avail: "Disponibilité des Salles",
+    planning_btn_new_slot: "Créer une Séance / Cours",
+    th_planning_groupe: "DIVISION / CLASSE",
+    th_planning_niveau: "NIVEAU",
+    th_planning_matiere: "MATIÈRE",
+    th_planning_enseignant: "ENSEIGNANT",
+    th_planning_salle: "SALLE",
+    th_planning_horaire: "HORAIRE",
+    modal_avail_title: "Disponibilité des Salles de Cours",
+    modal_avail_lbl_day: "Jour :",
+    modal_avail_lbl_time: "Horaire :",
+    modal_timetable_title: "Emploi du Temps — Salle",
+    niveaux_title: "Niveaux Scolaires & Formations",
+    niveaux_subtitle: "Organisation des divisions par niveau pédagogique et cycle scolaire",
+    btn_add_level: "Ajouter un Niveau",
+    th_level_id: "ID",
+    th_level_name: "INTITULÉ DU NIVEAU",
+    th_level_cycle: "CATÉGORIE (CYCLE)",
+    modal_level_title: "Ajouter un Niveau",
+    modal_level_name_lbl: "Intitulé du Niveau *",
+    modal_level_cycle_lbl: "Catégorie / Cycle",
+    btn_save_level: "Enregistrer le Niveau",
+    matieres_title: "Matières Enseignées",
+    matieres_subtitle: "Gestion du programme pédagogique, coefficients et cycles d'enseignement",
+    btn_add_subject: "Ajouter une Matière",
+    matieres_hint_settings: "Configurer les cycles de l'établissement dans les Paramètres",
+    cycle_all: "Toutes les matières",
+    cycle_primaire: "Cycle Primaire",
+    cycle_cem: "Cycle Moyen (CEM)",
+    cycle_lycee: "Cycle Secondaire (Lycée)",
+    cycle_communes: "Matières Communes",
+    modal_subject_title: "Ajouter une Matière",
+    modal_subject_name_lbl: "Nom de la Matière *",
+    modal_subject_cycle_lbl: "Cycle Scolaire *",
+    modal_subject_code_lbl: "Code Court",
+    modal_subject_color_lbl: "Couleur Distinctive",
+    btn_save_subject: "Enregistrer la Matière",
+    modal_teacher_title: "Ajouter un Enseignant",
+    modal_teacher_matricule_lbl: "Matricule Enseignant",
+    modal_teacher_name_lbl: "Nom & Prénom *",
+    modal_teacher_phone_lbl: "Téléphone",
+    modal_teacher_specialite_lbl: "Matière / Spécialité *",
+    modal_teacher_grade_lbl: "Grade & Statut Professionnel *",
+    modal_teacher_email_lbl: "Email",
+    btn_save_teacher: "Enregistrer l'Enseignant",
+    settings_title_etab: "Informations de l'établissement",
+    settings_lbl_name: "Nom de l'établissement",
+    settings_lbl_address: "Adresse",
+    settings_lbl_phone: "Téléphone",
+    settings_lbl_email: "Email",
+    settings_lbl_currency: "Devise monétaire",
+    settings_lbl_school_year: "Année scolaire",
+    settings_lbl_logo: "Logo (pour impression)",
+    settings_lbl_ticket_width: "Largeur ticket (mm)",
+    settings_lbl_header_msg: "En-tête des documents",
+    settings_lbl_footer_msg: "Pied de page des reçus",
+    report_att_title: "Rapport d'Assiduité & Présence",
+    report_kpi_sessions: "Séances",
+    report_kpi_present: "Présent",
+    report_kpi_retard: "Retard",
+    report_kpi_absent: "Absent",
+    report_btn_print: "Imprimer le Rapport",
+    matrix_att_title: "Grille Complète des Séances & Présences",
+    pay_modal_title: "Encaisser un Paiement",
+    pay_lbl_groupe: "Division / Matière *",
+    pay_lbl_mois: "Mois Concerné",
+    pay_lbl_montant: "Montant Payé (DA) *",
+    pay_lbl_remise: "Remise (DA)",
+    pay_lbl_mode: "Mode de Paiement",
+    pay_btn_submit: "Valider & Imprimer le Reçu",
+    receipt_title: "Reçu de Paiement Officiel",
+    wizard_btn_change: "Changer",
+    wizard_step_next_level: "Suivant : Niveau scolaire",
+    modal_parent_dossier_title: "Dossier Familial",
+    bulk_lbl_sel_students: "Élèves sélectionnés",
+    bulk_lbl_sel_groups: "Groupes sélectionnés",
+    bulk_lbl_total_enrollments: "Total des inscriptions",
+    bulk_btn_confirm: "Confirmer les inscriptions groupées",
   },
   ar: {
+            // Dashboard Keys
+            dash_kpi_students: "إجمالي التلاميذ",
+            dash_kpi_students_sub: "متمدرسون مسجلون",
+            dash_kpi_demi_pension: "نصف داخلي (المطعم)",
+            dash_kpi_demi_pension_sub: "مستفيدون من الإطعام",
+            dash_kpi_externe: "تلاميذ خارجي",
+            dash_kpi_externe_sub: "نظام خارجي (بدون إطعام)",
+            dash_kpi_meals: "وجبات اليوم المقدمة",
+            dash_kpi_teachers: "هيئة التدريس",
+            dash_kpi_teachers_sub: "أستاذ مسجل بالمؤسسة",
+            dash_kpi_classes: "الأقسام التربوية",
+            dash_kpi_classes_sub: "أقسام تربوية موزعة",
+            dash_kpi_caisse: "رصيد الصندوق",
+            dash_kpi_caisse_sub: "المصالح المالية والمقتصد",
+            dash_action_cantine: "مسح بطاقات المطعم (الباركود)",
+            dash_action_import: "استيراد قوائم الرقمنة (Excel)",
+            dash_action_caisse: "سجل الصندوق ومصاريف المؤسسة",
+            dash_action_pointage: "الحياة المدرسية والغيابات",
+            dash_recent_meals_title: "آخر وجبات المطعم المسجلة اليوم",
+            dash_btn_open_scan: "فتح شاشة المسح",
+            dash_th_time: "الوقت",
+            dash_th_student: "التلميذ",
+            dash_th_classe: "القسم",
+            dash_th_status: "الحالة",
+            dash_no_meals: "لم يتم تسجيل أي وجبة اليوم بعد",
+            dash_system_status_title: "حالة النظام والإشعارات",
+            dash_db_status: "قاعدة البيانات متصلة ومؤمنة",
+            dash_db_desc: "النسخ الاحتياطي التلقائي اليومي مفعل ويعمل بأمان.",
+            dash_scanner_status: "قارئ الباركود (Douchette) جاهز",
+            dash_scanner_desc: "جاهز لمسح بطاقات التلاميذ مباشرة في المطعم والحياة المدرسية.",
+            btn_back: "رجوع",
+            btn_edit: "تعديل",
+            title_cantine: "المطعم المدرسي (نصف داخلي)",
+            title_groupes_salles: "الأقسام التربوية والقاعات",
     tagline: 'تسيير المتوسطات والثانويات',
     nav_dashboard: 'لوحة القيادة',
     cat_quotidien: 'التسيير المدرسي',
@@ -464,6 +794,8 @@ const i18n = {
     nav_caisse: 'المصالح المالية (المقتصد)',
     cat_configuration: 'الهيكل والإعدادات',
     nav_groupes: 'الأقسام التربوية والقاعات',
+    nav_matieres: 'المواد التعليمية',
+    nav_niveaux: 'المستويات والأطوار',
     nav_enseignants: 'هيئة التدريس (الأساتذة)',
     nav_settings: 'إعدادات المؤسسة',
     title_salles: 'قاعات التدريس',
@@ -475,11 +807,11 @@ const i18n = {
     kpi_total_rooms: 'إجمالي القاعات',
     kpi_total_capacity: 'السعة الاستيعابية',
     kpi_projectors: 'مجهزة بعارض (DataShow)',
-    kpi_assigned_groups: 'الأفواج المجدولة',
+    kpi_assigned_groups: 'الأقسام المجدولة',
     th_capacite: 'السعة (مقاعد)',
     th_projecteur: 'عارض داتاشو',
     th_equipement: 'التجهيزات والملاحظات',
-    th_groupes_occup: 'الأفواج والحصص',
+    th_groupes_occup: 'الأقسام والحصص',
     th_actions: 'الإجراءات',
     lbl_room_name: 'اسم القاعة *',
     lbl_room_capacity: 'السعة (عدد المقاعد) *',
@@ -487,13 +819,13 @@ const i18n = {
     lbl_room_notes: 'التجهيزات والملاحظات / الموقع والطابق',
     btn_save_room: 'حفظ بيانات القاعة',
     btn_print_schedule: 'طباعة الجدول',
-    title_groupes: 'الأفواج',
-    btn_new_group: 'فوج جديد',
-    kpi_active_groups: 'الأفواج النشطة',
-    kpi_enrolled_students: 'التلاميذ المسجلون',
-    kpi_fill_rate: 'نسبة الامتلاء',
-    list_groups: 'قائمة الأفواج',
-    th_group_name: 'اسم الفوج',
+    title_groupes: 'الأقسام التربوية',
+    btn_new_group: 'قسم تربوي جديد',
+    kpi_active_groups: 'الأقسام التربوية النشطة',
+    kpi_enrolled_students: 'التلاميذ المتمدرسون',
+    kpi_fill_rate: 'معدل شغل المقاعد',
+    list_groups: 'قائمة الأقسام التربوية',
+    th_group_name: 'القسم التربوي',
     th_eleves_cap: 'التلاميذ / المقاعد',
     th_salle: 'القاعة',
     th_statut: 'الحالة',
@@ -504,14 +836,14 @@ const i18n = {
     kpi_inscriptions: 'التسجيلات',
     kpi_today: 'المحصّل اليوم',
     kpi_month: 'المحصّل هذا الشهر',
-    kpi_unpaid: 'مجموع الديون',
+    kpi_unpaid: 'المستحقات المتبقية',
     kpi_profs: 'الأساتذة',
     kpi_matieres: 'المواد',
     chart_title: 'تطور المداخيل المالية — 12 شهراً',
     alerts_title: 'التنبيهات والإشعارات',
     all_good: 'كل شيء على ما يرام',
     recent_payments: 'آخر المدفوعات المستلمة',
-    recent_unpaid: 'آخر الاشتراكات غير المسددة',
+    recent_unpaid: 'آخر المستحقات غير المسددة',
     btn_view_reports: 'عرض التقارير',
     btn_view_all: 'عرض الكل',
     btn_batch_badges: 'طباعة البطاقات',
@@ -523,7 +855,7 @@ const i18n = {
     th_nom: 'اللقب',
     th_prenom: 'الاسم',
     pointage_title: 'تسجيل الحضور السريع بالباركود',
-    pointage_subtitle: 'مرر بطاقة التلميذ عبر القارئ أو أدخل رقم قيده لتسجيل حضوره والتأكد من دفع اشتراكه فوراً.',
+    pointage_subtitle: 'مرر بطاقة التلميذ عبر القارئ أو أدخل رقم تعريفه لتسجيل حضوره ومتابعة انضباطه ومواظبته.',
     tip_douchette_ready: 'قارئ الباركود (Douchette USB) متصل وجاهز للمسح المباشر',
     tip_douchette_ready_entrance: 'قارئ الباركود (Douchette) جاهز للمسح السريع والتلقائي',
     btn_scan: 'تسجيل الحضور',
@@ -536,8 +868,8 @@ const i18n = {
     kpi_parents_total: 'إجمالي الأولياء المسجلين',
     kpi_parents_discount: 'أولياء بتخفيض عائلي',
     kpi_parents_children: 'إجمالي الأبناء المتمدرسين',
-    kpi_parents_debts: 'مستحقات ديون العائلات',
-    planning_kpi_groups: 'الحصص / الأفواج',
+    kpi_parents_debts: 'مستحقات العائلات',
+    planning_kpi_groups: 'الحصص / الأقسام',
     planning_kpi_hours: 'الحجم الساعي الأسبوعي',
     planning_kpi_teachers: 'الأساتذة المبرمجون',
     planning_kpi_rooms: 'القاعات المستعملة',
@@ -552,7 +884,7 @@ const i18n = {
     lbl_parent_email: "البريد الإلكتروني",
     lbl_parent_address: "عنوان السكن",
     lbl_parent_discount_title: "نسبة التخفيض الممنوحة للعائلة (%)",
-    lbl_parent_discount_hint: "يطبق تلقائياً على اشتراكات أبنائه",
+    lbl_parent_discount_hint: "يطبق تلقائياً على مستحقات أبنائه",
     lbl_parent_notes: "ملاحظات خاصة بالعائلة",
     btn_save_parent: "حفظ بيانات الولي",
     btn_edit_parent: "تعديل بيانات الولي",
@@ -560,9 +892,9 @@ const i18n = {
     dossier_stat_discount: "نسبة التخفيض",
     dossier_stat_debts: "مستحقات العائلة المتبقية",
     dossier_title_children: "قائمة الأبناء المتمدرسين بالمؤسسة",
-    dossier_title_unpaid: "المستحقات والديون غير المسددة للعائلة",
+    dossier_title_unpaid: "المستحقات المعلقة للعائلة",
     dossier_th_student: "الابن / التلميذ",
-    dossier_th_group: "الفوج / المادة",
+    dossier_th_group: "القسم / المادة",
     dossier_th_month: "الشهر",
     dossier_th_amount: "المبلغ المستحق",
     th_nom_prenom: 'الاسم واللقب',
@@ -576,21 +908,21 @@ const i18n = {
     profile_kpi_payments: 'عدد الدفعات',
     title_paiements: 'المدفوعات ووصولات التسديد',
     btn_new_payment: 'تسجيل دفعة جديدة',
-    th_groupe: 'الفوج / المادة',
+    th_groupe: 'القسم / المادة',
     th_mode: 'طريقة الدفع',
-    title_echeances: 'متابعة الديون والاشتراكات المستحقة',
+    title_echeances: 'متابعة المستحقات والاشتراكات المدرسية',
     th_montant_du: 'المبلغ المستحق',
-    title_caisse: 'الخزينة وسجل حركات الصندوق',
+    title_caisse: 'المصالح المالية وسجل الخزينة والصندوق',
     title_enseignants: 'هيئة التدريس (الأساتذة)',
     btn_add_teacher: 'إضافة أستاذ جديد',
-    title_planning: 'جدول التوقيت والأفواج',
-    title_attendance: "سجل ومتابعة حضور وغياب التلاميذ",
-    subtitle_attendance: "تأكيد ومتابعة الحضور والغياب حسب الأفواج، مع استعراض عدد وتواريخ الحصص الشهرية.",
-    tab_manual_attendance: "ورقة التحضير اليدوي بالفوج",
+    title_planning: 'جدول التوقيت والأقسام',
+    title_attendance: "الحياة المدرسية ومتابعة الغيابات",
+    subtitle_attendance: "تأكيد ومتابعة الحضور والغياب حسب الأقسام، مع استعراض عدد وتواريخ الحصص والمواظبة.",
+    tab_manual_attendance: "ورقة التحضير بالقسم",
     tab_rapid_scan: "المسح السريع بالباركود",
     tab_entrance_pointage: "بوابة المدخل (حضور عام)",
     entrance_title: "بوابة المدخل لتسجيل الحضور السريع (تلاميذ وأساتذة)",
-    entrance_subtitle: "مرر بطاقة التلميذ أو الأستاذ عبر الماسح لتسجيل حضوره أو انصرافه فوراً ودون الحاجة لتحديد الفوج.",
+    entrance_subtitle: "مرر بطاقة التلميذ أو الأستاذ عبر الماسح لتسجيل حضوره أو انصرافه فوراً ودون الحاجة لتحديد القسم.",
     entrance_scan_mode: "نمط تسجيل الحضور",
     entrance_mode_auto: "كشف تلقائي ذكي (دخول / خروج)",
     entrance_mode_in: "تسجيل دخول فقط",
@@ -611,25 +943,25 @@ const i18n = {
     opt_all_roles: "الكل (تلاميذ وأساتذة)",
     opt_students_only: "التلاميذ فقط",
     opt_teachers_only: "الأساتذة فقط",
-    lbl_select_group: "اختيار الفوج الدراسي",
+    lbl_select_group: "اختيار القسم التربوي",
     lbl_session_date: "تاريخ الحصة",
     lbl_session_num: "رقم الحصة",
     lbl_session_topic: "عنوان الدرس / ملاحظات",
     btn_save_attendance: "حفظ سجل الحضور",
     btn_view_matrix: "سجل وشبكة الحصص والمواظبة",
     btn_print_matrix: "طباعة كشف الحصص والمواظبة",
-    stat_inscrits: "تلاميذ الفوج",
+    stat_inscrits: "تلاميذ القسم",
     stat_total_seances: "الحصص المنجزة",
     stat_presents: "الحاضرون",
     stat_absents: "الغائبون",
     stat_retards: "متأخر / معذور",
-    stat_paid_ratio: "الاشتراكات المسددة",
+    stat_paid_ratio: "الصفة المدرسية والمواظبة",
     btn_mark_all_present: "تحديد الكل حاضر",
     btn_mark_all_absent: "تحديد الكل غائب",
     btn_reset: "إعادة ضبط",
     th_contact: "معلومات التواصل",
     th_assiduite_groupe: "مواظبة التلميذ (الحصص)",
-    th_cotisation: "اشتراك الشهر الحالي",
+    th_cotisation: "الصفة المدرسية (النظام)",
     th_etat_presence: "حالة الحضور في هذه الحصة",
     th_notes: "ملاحظات وتوجيهات",
     status_present: "حاضر",
@@ -643,13 +975,13 @@ const i18n = {
     lbl_avg_presence: "معدل الحضور العام",
     btn_close_session_absent: "إنهاء الحضور وتسجيل البقية غائبين",
     title_modal_close_session: "تأكيد إنهاء الحضور وتسجيل الغائبين",
-    note_modal_close_session: "جميع التلاميذ المسجلين في هذا الفوج الذين لم يُسجّل حضورهم بعد، سيتم تسجيلهم تلقائياً كـ (غائبين).",
+    note_modal_close_session: "جميع تلاميذ هذا القسم الذين لم يُسجّل حضورهم بعد، سيتم تسجيلهم تلقائياً كـ (غائبين).",
     btn_confirm_close_absent: "تأكيد وتسجيل الغياب تلقائياً",
     stat_en_attente: "في الانتظار",
     title_live_scanned: "قائمة الحضور اللحظي في هذه الحصة",
     tip_barcode_autofocus: "القارئ جاهز للمسح المتتالي والسريع تلقائياً دون الحاجة للنقر بالفأرة",
     th_heure: "الوقت",
-    login_tagline: "نظام إدارة المدارس والمراكز التعليمية الاحترافي",
+    login_tagline: "نظام تسيير المؤسسات التعليمية العمومية (متوسط وثانوي)",
     login_lbl_role: "حساب المستخدم",
     login_role_admin: "المدير العام (Admin)",
     login_role_auto: "محدد تلقائياً",
@@ -658,6 +990,10 @@ const i18n = {
     login_password_ph: "أدخل كلمة المرور...",
     login_btn_submit: "تسجيل الدخول",
     login_secured: "نظام محمي ومشفر",
+    login_tab_borne: "بوابة المدخل (Borne d'Entrée)",
+    login_tab_manual: "تسجيل الدخول اليدوي (الإدارة)",
+    login_btn_switch_manual: "الانتقال إلى تسجيل الدخول الإداري اليدوي",
+    login_btn_switch_borne: "العودة لبوابة المدخل (حضور سريع)",
     btn_logout: "تسجيل الخروج",
     login_err_empty: "يرجى كتابة كلمة المرور",
     login_err_invalid: "كلمة المرور غير صحيحة، يرجى المحاولة مجدداً",
@@ -665,7 +1001,7 @@ const i18n = {
     dev_phone_label: "الهاتف / الدعم الفني",
     tab_apropos: "حول البرنامج والمطور",
     about_title: "حول نظام EDUMIND والمطور",
-    about_desc: "نظام احترافي متكامل لإدارة المدارس ومراكز الدروس الخصوصية، الطلاب، المدفوعات ونقاط الحضور.",
+    about_desc: "نظام إلكتروني متكامل وشامل لتسيير المؤسسات التعليمية العمومية (متوسطة وثانوية): إدارة شؤون التلاميذ، الأقسام التربوية، المطعم المدرسي ونصف الداخلي، المصالح المالية، المواظبة والغيابات.",
     about_contact_btn: "اتصال هاتفي",
     about_whatsapp_btn: "واتساب",
     admin_developer_lbl: "البرنامج من طرف",
@@ -710,7 +1046,7 @@ const i18n = {
     lbl_from_month: "من شهر :",
     lbl_to_month: "إلى شهر :",
     msg_export_all_hint: "سيتم استخراج وتصدير السجل الكامل لجميع عمليات الدفع المسجلة في النظام.",
-    lbl_filter_group: "تصفية حسب الفوج (اختياري) :",
+    lbl_filter_group: "تصفية حسب القسم التربوي (اختياري) :",
     lbl_filter_method: "وسيلة الدفع (اختياري) :",
     lbl_count_payments: "عدد العمليات",
     lbl_count_students: "التلاميذ المعنيون",
@@ -739,7 +1075,7 @@ const i18n = {
     lbl_caisse_movements_count: "حركات معروضة",
     btn_quick_excel: "Excel السريع",
     modal_card_title: "بطاقة التلميذ المدرسية",
-    card_school_sub: "مؤسسة تعليمية وتدريبية",
+    card_school_sub: "مؤسسة تعليمية عمومية (متوسطة / ثانوية)",
     card_tag_student: "بطاقة مدرسية • رسمي",
     card_verified: "رسمي",
     lbl_card_level: "المستوى :",
@@ -760,36 +1096,36 @@ const i18n = {
     modal_batch_badges_desc: "توليد وطباعة بطاقات مدرسية احترافية مع الباركود بتنسيق A4 (8 بطاقات لكل ورقة)",
     lbl_filter_level: "تصفية حسب المستوى الدراسي",
     opt_all_levels: "-- كل المستويات --",
-    opt_all_groups: "-- كل الأفواج --",
+    opt_all_groups: "-- كل الأقسام التربوية --",
     lbl_available_students: "قائمة التلاميذ المتاحين",
     lbl_selected_students: "تم تحديد",
     lbl_badges_theme: "تصميم ولون البطاقات :",
     lbl_a4_format: "ورق A4 قياسي",
     lbl_cards_per_page: "8 بطاقات لكل ورقة",
     btn_print_badges: "طباعة البطاقات المحددة",
-    btn_new_enrollment: "تسجيل تلميذ في فوج",
-    title_inscriptions: "تسجيلات التلاميذ في الأفواج",
+    btn_new_enrollment: "توزيع تلميذ في قسم تربوي",
+    title_inscriptions: "قوائم توزيع التلاميذ على الأقسام",
     th_matricule: "رقم القيد",
-    th_groupe_cours: "الفوج الدراسي",
+    th_groupe_cours: "القسم التربوي",
     th_matiere_prof: "المادة والأستاذ",
     th_tarif: "السعر الصافي (دج)",
     lbl_filter_month: "الشهر :",
     btn_prev: "السابق",
-    wizard_title: "تسجيل تلميذ في فوج دراسي",
+    wizard_title: "توزيع تلميذ في قسم تربوي",
     wizard_subtitle: "خطوات متسلسلة وسهلة لإتمام عملية التسجيل",
     wizard_step1_title: "1. التلميذ",
     wizard_step1_sub: "اختيار التلميذ",
     wizard_step2_title: "2. المستوى",
     wizard_step2_sub: "المستوى الدراسي",
-    wizard_step3_title: "3. المادة والفوج",
-    wizard_step3_sub: "الفوج والتأكيد",
+    wizard_step3_title: "3. القسم والمستوى",
+    wizard_step3_sub: "القسم والتأكيد",
     wizard_pane1_heading: "الخطوة الأولى: ابحث عن التلميذ واختره",
     wizard_pane1_desc: "اكتب اسم التلميذ، لقبه، رقم القيد، أو رقم الهاتف للاختيار السريع.",
     wizard_pane2_heading: "الخطوة الثانية: حدد المستوى الدراسي المطلوب",
-    wizard_pane2_desc: "اختر المستوى الدراسي لعرض الأفواج المتاحة الخاصة بهذا المستوى فقط.",
+    wizard_pane2_desc: "اختر المستوى الدراسي لعرض الأقسام التربوية المتاحة الخاصة بهذا المستوى فقط.",
     wizard_selected_student_lbl: "التلميذ المختار :",
-    wizard_pane3_heading: "الخطوة الثالثة: اختر المادة والفوج الدراسي وأكد التسجيل",
-    wizard_pane3_desc: "اختر الفوج المناسب وحدد التخفيض الشهري إن وجد ثم أكد التسجيل.",
+    wizard_pane3_heading: "الخطوة الثالثة: اختر القسم التربوي وأكد التوزيع",
+    wizard_pane3_desc: "اختر القسم التربوي المناسب ثم أكد التوزيع.",
     wizard_lbl_reg_date: "تاريخ التسجيل",
     wizard_lbl_discount: "تخفيض شهري (دج)",
     wizard_lbl_free: "مجاني",
@@ -818,8 +1154,8 @@ const i18n = {
     import_drop_browse: "أو اضغط لاختيار الملف من جهازك (.xlsx, .xls, .csv, .html)",
     import_lbl_default_level: "المستوى الدراسي الافتراضي",
     import_opt_level_auto: "-- اختياري (أو التعرف من الملف) --",
-    import_lbl_default_group: "الفوج / القسم الدراسي",
-    import_opt_group_none: "-- بدون تسجيل في فوج حالياً --",
+    import_lbl_default_group: "القسم التربوي الافتراضي",
+    import_opt_group_none: "-- بدون تعيين قسم حالياً --",
     import_lbl_duplicate_strategy: "معالجة التلاميذ المكررين",
     import_opt_duplicate_skip: "تخطي الموجودين مسبقاً (تجنب التكرار)",
     import_opt_duplicate_update: "تحديث وتصحيح بيانات الموجودين",
@@ -837,33 +1173,33 @@ const i18n = {
     th_lieu_col: "مكان الميلاد",
     th_parent_col: "إسم الأب",
     th_adresse_col: "العنوان",
-    th_groupe_col: "رقم الفوج",
+    th_groupe_col: "القسم التربوي",
     th_statut_col: "الحالة",
     import_btn_confirm: "تأكيد وحفظ الاستيراد",
     import_btn_executing: "جاري الاستيراد والحفظ...",
-    btn_bulk_enrollment: "تسجيل في الأفواج (تسجيل متعدد)",
-    bulk_enroll_title: "تسجيل التلاميذ في الأفواج (تسجيل متعدد)",
-    bulk_enroll_subtitle: "اختر قائمة التلاميذ والأفواج المطلوبة بضغطة زر لإتمام التسجيل دفعة واحدة",
+    btn_bulk_enrollment: "توزيع التلاميذ في الأقسام التربوية",
+    bulk_enroll_title: "توزيع التلاميذ على الأقسام التربوية",
+    bulk_enroll_subtitle: "اختر قائمة التلاميذ والأقسام التربوية لتوزيعهم دفعة واحدة",
     bulk_panel_students: "1. اختيار التلاميذ",
     bulk_select_all_students: "تحديد كل الظاهرين",
-    bulk_panel_groups: "2. اختيار الأفواج المستهدفة",
-    bulk_select_all_groups: "تحديد كل الأفواج",
+    bulk_panel_groups: "2. اختيار الأقسام التربوية المستهدفة",
+    bulk_select_all_groups: "تحديد كل الأقسام",
     bulk_lbl_sel_students: "التلاميذ المختارون",
-    bulk_lbl_sel_groups: "الأفواج المختارة",
+    bulk_lbl_sel_groups: "الأقسام المختارة",
     bulk_lbl_total_enrollments: "إجمالي عمليات التسجيل",
     bulk_btn_confirm: "تأكيد التسجيل الجماعي",
     bulk_btn_executing: "جاري التسجيل الجماعي...",
     th_annee_scolaire: "السنة الدراسية :",
-    fast_pay_title: "الصندوق السريع والدفع المتعدد (متعدد الأفواج والأشهر)",
-    fast_pay_subtitle: "ابحث عن تلميذ أو ولي لاستخلاص عدة اشتراكات وإصدار وصل دفع موحد",
+    fast_pay_title: "سجل الصندوق والمستحقات المدرسية الموحدة",
+    fast_pay_subtitle: "ابحث عن تلميذ أو ولي لتسوية المستحقات وإصدار وصل موحد",
     fast_pay_search_placeholder: "ابحث عن تلميذ بالاسم، اللقب أو رقم القيد...",
     fast_pay_mode_student: "دفع لتلميذ",
     fast_pay_mode_parent: "دفع عائلي (بالولي)",
-    fast_pay_no_student_hint: "اكتب اسم التلميذ أو رقم قيده في الحقل أعلاه لعرض جميع أفواجه ومستحقاته وسدادها دفعة واحدة",
-    fast_pay_no_parent_hint: "ابحث باسم الولي لعرض جميع أبنائه وأفواجهم وتسديد المستحقات دفعة واحدة أو دفع جزء من المبلغ",
+    fast_pay_no_student_hint: "اكتب اسم التلميذ أو رقم قيده لعرض قسمه ومستحقاته وسدادها دفعة واحدة",
+    fast_pay_no_parent_hint: "ابحث باسم الولي لعرض جميع أبنائه وأقسامهم وتسديد المستحقات دفعة واحدة",
     fast_pay_no_parent_sub: "يمكنك إدخال أي مبلغ جزئي وتوزيعه تلقائياً على الأبناء، مع حفظ أي متبقي كدين وإصدار وصل دفع عائلي موحد.",
-    fast_pay_selected_courses: "الأفواج والاشتراكات المسجل بها",
-    fast_pay_lbl_selected_groups: "الأفواج المحددة",
+    fast_pay_selected_courses: "الأقسام والمستحقات المسجلة",
+    fast_pay_lbl_selected_groups: "الأقسام المحددة",
     fast_pay_lbl_total_due: "إجمالي المستحق",
     fast_pay_lbl_total_paid: "المبلغ المقبوض",
     fast_pay_btn_submit: "تأكيد الدفع وطباعة الوصل الموحد",
@@ -883,8 +1219,8 @@ const i18n = {
     th_enseignant: "الأستاذ",
     lbl_filter_category: "التصنيف :",
     batch_selected_text: "تلميذ محدد",
-    modal_payroll_slip_title: "كشف أتعاب الأستاذ",
-    fast_pay_no_student_sub: "ستظهر نتائج البحث والأفواج فورياً مع إمكانية تحديد عدة أشهر أو أفواج وإصدار وصل موحد",
+    modal_payroll_slip_title: "كشف حصص ومتابعة الأستاذ",
+    fast_pay_no_student_sub: "ستظهر نتائج البحث فورياً مع إمكانية إصدار وصل موحد",
     opt_all_months: "جميع الأشهر",
     opt_all_flux: "كل الحركات (المداخيل والمصاريف)",
     opt_entrees_only: "مداخيل فقط (+)",
@@ -903,13 +1239,274 @@ const i18n = {
     btn_download_excel: "تحميل ملف Excel (CSV)",
     btn_export_caisse: "تحميل سجل الخزينة",
     btn_export_payments: "تحميل المدفوعات",
-    btn_quick_excel: "Excel السريع"
+    btn_quick_excel: "Excel السريع",
+    // Modal Student Keys (AR)
+    modal_student_title_new: "تسجيل تلميذ جديد",
+    modal_student_title_edit: "تعديل بيانات التلميذ",
+    modal_student_subtitle: "بطاقة التعريف والمعلومات المدرسية للتلميذ",
+    modal_student_matricule_lbl: "رقم التعريف المدرسي / الباركود",
+    modal_student_matricule_hint: "اتركه فارغاً للتوليد التلقائي",
+    modal_student_matricule_placeholder: "تلقائي (مثال: ELE-2026-0001)",
+    modal_student_sec_identity: "الهوية والمسار الدراسي",
+    modal_student_lastname: "اللقب *",
+    modal_student_lastname_placeholder: "لقب التلميذ...",
+    modal_student_firstname: "الاسم *",
+    modal_student_firstname_placeholder: "اسم التلميذ...",
+    modal_student_level: "المستوى الدراسي",
+    modal_student_gender: "الجنس",
+    modal_student_gender_m: "ذكر",
+    modal_student_gender_f: "أنثى",
+    modal_student_phone: "هاتف التلميذ (اختياري)",
+    modal_student_phone_placeholder: "05 / 06 / 07... (اختياري)",
+    modal_student_sec_parent: "ولي أمر التلميذ",
+    modal_student_parent_select: "ولي أمر التلميذ المسجل مسبقاً",
+    modal_student_discount_lbl: "تخفيض الأخوة:",
+    modal_student_parent_name: "اسم ولي أمر التلميذ",
+    modal_student_parent_name_placeholder: "الاسم الكامل لولي أمر التلميذ...",
+    modal_student_parent_phone: "هاتف ولي أمر التلميذ",
+    modal_student_parent_phone_placeholder: "05 / 06 / 07...",
+    modal_student_address: "عنوان الإقامة",
+    modal_student_address_placeholder: "البلدية، الحي، المدينة...",
+    btn_save_student: "حفظ بيانات التلميذ",
+    btn_update_student: "حفظ التعديلات",
+    th_num_col: "#",
+    th_matricule_col: "رقم التعريف / Matricule",
+    th_nom_col: "اللقب",
+    th_prenom_col: "الاسم",
+    th_genre_col: "الجنس",
+    th_niveau_col: "المستوى الدراسي",
+    th_naissance_col: "تاريخ الميلاد",
+    th_lieu_col: "مكان الميلاد",
+    th_parent_col: "ولي الأمر / الأب",
+    th_adresse_col: "العنوان",
+    th_groupe_col: "القسم / الفوج التربوي",
+    th_regime_col: "الصفة / النظام",
+    th_statut_col: "الحالة",
+    import_modal_title: "استيراد ملف الرقمنة الوزاري (Excel)",
+    import_modal_sub: "استيراد ذكي وربط تلقائي لبيانات التلاميذ، أولياء الأمور، والأقسام التربوية",
+    import_preview_heading: "المعاينة المباشرة قبل الحفظ والتسجيل",
+    import_btn_confirm: "تأكيد وتسجيل الاستيراد في النظام",
+    th_classe_niveau: "القسم / المستوى",
+    th_classes_assignees: "الأقسام المسندة",
+    th_groupe_name: "القسم التربوي",
+    th_salle: "القاعة المعينة",
+    th_matiere_enseignant: "المادة / الأستاذ المسؤول",
+    th_grade: "الرتبة والصفة",
+    th_email: "البريد الإلكتروني",
+    th_enseignant: "الأستاذ(ة)",
+    th_jour_heure: "اليوم والتوقيت",
+    th_duree: "الحجم الساعي",
+    th_prix_mensuel: "المبلغ الشهري",
+    th_effectif: "التعداد / السعة",
+    modal_student_group_lbl: "القسم التربوي / الفوج",
+    modal_student_group_hint: "توزيع التلميذ في القسم",
+    modal_student_group_num_lbl: "رقم القسم",
+    modal_student_group_num_placeholder: "مثال: 1 أو 2",
+    modal_student_regime_lbl: "الصفة المدرسية والمطعم",
+    opt_regime_demi: "نصف داخلي (المطعم المدرسي)",
+    opt_regime_externe: "خارجي (بدون إطعام)",
+    opt_regime_interne: "داخلي",
+    btn_add_to_group: "إضافة للقسم",
+    btn_print_group_list: "طباعة القائمة الرسمية",
+    th_nom_prenom: "اللقب والاسم",
+    th_genre: "الجنس",
+    btn_save: "حفظ",
+    btn_add: "إضافة",
+    btn_delete: "حذف",
+    btn_edit: "تعديل",
+    th_periode: "الفترة",
+    th_recu_num: "رقم الوصل",
+    th_filiere: "الشعبة / التخصص",
+    th_effectif_eleves: "عدد التلاميذ",
+    th_matiere: "المادة التعليمية",
+    th_code: "الرمز",
+    th_cycle: "الطور التعليمي",
+    school_year_badge: "السنة الدراسية 2026-2027",
+    th_regime_cantine: "الصفة / المطعم",
+    btn_fiche_student: "استمارة التلميذ",
+    btn_badge_student: "بطاقة التلميذ",
+    btn_report_student: "كشف المواظبة",
+    profile_kpi_regime: "الصفة المدرسية",
+    profile_kpi_canteen: "المطعم المدرسي",
+    profile_kpi_absences: "مجموع الغيابات",
+    profile_kpi_retards: "التأخرات المسجلة",
+    profile_title_perso: "المعلومات الشخصية",
+    profile_lbl_gender: "الجنس",
+    profile_lbl_birthdate: "تاريخ الازدياد",
+    profile_lbl_birthplace: "مكان الازدياد",
+    profile_lbl_level: "المستوى الدراسي",
+    profile_lbl_tuteur: "ولي الأمر",
+    profile_lbl_tuteur_phone: "هاتف ولي الأمر",
+    profile_lbl_address: "العنوان",
+    profile_title_situation: "الوضعية المدرسية والمطعم",
+    profile_lbl_national_id: "رقم التعريف الوطني / الرقمنة",
+    profile_lbl_regime: "الصفة",
+    profile_lbl_canteen_status: "المطعم المدرسي",
+    profile_lbl_canteen_meals: "وجبات تم تناولها بالمطعم",
+    profile_lbl_reg_date: "تاريخ التسجيل بالمؤسسة",
+    cantine_subtitle: "مراقبة دخول التلاميذ بالباركود، التحقق من صفة نصف داخلي، والحماية من التكرار",
+    cantine_btn_sheet: "ورقة الحضور اليومية للمطعم",
+    cantine_btn_refresh: "تحديث",
+    cantine_kpi_inscrits: "المسجلون (نصف داخلي)",
+    cantine_kpi_inscrits_sub: "المستفيدون المعتمدون",
+    cantine_kpi_served: "الوجبات المقدمة اليوم",
+    cantine_kpi_remaining: "المتبقون لتناول الوجبة",
+    cantine_kpi_remaining_sub: "في انتظار الدخول",
+    cantine_kpi_rate: "نسبة التقديم",
+    cantine_scan_box_lbl: "مسح بطاقة التلميذ (قارئ الباركود أو الرمز)",
+    cantine_scanner_ready: "قارئ الباركود متصل وجاهز",
+    cantine_btn_confirm: "تأكيد الوجبة",
+    cantine_scan_hint: "يقبل أرقام التسجيل، بطاقات الباركود المطبوعة، أو مسح الهاتف مباشرة مع التحقق الفوري",
+    cantine_lbl_matricule: "رقم التسجيل :",
+    cantine_lbl_class: "القسم :",
+    cantine_badge_demi: "نصف داخلي (مستفيد)",
+    cantine_live_title: "سجل وجبات اليوم المباشر",
+    cantine_no_meals_sub: "ابدأ بمسح بطاقات التلاميذ.",
+    login_role_admin: "مدير المؤسسة",
+    login_role_caisse: "المقتصد (المصالح المالية)",
+    login_role_cpe: "مستشار التربية (الحياة المدرسية)",
+    login_role_secretariat: "الأمانة العامة والرقمنة",
+    login_admin_badge: "مدير المؤسسة (مسؤول عام)",
+    login_admin_perms: "صلاحيات تسيير كاملة وشاملة",
+    login_err_wrong_pass: "كلمة المرور غير صحيحة",
+    login_update_badge: "تحديث جديد متوفر",
+    login_support_txt: "Veloce Craft — الدعم الفني والتراخيص",
+    groupes_main_title: "الأقسام التربوية والفصول",
+    groupes_main_subtitle: "تسيير الأفواج التربوية، تعداد التلاميذ، الشعب وتوزيع الأقسام",
+    btn_new_division: "+ قسم جديد",
+    groupes_kpi_active: "الأقسام التربوية النشطة",
+    groupes_kpi_total_students: "إجمالي التلاميذ في الأقسام",
+    groupes_kpi_avg_per_class: "متوسط التلاميذ لكل قسم",
+    groupes_list_title: "قائمة الأقسام الدراسية",
+    modal_group_title: "إضافة قسم تربوي جديد",
+    modal_group_name_lbl: "اسم القسم / الفوج التربوي *",
+    modal_group_level_lbl: "المستوى الدراسي *",
+    modal_group_filiere_lbl: "الشعبة / التخصص",
+    modal_group_year_lbl: "السنة الدراسية",
+    btn_save_group: "حفظ وتأكيد القسم",
+    modal_group_students_title: "قائمة تلاميذ القسم",
+    caisse_title: "المصالح المالية وسجل الصندوق",
+    caisse_subtitle: "متابعة المداخيل والمصاريف وسجلات الصندوق للمؤسسة",
+    caisse_btn_in: "سند قبض (إيراد)",
+    caisse_btn_out: "سند صرف (نفقة)",
+    caisse_kpi_in: "إجمالي المداخيل المحصلة",
+    caisse_kpi_out: "المصاريف والنفقات",
+    caisse_kpi_net: "الرصيد الصافي المتبقي",
+    caisse_lbl_filter_type: "النوع :",
+    caisse_lbl_filter_cat: "الفئة :",
+    th_caisse_piece: "رقم السند",
+    th_caisse_type: "النوع",
+    th_caisse_cat: "الفئة",
+    th_caisse_motif: "البيان / السبب",
+    th_caisse_montant: "المبلغ",
+    th_caisse_mode: "طريقة الدفع",
+    modal_caisse_title: "حركة صندوق جديدة",
+    modal_caisse_type_lbl: "نوع المعاملة",
+    modal_caisse_motif_lbl: "البيان / سبب المعاملة *",
+    modal_caisse_cat_lbl: "فئة المعاملة",
+    modal_caisse_montant_lbl: "المبلغ (دج) *",
+    modal_caisse_mode_lbl: "طريقة الدفع",
+    modal_caisse_date_lbl: "تاريخ المعاملة",
+    modal_caisse_ref_lbl: "رقم السند / المرجع",
+    btn_save_movement: "تسجيل المعاملة",
+    modal_expense_title: "تسجيل نفقة جديدة",
+    modal_expense_motif_lbl: "بيان النفقة / الغرض *",
+    modal_expense_cat_lbl: "فئة النفقة",
+    modal_expense_montant_lbl: "المبلغ (دج) *",
+    btn_save_expense: "تسجيل النفقة",
+    planning_title: "جدول التوقيت والتوزيع الأسبوعي",
+    planning_subtitle: "تنظيم التوزيع الزمني حسب الأقسام، الأساتذة، المواد والقاعات",
+    planning_view_grid: "جدول التوقيت الأسبوعي",
+    planning_btn_print: "طباعة جدول التوقيت",
+    planning_btn_avail: "شغور وتوفر القاعات",
+    planning_btn_new_slot: "إضافة حصة دراسية",
+    th_planning_groupe: "القسم التربوي",
+    th_planning_niveau: "المستوى",
+    th_planning_matiere: "المادة",
+    th_planning_enseignant: "الأستاذ",
+    th_planning_salle: "القاعة",
+    th_planning_horaire: "التوقيت",
+    modal_avail_title: "توفر وشغور قاعات التدريس",
+    modal_avail_lbl_day: "اليوم :",
+    modal_avail_lbl_time: "الفترة الزمنية :",
+    modal_timetable_title: "جدول إشغال القاعة",
+    niveaux_title: "المستويات التعليمية والأطوار",
+    niveaux_subtitle: "تنظيم وتصنيف المستويات والأطوار التعليمية بالمؤسسة",
+    btn_add_level: "إضافة مستوى تعليمي",
+    th_level_id: "المعرف",
+    th_level_name: "المستوى التعليمي",
+    th_level_cycle: "الطور التعليمي",
+    modal_level_title: "إضافة مستوى تعليمي",
+    modal_level_name_lbl: "اسم المستوى التعليمي *",
+    modal_level_cycle_lbl: "الطور التعليمي",
+    btn_save_level: "حفظ المستوى",
+    matieres_title: "المواد التعليمية المقررة",
+    matieres_subtitle: "إدارة المواد الدراسية، المعاملات والأطوار التعليمية",
+    btn_add_subject: "إضافة مادة تعليمية",
+    matieres_hint_settings: "تغيير أطوار المؤسسة من الإعدادات",
+    cycle_all: "جميع المواد المقررة",
+    cycle_primaire: "الطور الابتدائي",
+    cycle_cem: "الطور المتوسط",
+    cycle_lycee: "الطور الثانوي",
+    cycle_communes: "مواد مشتركة",
+    modal_subject_title: "إضافة مادة تعليمية جديدة",
+    modal_subject_name_lbl: "اسم المادة التعليمية *",
+    modal_subject_cycle_lbl: "الطور التعليمي *",
+    modal_subject_code_lbl: "الرمز المختصر",
+    modal_subject_color_lbl: "اللون المميز",
+    btn_save_subject: "حفظ المادة",
+    modal_teacher_title: "إضافة أستاذ جديد",
+    modal_teacher_matricule_lbl: "رقم التسجيل المهني",
+    modal_teacher_name_lbl: "اللقب والاسم *",
+    modal_teacher_phone_lbl: "رقم الهاتف",
+    modal_teacher_specialite_lbl: "المادة / التخصص *",
+    modal_teacher_grade_lbl: "الرتبة والصفة المهنية *",
+    modal_teacher_email_lbl: "البريد الإلكتروني",
+    btn_save_teacher: "حفظ بيانات الأستاذ",
+    settings_title_etab: "معلومات المؤسسة التعليمية",
+    settings_lbl_name: "اسم المؤسسة (المتوسطة / الثانوية)",
+    settings_lbl_address: "العنوان الكامل",
+    settings_lbl_phone: "رقم الهاتف",
+    settings_lbl_email: "البريد الإلكتروني",
+    settings_lbl_currency: "العملة",
+    settings_lbl_school_year: "السنة الدراسية",
+    settings_lbl_logo: "شعار المؤسسة (للطباعة والوثائق)",
+    settings_lbl_ticket_width: "عرض التذكرة (مم)",
+    settings_lbl_header_msg: "ترويسة الوثائق الرسمية",
+    settings_lbl_footer_msg: "تذييل الوصولات والشهادات",
+    report_att_title: "تقرير المواظبة والغيابات",
+    report_kpi_sessions: "الحصص",
+    report_kpi_present: "حاضر",
+    report_kpi_retard: "تأخر",
+    report_kpi_absent: "غائب",
+    report_btn_print: "طباعة التقرير",
+    matrix_att_title: "شبكة الحصص والمواظبة الشاملة",
+    pay_modal_title: "تسجيل وصل دفع",
+    pay_lbl_groupe: "القسم / المادة *",
+    pay_lbl_mois: "الشهر المعني",
+    pay_lbl_montant: "المبلغ المدفوع (دج) *",
+    pay_lbl_remise: "التخفيض (دج)",
+    pay_lbl_mode: "طريقة الدفع",
+    pay_btn_submit: "تأكيد وطباعة الوصل",
+    receipt_title: "وصل استلام رسمي",
+    wizard_btn_change: "تغيير",
+    wizard_step_next_level: "التالي : المستوى الدراسي",
+    modal_parent_dossier_title: "الملف العائلي",
+    bulk_lbl_sel_students: "التلاميذ المحددون",
+    bulk_lbl_sel_groups: "الأقسام المحددة",
+    bulk_lbl_total_enrollments: "مجموع التسجيلات",
+    bulk_btn_confirm: "تأكيد التسجيلات الجماعية",
   }
 };
 
 class EdumindApp {
   constructor() {
-    this.lang = localStorage.getItem('edumind_lang') || 'fr';
+    // Enforce Arabic by default on first launch / version upgrade for Public Schools
+    if (!localStorage.getItem('edumind_scolaire_v2_init')) {
+      localStorage.setItem('edumind_lang', 'ar');
+      localStorage.setItem('edumind_scolaire_v2_init', '1');
+    }
+    this.lang = localStorage.getItem('edumind_lang') || 'ar';
     this.theme = localStorage.getItem('edumind_theme') || 'dark';
     this.sidebarCollapsed = localStorage.getItem('edumind_sidebar_collapsed') === 'true';
     this.currentView = 'dashboard';
@@ -936,7 +1533,12 @@ class EdumindApp {
     this.currentAttendanceDate = new Date().toISOString().split('T')[0];
     this.attendanceSheetData = null;
     this.attendanceRecords = {};
-    this.attendanceMode = 'sheet';
+    this.attendanceMode = 'entrance';
+
+    // Login Screen Entrance Borne State
+    this.loginMode = 'borne'; // 'borne', 'manual'
+    this.loginEntranceMode = 'auto'; // 'auto', 'in', 'out'
+    this._loginClockInterval = null;
 
     // Entrance Gate Pointage state (Students & Teachers)
     this.entranceMode = 'auto'; // 'auto', 'in', 'out'
@@ -1050,9 +1652,98 @@ class EdumindApp {
     }, 3500);
   }
 
+  formatGroupName(rawName, targetLang = this.lang) {
+    if (!rawName) return '';
+    const isAr = targetLang === 'ar';
+
+    if (typeof rawName === 'string' && rawName.includes(',')) {
+      const parts = rawName.split(',').map(p => this.formatGroupName(p.trim(), targetLang)).filter(Boolean);
+      return parts.join(isAr ? '، ' : ', ');
+    }
+
+    const str = String(rawName).trim();
+    if (!str) return '';
+
+    // Pattern: "ArabicPart (FrenchPart)" or "FrenchPart (ArabicPart)"
+    const parenMatch = str.match(/^(.*?)\s*\((.*?)\)$/);
+    if (parenMatch) {
+      const part1 = parenMatch[1].trim();
+      const part2 = parenMatch[2].trim();
+      const hasArabic1 = /[\u0600-\u06FF]/.test(part1);
+      const hasArabic2 = /[\u0600-\u06FF]/.test(part2);
+
+      if (hasArabic1 && !hasArabic2) {
+        return isAr ? part1 : part2;
+      } else if (!hasArabic1 && hasArabic2) {
+        return isAr ? part2 : part1;
+      }
+    }
+
+    if (isAr) {
+      // Convert French style to clean Arabic: "1AM-1" -> "1 متوسط 1"
+      const mAm = str.match(/^([1-4])\s*AM[-_\s]*(\d+)?/i);
+      if (mAm) return `${mAm[1]} متوسط ${mAm[2] || '1'}`;
+      const mAs = str.match(/^([1-3])\s*AS[-_\s]*(\d+)?/i);
+      if (mAs) return `${mAs[1]} ثانوي ${mAs[2] || '1'}`;
+      const mAp = str.match(/^([1-5])\s*AP[-_\s]*(\d+)?/i);
+      if (mAp) return `${mAp[1]} ابتدائي ${mAp[2] || '1'}`;
+      return str;
+    } else {
+      // Convert Arabic style to clean French: "1 متوسط 1" -> "1AM-1"
+      const mArM = str.match(/(?:سنة\s*)?([1-4])\s*(?:متوسط|م)[-_\s]*(\d+)?/);
+      if (mArM) return `${mArM[1]}AM-${mArM[2] || '1'}`;
+      const mArS = str.match(/(?:سنة\s*)?([1-3])\s*(?:ثانوي|ث)[-_\s]*(\d+)?/);
+      if (mArS) return `${mArS[1]}AS-${mArS[2] || '1'}`;
+      const mArP = str.match(/(?:سنة\s*)?([1-5])\s*(?:ابتدائي|ب)[-_\s]*(\d+)?/);
+      if (mArP) return `${mArP[1]}AP-${mArP[2] || '1'}`;
+      return str;
+    }
+  }
+
+  formatLevelName(rawName, targetLang = this.lang) {
+    if (!rawName) return '';
+    const isAr = targetLang === 'ar';
+    const str = String(rawName).trim();
+    if (!str || str === '—' || str === '-') return isAr ? 'غير محدد' : 'Non défini';
+
+    const levelsMap = {
+      '1AP': { ar: 'السنة الأولى ابتدائي', fr: '1ère Année Primaire (1AP)' },
+      '2AP': { ar: 'السنة الثانية ابتدائي', fr: '2ème Année Primaire (2AP)' },
+      '3AP': { ar: 'السنة الثالثة ابتدائي', fr: '3ème Année Primaire (3AP)' },
+      '4AP': { ar: 'السنة الرابعة ابتدائي', fr: '4ème Année Primaire (4AP)' },
+      '5AP': { ar: 'السنة الخامسة ابتدائي', fr: '5ème Année Primaire (5AP)' },
+      '1AM': { ar: 'السنة الأولى متوسط', fr: '1ère Année Moyenne (1AM)' },
+      '2AM': { ar: 'السنة الثانية متوسط', fr: '2ème Année Moyenne (2AM)' },
+      '3AM': { ar: 'السنة الثالثة متوسط', fr: '3ème Année Moyenne (3AM)' },
+      '4AM': { ar: 'السنة الرابعة متوسط (BEM)', fr: '4ème Année Moyenne - BEM (4AM)' },
+      '1AS': { ar: 'السنة الأولى ثانوي', fr: '1ère Année Secondaire (1AS)' },
+      '2AS': { ar: 'السنة الثانية ثانوي', fr: '2ème Année Secondaire (2AS)' },
+      '3AS': { ar: 'السنة الثالثة ثانوي (BAC)', fr: '3ème Année Secondaire - BAC (3AS)' },
+    };
+
+    for (const [code, val] of Object.entries(levelsMap)) {
+      if (str.toUpperCase().includes(code)) {
+        return isAr ? val.ar : val.fr;
+      }
+    }
+
+    const parenMatch = str.match(/^(.*?)\s*\((.*?)\)$/);
+    if (parenMatch) {
+      const part1 = parenMatch[1].trim();
+      const part2 = parenMatch[2].trim();
+      const hasArabic1 = /[\u0600-\u06FF]/.test(part1);
+      const hasArabic2 = /[\u0600-\u06FF]/.test(part2);
+      if (hasArabic1 && !hasArabic2) return isAr ? part1 : part2;
+      if (!hasArabic1 && hasArabic2) return isAr ? part2 : part1;
+    }
+
+    return str;
+  }
+
   async init() {
     this.initSidebar();
     this.setupEventListeners();
+    this.setupInputRestrictions();
     this.applyTheme();
     this.applyLanguage();
     this.updateGreetingDate();
@@ -1085,10 +1776,11 @@ class EdumindApp {
     const screen = document.getElementById('loginScreen');
     if (screen) {
       screen.classList.add('active');
+      this.switchLoginMode('manual');
       const passInput = document.getElementById('loginPassword');
       if (passInput) {
-        passInput.value = '';
-        setTimeout(() => passInput.focus(), 150);
+        if (!passInput.value) passInput.value = 'admin';
+        passInput.focus();
       }
       const errAlert = document.getElementById('loginErrorAlert');
       if (errAlert) errAlert.style.display = 'none';
@@ -1096,6 +1788,10 @@ class EdumindApp {
   }
 
   hideLoginScreen(animated = true) {
+    if (this._loginClockInterval) {
+      clearInterval(this._loginClockInterval);
+      this._loginClockInterval = null;
+    }
     const screen = document.getElementById('loginScreen');
     if (screen) {
       if (animated) {
@@ -1110,6 +1806,226 @@ class EdumindApp {
       } else {
         screen.classList.remove('active');
       }
+    }
+  }
+
+  switchLoginMode(mode) {
+    this.loginMode = mode;
+    const tabBorne = document.getElementById('loginTabBorne');
+    const tabManual = document.getElementById('loginTabManual');
+    const viewBorne = document.getElementById('loginBorneView');
+    const viewManual = document.getElementById('loginManualView');
+    const container = document.querySelector('.login-container');
+
+    if (mode === 'borne') {
+      tabBorne?.classList.add('active');
+      tabManual?.classList.remove('active');
+      if (viewBorne) viewBorne.style.display = 'block';
+      if (viewManual) viewManual.style.display = 'none';
+      if (container) container.classList.add('borne-mode');
+
+      this.startLoginEntranceClock();
+      this.loadLoginEntranceStats();
+      setTimeout(() => {
+        const inp = document.getElementById('loginEntranceScanInput');
+        if (inp) inp.focus();
+      }, 100);
+    } else {
+      tabManual?.classList.add('active');
+      tabBorne?.classList.remove('active');
+      if (viewManual) viewManual.style.display = 'block';
+      if (viewBorne) viewBorne.style.display = 'none';
+      if (container) container.classList.remove('borne-mode');
+
+      setTimeout(() => {
+        const pass = document.getElementById('loginPassword');
+        if (pass) pass.focus();
+      }, 100);
+    }
+  }
+
+  setLoginEntranceMode(mode) {
+    this.loginEntranceMode = mode;
+    ['btnLoginModeAuto', 'btnLoginModeIn', 'btnLoginModeOut'].forEach(id => {
+      document.getElementById(id)?.classList.remove('active');
+    });
+    const map = {
+      auto: 'btnLoginModeAuto',
+      in: 'btnLoginModeIn',
+      out: 'btnLoginModeOut'
+    };
+    if (map[mode]) {
+      document.getElementById(map[mode])?.classList.add('active');
+    }
+    document.getElementById('loginEntranceScanInput')?.focus();
+  }
+
+  startLoginEntranceClock() {
+    if (this._loginClockInterval) clearInterval(this._loginClockInterval);
+    const update = () => {
+      const el = document.getElementById('loginEntranceDigitalClock');
+      if (!el) return;
+      const now = new Date();
+      el.textContent = now.toLocaleTimeString('fr-FR', { hour12: false });
+    };
+    update();
+    this._loginClockInterval = setInterval(update, 1000);
+  }
+
+  async loadLoginEntranceStats() {
+    const todayDate = new Date().toISOString().split('T')[0];
+    try {
+      const res = await fetch(`/api/entrance/live-list?session_date=${todayDate}`);
+      const data = await res.json();
+      if (data.success && data.stats) {
+        this.updateLoginEntranceStats(data.stats);
+      }
+    } catch (e) {
+      console.error('loadLoginEntranceStats error:', e);
+    }
+  }
+
+  updateLoginEntranceStats(stats) {
+    const elStud = document.getElementById('loginStatStudents');
+    const elTeach = document.getElementById('loginStatTeachers');
+    const elTot = document.getElementById('loginStatTotal');
+    if (elStud) elStud.textContent = `${stats.students_present} / ${stats.students_total}`;
+    if (elTeach) elTeach.textContent = `${stats.teachers_present} / ${stats.teachers_total}`;
+    if (elTot) elTot.textContent = stats.total_present;
+  }
+
+  async handleLoginEntranceScan() {
+    const input = document.getElementById('loginEntranceScanInput');
+    if (!input) return;
+    const raw = input.value.trim();
+    if (!raw) return;
+
+    const code = this.normalizeBarcodeCode(raw);
+    input.value = code;
+
+    const todayDate = new Date().toISOString().split('T')[0];
+
+    try {
+      const res = await fetch('/api/entrance/scan', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          code: code,
+          session_date: todayDate,
+          mode: this.loginEntranceMode || 'auto'
+        })
+      });
+
+      const data = await res.json();
+      const card = document.getElementById('loginEntranceResultCard');
+      const badge = document.getElementById('loginEntranceBadge');
+      const avatarBox = document.getElementById('loginEntranceAvatar');
+      const infoText = document.getElementById('loginEntranceInfoText');
+
+      if (!data.success) {
+        this.playChime('error');
+        if (card && badge && infoText) {
+          card.style.display = 'block';
+          card.style.borderColor = '#ef4444';
+          badge.style.background = '#ef4444';
+          badge.textContent = this.lang === 'ar' ? '❌ غير مسجل في النظام' : '❌ INTROUVABLE DANS LE SYSTÈME';
+          let localizedError = data.error;
+          if (this.lang !== 'ar') {
+            if (data.error === 'الرمز أو رقم القيد غير موجود في النظام') {
+              localizedError = 'Le code ou matricule scanné est introuvable dans le système.';
+            } else if (data.error === 'يرجى إدخال كود الباركود أو رقم القيد') {
+              localizedError = 'Veuillez saisir le matricule ou scanner le code-barres.';
+            }
+          }
+          infoText.innerHTML = `
+            <h3 style="color: #ef4444; font-size: 17px; font-weight: 800; margin: 0 0 4px 0;">${this.escapeHtml(localizedError)}</h3>
+            <p style="color: #94a3b8; font-size: 13px; margin: 0;">${this.lang === 'ar' ? 'تأكد من صحة رقم القيد أو الكود المقروء.' : 'Vérifiez le matricule ou le code-barres scanné.'}</p>
+          `;
+          if (avatarBox) avatarBox.innerHTML = '<i class="fa-solid fa-triangle-exclamation" style="color: #ef4444;"></i>';
+          
+          if (this._loginEntranceCardTimeout) clearTimeout(this._loginEntranceCardTimeout);
+          this._loginEntranceCardTimeout = setTimeout(() => {
+            if (card) card.style.display = 'none';
+          }, 4500);
+        }
+        input.value = '';
+        setTimeout(() => input.focus(), 20);
+        return;
+      }
+
+      const p = data.person;
+      const isStudent = data.person_type === 'student';
+      const action = data.action;
+
+      if (action === 'check_in') {
+        this.playChime('success');
+      } else {
+        this.playChime('warning');
+      }
+
+      if (card && badge && infoText && avatarBox) {
+        card.style.display = 'block';
+        let badgeBg = '#10b981';
+        let borderColor = '#10b981';
+        let badgeText = '';
+
+        if (action === 'check_in') {
+          badgeBg = '#10b981';
+          borderColor = '#10b981';
+          badgeText = isStudent
+            ? (this.lang === 'ar' ? '🟢 دخول تلميذ (حاضر)' : '🟢 ENTRÉE ÉLÈVE VALIDÉE')
+            : (this.lang === 'ar' ? '🟢 حضور أستاذ' : '🟢 ARRIVÉE ENSEIGNANT VALIDÉE');
+        } else if (action === 'check_out') {
+          badgeBg = '#f59e0b';
+          borderColor = '#f59e0b';
+          badgeText = isStudent
+            ? (this.lang === 'ar' ? '👋 خروج تلميذ (انصراف)' : '👋 SORTIE ÉLÈVE ENREGISTRÉE')
+            : (this.lang === 'ar' ? '👋 انصراف أستاذ' : '👋 DÉPART ENSEIGNANT ENREGISTRÉ');
+        } else {
+          badgeBg = '#3b82f6';
+          borderColor = '#3b82f6';
+          badgeText = this.lang === 'ar' ? 'ℹ️ مسجل مسبقاً اليوم' : 'ℹ️ DÉJÀ ENREGISTRÉ';
+        }
+
+        card.style.borderColor = borderColor;
+        badge.style.background = badgeBg;
+        badge.textContent = badgeText;
+
+        if (p.photo) {
+          avatarBox.innerHTML = `<img src="${p.photo}" alt="${this.escapeHtml(p.first_name)}" style="width: 100%; height: 100%; object-fit: cover;">`;
+        } else {
+          avatarBox.innerHTML = isStudent ? '<i class="fa-solid fa-user-graduate" style="color: #60a5fa;"></i>' : '<i class="fa-solid fa-chalkboard-user" style="color: #fb923c;"></i>';
+        }
+
+        const roleLabel = isStudent
+          ? `<span class="badge-role-student"><i class="fa-solid fa-user-graduate"></i> ${this.lang === 'ar' ? 'تلميذ' : 'Élève'}</span>`
+          : `<span class="badge-role-teacher"><i class="fa-solid fa-chalkboard-user"></i> ${this.lang === 'ar' ? 'أستاذ' : 'Enseignant'}</span>`;
+        const subTitle = isStudent ? (p.level_name || 'Niveau non défini') : (p.subject_name ? `${this.lang === 'ar' ? 'أستاذ مادة:' : 'Matière:'} ${p.subject_name}` : 'Enseignant');
+
+        infoText.innerHTML = `
+          <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 3px;">
+            ${roleLabel}
+            <span style="font-family: monospace; font-weight: 700; color: #60a5fa; font-size: 13px;">${p.matricule}</span>
+          </div>
+          <h3 style="font-size: 20px; font-weight: 800; color: #fff; margin: 0 0 4px 0;">${this.escapeHtml(p.first_name)} ${this.escapeHtml(p.last_name)}</h3>
+          <p style="color: #94a3b8; font-size: 13px; margin: 0 0 6px 0;">${this.escapeHtml(subTitle)}</p>
+          <div style="font-size: 12px; color: #94a3b8; display: flex; gap: 12px; flex-wrap: wrap;">
+            <span><i class="fa-regular fa-clock"></i> ${this.lang === 'ar' ? 'وقت الدخول:' : 'Entrée:'} <strong>${data.attendance?.check_in_time || '--:--'}</strong></span>
+            ${data.attendance?.check_out_time ? `<span><i class="fa-solid fa-clock-rotate-left"></i> ${this.lang === 'ar' ? 'وقت الخروج:' : 'Sortie:'} <strong>${data.attendance.check_out_time}</strong></span>` : ''}
+          </div>
+        `;
+      }
+
+      if (data.stats) {
+        this.updateLoginEntranceStats(data.stats);
+      } else {
+        await this.loadLoginEntranceStats();
+      }
+
+      input.value = '';
+      setTimeout(() => input.focus(), 20);
+    } catch (err) {
+      console.error('handleLoginEntranceScan error:', err);
     }
   }
 
@@ -1130,6 +2046,12 @@ class EdumindApp {
         eyeIcon.classList.add('fa-eye');
       }
     }
+  }
+
+  toggleLanguage() {
+    this.lang = this.lang === 'fr' ? 'ar' : 'fr';
+    localStorage.setItem('edumind_lang', this.lang);
+    this.applyLanguage();
   }
 
   toggleLanguageFromLogin() {
@@ -1271,7 +2193,7 @@ class EdumindApp {
     const btnWa = document.getElementById('btnWhatsappLic');
     if (btnWa && status.hwid) {
       const waMsg = encodeURIComponent(
-        `Bonjour Veloce Craft, voici mon HWID pour l'activation EDUMIND :\n${status.hwid}`
+        `Bonjour Veloce Craft, voici mon HWID pour l'activation EDUMIND Scolaire :\n${status.hwid}`
       );
       btnWa.href = `https://wa.me/213552225150?text=${waMsg}`;
     }
@@ -1457,8 +2379,16 @@ class EdumindApp {
       const res = await fetch('/api/updates/check');
       const data = await res.json();
 
-      if (data.currentVersion && currentBadge) {
-        currentBadge.textContent = 'v' + data.currentVersion;
+      if (data.currentVersion) {
+        if (currentBadge) currentBadge.textContent = 'v' + data.currentVersion;
+        const aboutBadge = document.getElementById('aboutAppVersionBadge');
+        if (aboutBadge) aboutBadge.textContent = 'v' + data.currentVersion;
+        const adminVer = document.getElementById('adminAppVersion');
+        if (adminVer) adminVer.textContent = 'EDUMIND Scolaire v' + data.currentVersion;
+        const sideVer = document.getElementById('sidebarVersionBadge');
+        if (sideVer) sideVer.textContent = 'EDUMIND Scolaire v' + data.currentVersion;
+        const updCurr = document.getElementById('updCurrentVer');
+        if (updCurr) updCurr.textContent = 'v' + data.currentVersion;
       }
 
       if (data.success && data.updateAvailable) {
@@ -1822,6 +2752,137 @@ class EdumindApp {
     });
   }
 
+  setupInputRestrictions() {
+    // 1. Phone numbers: Digits ONLY, max 10 digits
+    const phoneInputIds = [
+      'studentPhone',
+      'studentParentPhone',
+      'parentPhone',
+      'parentPhoneSecondary',
+      'teacherPhone',
+      'settingSchoolPhone'
+    ];
+
+    const cleanPhoneNumber = (val) => {
+      if (!val) return '';
+      return String(val).replace(/\D/g, '').slice(0, 10);
+    };
+
+    phoneInputIds.forEach(id => {
+      const el = document.getElementById(id);
+      if (el && !el._phoneRestrictionBound) {
+        el._phoneRestrictionBound = true;
+        el.setAttribute('maxlength', '10');
+        el.setAttribute('inputmode', 'numeric');
+        el.setAttribute('pattern', '[0-9]*');
+        el.setAttribute('autocomplete', 'tel');
+
+        el.addEventListener('keydown', (e) => {
+          // Allow navigation, delete, backspace, tab, shortcuts
+          if ([46, 8, 9, 27, 13, 37, 38, 39, 40].includes(e.keyCode) ||
+              e.ctrlKey === true || e.metaKey === true) {
+            return;
+          }
+          // Block non-digit keys
+          if ((e.shiftKey || (e.keyCode < 48 || e.keyCode > 57)) && (e.keyCode < 96 || e.keyCode > 105)) {
+            e.preventDefault();
+            return;
+          }
+          // Block typing if already 10 digits and no selection
+          if (el.value.length >= 10 && el.selectionStart === el.selectionEnd) {
+            e.preventDefault();
+          }
+        });
+
+        el.addEventListener('input', () => {
+          const current = el.value;
+          const cleaned = cleanPhoneNumber(current);
+          if (current !== cleaned) {
+            const start = el.selectionStart;
+            el.value = cleaned;
+            if (start !== null) el.setSelectionRange(Math.min(start, cleaned.length), Math.min(start, cleaned.length));
+          }
+        });
+
+        el.addEventListener('paste', (e) => {
+          e.preventDefault();
+          const pastedText = (e.clipboardData || window.clipboardData)?.getData('text') || '';
+          const cleanedPaste = cleanPhoneNumber(pastedText);
+          const current = el.value || '';
+          const selStart = el.selectionStart || 0;
+          const selEnd = el.selectionEnd || 0;
+          const combined = current.slice(0, selStart) + cleanedPaste + current.slice(selEnd);
+          el.value = cleanPhoneNumber(combined);
+        });
+      }
+    });
+
+    // 2. Text / Name fields: strictly letters only (Arabic, Latin with accents, spaces, hyphens, apostrophes)
+    // No digits (0-9, ٠-٩) and no symbols allowed
+    const nameInputIds = [
+      'studentLastName',
+      'studentFirstName',
+      'studentParentName',
+      'parentFullName',
+      'teacherFirstName',
+      'teacherLastName'
+    ];
+
+    const cleanLettersOnly = (val) => {
+      if (!val) return '';
+      return String(val).replace(/[^a-zA-Z\u00C0-\u024F\u0600-\u06FF\s'\-]/g, '');
+    };
+
+    nameInputIds.forEach(id => {
+      const el = document.getElementById(id);
+      if (el && !el._nameRestrictionBound) {
+        el._nameRestrictionBound = true;
+        el.setAttribute('data-letters-only', 'true');
+
+        el.addEventListener('keydown', (e) => {
+          // Allow navigation, delete, backspace, tab, shortcuts
+          if ([46, 8, 9, 27, 13, 37, 38, 39, 40].includes(e.keyCode) ||
+              e.ctrlKey === true || e.metaKey === true) {
+            return;
+          }
+          // Block numbers on top row and numpad immediately
+          if ((e.keyCode >= 48 && e.keyCode <= 57 && !e.shiftKey) || (e.keyCode >= 96 && e.keyCode <= 105)) {
+            e.preventDefault();
+          }
+        });
+
+        el.addEventListener('keypress', (e) => {
+          if (e.ctrlKey || e.metaKey || e.altKey) return;
+          const char = e.key;
+          if (char && !/^[a-zA-Z\u00C0-\u024F\u0600-\u06FF\s'\-]$/.test(char)) {
+            e.preventDefault();
+          }
+        });
+
+        el.addEventListener('input', () => {
+          const current = el.value;
+          const cleaned = cleanLettersOnly(current);
+          if (current !== cleaned) {
+            const start = el.selectionStart;
+            el.value = cleaned;
+            if (start !== null) el.setSelectionRange(Math.min(start, cleaned.length), Math.min(start, cleaned.length));
+          }
+        });
+
+        el.addEventListener('paste', (e) => {
+          e.preventDefault();
+          const pastedText = (e.clipboardData || window.clipboardData)?.getData('text') || '';
+          const cleanedPaste = cleanLettersOnly(pastedText);
+          const current = el.value || '';
+          const selStart = el.selectionStart || 0;
+          const selEnd = el.selectionEnd || 0;
+          const combined = current.slice(0, selStart) + cleanedPaste + current.slice(selEnd);
+          el.value = cleanLettersOnly(combined);
+        });
+      }
+    });
+  }
+
   applyTheme() {
     if (this.theme === 'light') {
       document.body.classList.add('light-theme');
@@ -1847,12 +2908,33 @@ class EdumindApp {
 
     // Translate DOM elements with data-i18n
     const dict = i18n[this.lang];
-    document.querySelectorAll('[data-i18n]').forEach(el => {
-      const key = el.getAttribute('data-i18n');
-      if (dict[key]) {
-        el.textContent = dict[key];
-      }
-    });
+    if (dict) {
+      document.querySelectorAll('[data-i18n]').forEach(el => {
+        const key = el.getAttribute('data-i18n');
+        if (dict[key]) {
+          const icon = el.querySelector(':scope > i');
+          const star = el.querySelector(':scope > span.required-star');
+          if (icon || star) {
+            let textSpan = el.querySelector(':scope > span:not(.required-star)');
+            if (textSpan) {
+              textSpan.textContent = dict[key];
+            } else {
+              el.innerHTML = `${icon ? icon.outerHTML + ' ' : ''}${dict[key]}${star ? ' ' + star.outerHTML : ''}`;
+            }
+          } else {
+            el.textContent = dict[key];
+          }
+        }
+      });
+
+      // Translate placeholders with data-i18n-placeholder
+      document.querySelectorAll('[data-i18n-placeholder]').forEach(el => {
+        const pKey = el.getAttribute('data-i18n-placeholder');
+        if (dict[pKey]) {
+          el.placeholder = dict[pKey];
+        }
+      });
+    }
 
     const loginPass = document.getElementById('loginPassword');
     if (loginPass) {
@@ -1863,40 +2945,60 @@ class EdumindApp {
       loginLangText.textContent = isAr ? 'Français' : 'العربية';
     }
 
+    // Cantine Scan input placeholder
+    const cantineScanInput = document.getElementById('cantineScanInput');
+    if (cantineScanInput) {
+      cantineScanInput.placeholder = isAr
+        ? 'وجّه قارئ الباركود نحو بطاقة التلميذ (ELE-2026-XXXX)...'
+        : 'Scannez le badge ou tapez le matricule (ELE-2026-XXXX)...';
+    }
+
     const searchGroupes = document.getElementById('groupesFilterSearch');
     if (searchGroupes) {
-      searchGroupes.placeholder = isAr ? 'بحث...' : 'Rechercher...';
+      searchGroupes.placeholder = isAr ? 'بحث باسم القسم، القاعة، المستوى...' : 'Rechercher par classe, salle, niveau...';
     }
 
     const statusSelect = document.getElementById('groupesFilterStatus');
-    if (statusSelect) {
-      statusSelect.options[0].text = isAr ? 'النشطة فقط' : 'Actifs';
+    if (statusSelect && statusSelect.options && statusSelect.options.length >= 3) {
+      statusSelect.options[0].text = isAr ? 'الأقسام النشطة فقط' : 'Actifs';
       statusSelect.options[1].text = isAr ? 'كل الحالات' : 'Tous les statuts';
       statusSelect.options[2].text = isAr ? 'غير النشطة' : 'Inactifs';
     }
 
     const searchStudent = document.getElementById('searchStudentInput');
     if (searchStudent) {
-      searchStudent.placeholder = isAr ? 'الاسم، رقم القيد، الهاتف...' : 'Nom, matricule, téléphone...';
+      searchStudent.placeholder = isAr ? 'الاسم، اللقب، رقم التعريف، الهاتف...' : 'Nom, prénom, matricule, téléphone...';
+    }
+
+    const searchCaisse = document.getElementById('caisseFilterSearch');
+    if (searchCaisse) {
+      searchCaisse.placeholder = isAr ? 'بحث بالبيان، الوصل، المرجع...' : 'Rechercher par libellé, reçu, référence...';
+    }
+
+    const caisseFilterType = document.getElementById('caisseFilterType');
+    if (caisseFilterType && caisseFilterType.options && caisseFilterType.options.length >= 3) {
+      caisseFilterType.options[0].text = isAr ? 'كل الأنواع' : 'Tous les types';
+      caisseFilterType.options[1].text = isAr ? 'المداخيل والإيرادات (+)' : 'Entrées uniquement (+)';
+      caisseFilterType.options[2].text = isAr ? 'المصاريف والنفقات (-)' : 'Sorties uniquement (-)';
     }
 
     const filterStudentStatus = document.getElementById('filterStudentStatus');
-    if (filterStudentStatus) {
-      filterStudentStatus.options[0].text = isAr ? 'النشطون فقط' : 'Actifs';
+    if (filterStudentStatus && filterStudentStatus.options && filterStudentStatus.options.length >= 3) {
+      filterStudentStatus.options[0].text = isAr ? 'المتمدرسون (النشطون)' : 'Actifs (Scolarisés)';
       filterStudentStatus.options[1].text = isAr ? 'كل الحالات' : 'Tous les statuts';
       filterStudentStatus.options[2].text = isAr ? 'غير النشطين' : 'Inactifs';
     }
 
     const filterStudentPayment = document.getElementById('filterStudentPayment');
-    if (filterStudentPayment) {
-      filterStudentPayment.options[0].text = isAr ? 'كل المدفوعات' : 'Tous paiements';
-      filterStudentPayment.options[1].text = isAr ? 'مستوفٍ / لا ديون' : 'À jour';
-      filterStudentPayment.options[2].text = isAr ? 'متأخر / ديون' : 'En retard / Dette';
+    if (filterStudentPayment && filterStudentPayment.options && filterStudentPayment.options.length >= 3) {
+      filterStudentPayment.options[0].text = isAr ? 'كل الحالات' : 'Tous statuts';
+      filterStudentPayment.options[1].text = isAr ? 'مستوفٍ / لا مستحقات' : 'À jour';
+      filterStudentPayment.options[2].text = isAr ? 'مستحقات معلقة' : 'Droits en attente';
     }
 
     const searchAtt = document.getElementById('attStudentSearch');
     if (searchAtt) {
-      searchAtt.placeholder = isAr ? 'بحث عن تلميذ بالفوج...' : 'Filtrer un élève...';
+      searchAtt.placeholder = isAr ? 'بحث عن تلميذ بالقسم...' : 'Filtrer un élève de la classe...';
     }
 
     const bulkStudentSearch = document.getElementById('bulkStudentSearchInput');
@@ -1906,15 +3008,15 @@ class EdumindApp {
 
     const bulkGroupSearch = document.getElementById('bulkGroupSearchInput');
     if (bulkGroupSearch) {
-      bulkGroupSearch.placeholder = isAr ? 'بحث عن فوج أو مادة...' : 'Rechercher un groupe ou matière...';
+      bulkGroupSearch.placeholder = isAr ? 'بحث عن قسم تربوي...' : 'Rechercher une division / classe...';
     }
     const topicAtt = document.getElementById('attSessionTopic');
     if (topicAtt) {
-      topicAtt.placeholder = isAr ? 'مثال: الفصل الثاني / حل تمارين' : 'Ex: Chapitre 2 / Exercices';
+      topicAtt.placeholder = isAr ? 'ملاحظات الحصة / الدرس...' : 'Notes / Thème de la séance...';
     }
     const searchPayments = document.getElementById('searchPaymentInput');
     if (searchPayments) {
-      searchPayments.placeholder = isAr ? 'بحث باسم التلميذ، رقم الوصل، الفوج...' : 'Rechercher élève, N° reçu, groupe...';
+      searchPayments.placeholder = isAr ? 'بحث باسم التلميذ، رقم الوصل، القسم...' : 'Rechercher élève, N° reçu, classe...';
     }
     const payStudentSearch = document.getElementById('payStudentSearch');
     if (payStudentSearch) {
@@ -1928,13 +3030,13 @@ class EdumindApp {
     const entranceScanInput = document.getElementById('entranceScanInput');
     if (entranceScanInput) {
       entranceScanInput.placeholder = isAr
-        ? 'مرر الباركود أو اكتب رقم القيد (مثال: ETU-001 أو ENS-001)...'
-        : 'Scannez le code-barres ou tapez le matricule (Ex: ETU-001 / ENS-001)...';
+        ? 'مرر الباركود أو اكتب رقم التعريف (مثال: ELE-001 أو ENS-001)...'
+        : 'Scannez le code-barres ou tapez le matricule (Ex: ELE-001 / ENS-001)...';
     }
 
     const entranceSearchInput = document.getElementById('entranceSearchInput');
     if (entranceSearchInput) {
-      entranceSearchInput.placeholder = isAr ? 'بحث بالاسم، اللقب أو رقم القيد...' : 'Rechercher nom ou matricule...';
+      entranceSearchInput.placeholder = isAr ? 'بحث بالاسم، اللقب أو رقم التعريف...' : 'Rechercher nom ou matricule...';
     }
 
     const entranceFilterType = document.getElementById('entranceFilterType');
@@ -1946,7 +3048,7 @@ class EdumindApp {
 
     const batchSearchInput = document.getElementById('batchBadgesSearchInput');
     if (batchSearchInput) {
-      batchSearchInput.placeholder = isAr ? 'بحث بالاسم أو اللقب أو رقم القيد...' : 'Rechercher par nom, matricule ou téléphone...';
+      batchSearchInput.placeholder = isAr ? 'بحث بالاسم أو اللقب أو رقم التعريف...' : 'Rechercher par nom, matricule ou téléphone...';
     }
 
     const batchLevelSelect = document.getElementById('batchBadgesFilterLevel');
@@ -1956,7 +3058,7 @@ class EdumindApp {
 
     const batchGroupSelect = document.getElementById('batchBadgesFilterGroup');
     if (batchGroupSelect && batchGroupSelect.options && batchGroupSelect.options.length > 0) {
-      batchGroupSelect.options[0].text = isAr ? '-- كل الأفواج --' : '-- Tous les groupes --';
+      batchGroupSelect.options[0].text = isAr ? '-- كل الأقسام --' : '-- Toutes les divisions --';
     }
 
     const fastPaySearch = document.getElementById('fastPayStudentSearch');
@@ -1986,7 +3088,7 @@ class EdumindApp {
 
     const searchParents = document.getElementById('searchParentInput');
     if (searchParents) {
-      searchParents.placeholder = isAr ? 'ابحث بالاسم، اللقب، الهاتف، أو اسم الابن...' : "Rechercher par nom, prénom, tél ou enfant...";
+      searchParents.placeholder = isAr ? 'ابحث باسم الولي، اللقب، الهاتف، أو اسم التلميذ...' : "Rechercher par nom, prénom, tél ou élève...";
     }
     const filterParentDisc = document.getElementById('filterParentDiscount');
     if (filterParentDisc && filterParentDisc.options && filterParentDisc.options.length >= 3) {
@@ -1997,8 +3099,8 @@ class EdumindApp {
     const filterParentDebt = document.getElementById('filterParentDebts');
     if (filterParentDebt && filterParentDebt.options && filterParentDebt.options.length >= 3) {
       filterParentDebt.options[0].text = isAr ? 'جميع الحالات المالية' : 'Tous statuts financiers';
-      filterParentDebt.options[1].text = isAr ? 'عليهم مستحقات / ديون' : 'Avec impayés / dettes';
-      filterParentDebt.options[2].text = isAr ? 'خالصين تماماً' : 'À jour (aucun impayé)';
+      filterParentDebt.options[1].text = isAr ? 'عليهم مستحقات معلقة' : 'Avec impayés / restants';
+      filterParentDebt.options[2].text = isAr ? 'مستوفٍ تماماً' : 'À jour (aucun impayé)';
     }
 
     if (this.currentView === 'groupes') {
@@ -2022,6 +3124,8 @@ class EdumindApp {
       this.loadParents();
     } else if (this.currentView === 'salles') {
       this.loadRooms();
+    } else if (this.currentView === 'enseignants') {
+      this.loadTeachers();
     }
 
     const searchRooms = document.getElementById('roomsFilterSearch');
@@ -2044,18 +3148,18 @@ class EdumindApp {
     const filterOcc = document.getElementById('roomsFilterOccupancy');
     if (filterOcc) {
       filterOcc.options[0].text = isAr ? 'كل القاعات' : 'Toutes les salles';
-      filterOcc.options[1].text = isAr ? 'مشغولة (بها أفواج)' : 'Occupées (avec groupes)';
-      filterOcc.options[2].text = isAr ? 'شاغرة (بدون أفواج)' : 'Disponibles (sans groupes)';
+      filterOcc.options[1].text = isAr ? 'مشغولة (بها أقسام)' : 'Occupées (avec classes)';
+      filterOcc.options[2].text = isAr ? 'شاغرة (بدون أقسام)' : 'Disponibles (sans classes)';
     }
 
     // Inscriptions View & Wizard placeholders / selects
     const searchEnroll = document.getElementById('searchEnrollmentsTableInput');
     if (searchEnroll) {
-      searchEnroll.placeholder = isAr ? 'بحث بالتلميذ، رقم القيد، الهاتف، الفوج، المادة، الأستاذ...' : 'Rechercher par élève, matricule, tél, groupe, matière, prof...';
+      searchEnroll.placeholder = isAr ? 'بحث بالتلميذ، رقم التعريف، الهاتف، القسم، المادة، الأستاذ...' : 'Rechercher par élève, matricule, tél, classe, matière, prof...';
     }
     const filterEnrollGroup = document.getElementById('filterEnrollmentGroup');
     if (filterEnrollGroup && filterEnrollGroup.options.length > 0 && filterEnrollGroup.options[0].value === 'all') {
-      filterEnrollGroup.options[0].text = isAr ? 'كل الأفواج' : 'Tous les groupes';
+      filterEnrollGroup.options[0].text = isAr ? 'كل الأقسام' : 'Toutes les divisions';
     }
     const filterEnrollStatus = document.getElementById('filterEnrollmentStatus');
     if (filterEnrollStatus && filterEnrollStatus.options.length >= 3) {
@@ -2102,6 +3206,14 @@ class EdumindApp {
 
     this.updateGreetingDate();
     this.updateSidebarTooltips();
+
+    const mealRateEl = document.getElementById('kpiMealRateText');
+    if (mealRateEl) {
+      const currentText = mealRateEl.textContent || '';
+      const numMatch = currentText.match(/\d+/);
+      const val = numMatch ? numMatch[0] : '0';
+      mealRateEl.textContent = isAr ? `نسبة الاستلام : ${val}%` : `Taux de service : ${val}%`;
+    }
   }
 
   updateGreetingDate() {
@@ -2140,7 +3252,10 @@ class EdumindApp {
       view.classList.remove('active');
     });
 
-    const target = document.getElementById(`view-${viewName}`);
+    let target = document.getElementById(`view-${viewName}`);
+    if (!target && viewName === 'groupes') {
+      target = document.getElementById('view-planning');
+    }
     if (target) {
       target.classList.add('active');
     }
@@ -2244,6 +3359,8 @@ class EdumindApp {
       if (!data.success) return;
 
       const { kpis, recentCanteenScans } = data;
+      const unpaidStudents = data.unpaidStudents || [];
+      const alerts = data.alerts || [];
 
       // Update Public School KPIs
       const elActive = document.getElementById('kpiActiveStudents');
@@ -2303,21 +3420,23 @@ class EdumindApp {
 
       // Render Recent Unpaid Table
       const unpaidBody = document.getElementById('recentUnpaidTableBody');
-      if (unpaidStudents.length === 0) {
-        unpaidBody.innerHTML = `<tr><td colspan="3" style="text-align: center; color: var(--text-muted); padding: 24px;">Aucun impayé trouvé</td></tr>`;
-      } else {
-        unpaidBody.innerHTML = unpaidStudents.map(u => `
-          <tr>
-            <td><strong>${u.student_name}</strong></td>
-            <td><span class="badge-pill" style="background: rgba(239, 68, 68, 0.15); color: #f87171;">${u.subject_name}</span></td>
-            <td><strong style="color: #ef4444;">${Number(u.amount_due).toLocaleString()} DA</strong></td>
-          </tr>
-        `).join('');
+      if (unpaidBody) {
+        if (unpaidStudents.length === 0) {
+          unpaidBody.innerHTML = `<tr><td colspan="3" style="text-align: center; color: var(--text-muted); padding: 24px;">${this.lang === 'ar' ? 'لا توجد مستحقات غير مسددة' : 'Aucun impayé trouvé'}</td></tr>`;
+        } else {
+          unpaidBody.innerHTML = unpaidStudents.map(u => `
+            <tr>
+              <td><strong>${this.escapeHtml(u.student_name || '')}</strong></td>
+              <td><span class="badge-pill" style="background: rgba(239, 68, 68, 0.15); color: #f87171;">${this.escapeHtml(u.subject_name || '')}</span></td>
+              <td><strong style="color: #ef4444;">${Number(u.amount_due || 0).toLocaleString()} DA</strong></td>
+            </tr>
+          `).join('');
+        }
       }
 
       // Alerts
       const alertsContainer = document.getElementById('alertsContainer');
-      if (alerts && alerts.length > 0) {
+      if (alertsContainer && alerts && alerts.length > 0) {
         alertsContainer.innerHTML = alerts.map(a => `
           <div style="background: rgba(245, 158, 11, 0.1); border-left: 4px solid #f59e0b; padding: 12px 16px; border-radius: 6px; margin-bottom: 8px;">
             <strong style="color: #f59e0b;">${a.title}</strong>
@@ -2439,7 +3558,7 @@ class EdumindApp {
       if (this.students.length === 0) {
         tbody.innerHTML = `
           <tr>
-            <td colspan="9" style="text-align: center; color: var(--text-muted); padding: 40px;">
+            <td colspan="8" style="text-align: center; color: var(--text-muted); padding: 40px;">
               <i class="fa-solid fa-user-slash" style="font-size: 32px; margin-bottom: 10px; opacity: 0.5; display: block;"></i>
               ${this.lang === 'ar' ? 'لم يتم العثور على أي تلميذ مطابق' : 'Aucun élève trouvé'}
             </td>
@@ -2472,7 +3591,16 @@ class EdumindApp {
               <span style="color: var(--text-main); cursor: pointer;" onclick="app.openStudentProfile(${s.id})" title="Voir la fiche">${this.escapeHtml(s.first_name)}</span>
             </td>
             <td>
-              <span style="color: var(--text-muted); font-weight: 500;">${this.escapeHtml(s.level_name || '—')}</span>
+              ${s.group_name ? `
+                <div style="display: flex; flex-direction: column; gap: 3px;">
+                  <span class="badge-pill" style="background: rgba(37, 99, 235, 0.12); color: #2563eb; font-weight: 700; font-size: 12px; align-self: flex-start;">
+                    ${this.escapeHtml(this.formatGroupName(s.group_name))}
+                  </span>
+                  <span style="color: var(--text-muted); font-size: 11px;">${this.escapeHtml(this.formatLevelName(s.level_name || ''))}</span>
+                </div>
+              ` : `
+                <span style="color: var(--text-muted); font-weight: 500;">${this.escapeHtml(this.formatLevelName(s.level_name || '—'))}</span>
+              `}
             </td>
             <td>
               <span style="font-size: 13px;">${this.escapeHtml(s.phone || '—')}</span>
@@ -2486,18 +3614,11 @@ class EdumindApp {
             </td>
             <td style="text-align: center;">
               ${(s.regime === 'interne')
-                ? `<span class="badge-pill" style="background: rgba(139, 92, 246, 0.15); color: #a78bfa; font-weight: 700;">داخلي</span>`
+                ? `<span class="badge-pill" style="background: rgba(139, 92, 246, 0.15); color: #a78bfa; font-weight: 700;">${this.lang === 'ar' ? 'داخلي' : 'Interne'}</span>`
                 : (s.regime === 'externe')
-                  ? `<span class="badge-pill" style="background: rgba(100, 116, 139, 0.15); color: #94a3b8; font-weight: 700;">خارجي</span>`
-                  : `<span class="badge-pill" style="background: rgba(16, 185, 129, 0.15); color: #10b981; font-weight: 700;">نصف داخلي</span>`
+                  ? `<span class="badge-pill" style="background: rgba(100, 116, 139, 0.15); color: #94a3b8; font-weight: 700;">${this.lang === 'ar' ? 'خارجي' : 'Externe'}</span>`
+                  : `<span class="badge-pill" style="background: rgba(16, 185, 129, 0.15); color: #10b981; font-weight: 700;">${this.lang === 'ar' ? 'نصف داخلي' : 'Demi-pension'}</span>`
               }
-            </td>
-            <td>
-              <span class="badge-status-pill ${isActive ? 'active' : 'inactive'}" 
-                    onclick="app.openStudentProfile(${s.id})" 
-                    title="${this.lang === 'ar' ? 'عرض تفاصيل وملف التلميذ' : 'Voir la fiche élève'}">
-                ${isActive ? (this.lang === 'ar' ? 'نشط' : 'Actif') : (this.lang === 'ar' ? 'غير نشط' : 'Inactif')}
-              </span>
             </td>
             <td style="text-align: right;">
               <div style="display: inline-flex; gap: 6px; align-items: center;">
@@ -2507,7 +3628,7 @@ class EdumindApp {
                 <button class="btn-action-edit" title="${this.lang === 'ar' ? 'تعديل' : 'Modifier'}" onclick="app.editStudent(${s.id})">
                   <i class="fa-solid fa-pen-to-square"></i>
                 </button>
-                <button class="btn-action-delete" title="${this.lang === 'ar' ? 'حذف / تعطيل' : 'Supprimer'}" onclick="app.deleteStudent(${s.id})">
+                <button class="btn-action-delete" title="${this.lang === 'ar' ? 'حذف التلميذ' : 'Supprimer'}" onclick="app.deleteStudent(${s.id})">
                   <i class="fa-solid fa-trash-can"></i>
                 </button>
               </div>
@@ -2744,7 +3865,7 @@ class EdumindApp {
 
   async cancelEnrollment(enrollmentId, studentId) {
     const msg = this.lang === 'ar'
-      ? 'هل أنت متأكد من إلغاء تسجيل هذا التلميذ في هذا الفوج؟'
+      ? 'هل أنت متأكد من إلغاء توزيع هذا التلميذ في هذا القسم التربوي؟'
       : 'Voulez-vous vraiment désinscrire cet élève de ce groupe ?';
     if (!confirm(msg)) return;
     try {
@@ -2783,18 +3904,85 @@ class EdumindApp {
   }
 
   async deleteStudent(id) {
-    const msg = this.lang === 'ar' ? 'هل أنت متأكد من تعطيل هذا التلميذ؟' : 'Voulez-vous vraiment désactiver cet élève ?';
+    const isAr = this.lang === 'ar';
+    const student = (this.students || []).find(s => s.id === id);
+    const studentName = student ? ` (${student.first_name} ${student.last_name})` : '';
+    const msg = isAr
+      ? `هل أنت متأكد من حذف هذا التلميذ${studentName} نهائياً؟\nسيتم حذف جميع بياناته وسجلاته المرتبطة به نهائياً.`
+      : `Êtes-vous sûr de vouloir supprimer définitivement cet élève${studentName} ?\nToutes ses données associées seront supprimées définitivement.`;
+
     if (!confirm(msg)) return;
     try {
-      const res = await fetch(`/api/students/${id}`, { method: 'DELETE' });
-      const data = await res.json();
+      const res = await fetch(`/api/students/${id}?permanent=1`, { method: 'DELETE' });
+      let data = {};
+      try {
+        data = await res.json();
+      } catch (e) {
+        data = { success: false, error: res.statusText || 'Erreur serveur' };
+      }
       if (data.success) {
         this.playChime('success');
-        this.loadStudents();
+        this.showToast(isAr ? 'تم حذف التلميذ بنجاح' : 'Élève supprimé avec succès', 'success');
+        if (this.selectedStudentIds) {
+          this.selectedStudentIds.delete(id);
+          this.updateBatchActionBar();
+        }
+        if (this.currentProfileStudentId === id) {
+          this.backToStudentsList();
+        }
+        await this.loadStudents();
+      } else {
+        this.playChime('error');
+        alert(data.error || (isAr ? 'تعذر حذف التلميذ' : 'Erreur lors de la suppression de l’élève'));
       }
     } catch (err) {
       console.error(err);
+      alert(isAr ? 'تعذر الاتصال بالخادم: ' + (err.message || '') : 'Impossible de contacter le serveur: ' + (err.message || ''));
     }
+  }
+
+  async deleteSelectedStudents() {
+    const count = this.selectedStudentIds ? this.selectedStudentIds.size : 0;
+    if (count === 0) return;
+
+    const isAr = this.lang === 'ar';
+    const msg = isAr
+      ? `هل أنت متأكد من حذف ${count} تلميذ محدد نهائياً؟\nسيتم حذف جميع السجلات والبيانات المرتبطة بهم نهائياً ولا يمكن التراجع عن هذه العملية.`
+      : `Êtes-vous sûr de vouloir supprimer définitivement les ${count} élève(s) sélectionné(s) ?\nToutes leurs données associées seront supprimées définitivement.`;
+
+    if (!confirm(msg)) return;
+
+    try {
+      const ids = Array.from(this.selectedStudentIds);
+      const res = await fetch('/api/students/batch-delete', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ids, permanent: true })
+      });
+      let data = {};
+      try {
+        data = await res.json();
+      } catch (e) {
+        data = { success: false, error: res.statusText || 'Erreur serveur' };
+      }
+      if (data.success) {
+        this.playChime('success');
+        this.showToast(isAr ? `تم حذف ${data.count || count} تلميذ بنجاح` : `${data.count || count} élève(s) supprimé(s) avec succès`, 'success');
+        this.clearSelectedStudents();
+        await this.loadStudents();
+      } else {
+        this.playChime('error');
+        alert(data.error || (isAr ? 'حدث خطأ أثناء حذف التلاميذ' : 'Erreur lors de la suppression des élèves'));
+      }
+    } catch (err) {
+      console.error(err);
+      alert(isAr ? 'تعذر الاتصال بالخادم: ' + (err.message || '') : 'Impossible de contacter le serveur: ' + (err.message || ''));
+    }
+  }
+
+  async deleteCurrentProfileStudent() {
+    if (!this.currentProfileStudentId) return;
+    await this.deleteStudent(this.currentProfileStudentId);
   }
 
   async openStudentAttendanceReport(id) {
@@ -2896,6 +4084,12 @@ class EdumindApp {
         ? `طباعة البطاقات (${count})` 
         : `Imprimer les badges (${count})`;
     }
+    const deleteTextEl = document.getElementById('batchDeleteBtnText');
+    if (deleteTextEl) {
+      deleteTextEl.textContent = isAr 
+        ? `حذف المحددين (${count})` 
+        : `Supprimer (${count})`;
+    }
 
     if (bar) {
       if (count > 0) {
@@ -2971,7 +4165,7 @@ class EdumindApp {
 
     const groupSelect = document.getElementById('batchBadgesFilterGroup');
     if (groupSelect) {
-      groupSelect.innerHTML = `<option value="">${isAr ? '-- كل الأفواج --' : '-- Tous les groupes --'}</option>` +
+      groupSelect.innerHTML = `<option value="">${isAr ? '-- كل الأقسام --' : '-- Toutes les divisions --'}</option>` +
         (this.groups || []).map(g => `<option value="${g.id}">${this.escapeHtml(g.name)} (${this.escapeHtml(g.subject_name || '')})</option>`).join('');
     }
 
@@ -3209,13 +4403,13 @@ class EdumindApp {
             format: 'CODE128',
             lineColor: '#000000',
             background: '#ffffff',
-            width: 1.8,
-            height: 38,
+            width: 1.35,
+            height: 32,
             displayValue: true,
             font: 'monospace',
             fontOptions: 'bold',
-            fontSize: 11,
-            textMargin: 2,
+            fontSize: 10,
+            textMargin: 1,
             margin: 2
           });
           return svgNode.outerHTML;
@@ -3628,7 +4822,7 @@ class EdumindApp {
     // Populate Group dropdown
     const grpSelect = document.getElementById('importDefaultGroup');
     if (grpSelect) {
-      grpSelect.innerHTML = `<option value="">${this.lang === 'ar' ? '-- بدون تسجيل في فوج حالياً --' : '-- Aucun groupe pour le moment --'}</option>` +
+      grpSelect.innerHTML = `<option value="">${this.lang === 'ar' ? '-- بدون تعيين قسم حالياً --' : '-- Aucune division assignée --'}</option>` +
         (this.groups || []).map(g => `<option value="${g.id}">${this.escapeHtml(g.name)} (${this.escapeHtml(g.level_name || '')})</option>`).join('');
     }
 
@@ -3738,12 +4932,44 @@ class EdumindApp {
         return;
       }
 
-      // Detect header row index
+      // 1. Detect any Global Class/Group or Level from top header rows or Sheet Name
+      let detectedSheetGroup = '';
+      let detectedSheetLevel = '';
+      const sheetNameClean = (firstSheetName || '').trim();
+      const groupMatchInSheet = sheetNameClean.match(/([1-4]\s*(?:am|as|ap|م|ث|متوسط|ثانوي)\s*[\-\_\s]?\s*\d+)|([1-4]\s*م\s*\d+)|([1-4]\s*ث\s*\d+)/i);
+      if (groupMatchInSheet) {
+        detectedSheetGroup = groupMatchInSheet[0].trim();
+      }
+
+      // Check first 15 rows for banners like: "الفوج التربوي: 1م1" or "القسم: 4 متوسط 2"
+      for (let r = 0; r < Math.min(rawRows.length, 15); r++) {
+        const rowStr = (rawRows[r] || []).map(c => String(c || '')).join(' ');
+        if (!detectedSheetGroup) {
+          const gm = rowStr.match(/(?:فوج|قسم|فوج تربوي|classe|groupe)\s*[:：]?\s*([0-9a-zA-Z\u0621-\u064A\s\-\_]+)/i);
+          if (gm && gm[1] && gm[1].trim().length <= 25) {
+            const candidate = gm[1].trim();
+            if (/\d+/.test(candidate) && !candidate.includes('سنة') && !candidate.includes('تاريخ')) {
+              detectedSheetGroup = candidate;
+            }
+          }
+        }
+        if (!detectedSheetLevel) {
+          if (rowStr.includes('1م') || rowStr.includes('1am') || (rowStr.includes('1') && rowStr.includes('متوسط')) || rowStr.includes('أولى متوسط')) detectedSheetLevel = '1AM';
+          else if (rowStr.includes('2م') || rowStr.includes('2am') || (rowStr.includes('2') && rowStr.includes('متوسط')) || rowStr.includes('ثانية متوسط')) detectedSheetLevel = '2AM';
+          else if (rowStr.includes('3م') || rowStr.includes('3am') || (rowStr.includes('3') && rowStr.includes('متوسط')) || rowStr.includes('ثالثة متوسط')) detectedSheetLevel = '3AM';
+          else if (rowStr.includes('4م') || rowStr.includes('4am') || (rowStr.includes('4') && rowStr.includes('متوسط')) || rowStr.includes('رابعة متوسط') || rowStr.includes('بيام')) detectedSheetLevel = '4AM';
+          else if (rowStr.includes('1as') || rowStr.includes('1ث') || (rowStr.includes('1') && rowStr.includes('ثانوي'))) detectedSheetLevel = '1AS';
+          else if (rowStr.includes('2as') || rowStr.includes('2ث') || (rowStr.includes('2') && rowStr.includes('ثانوي'))) detectedSheetLevel = '2AS';
+          else if (rowStr.includes('3as') || rowStr.includes('3ث') || (rowStr.includes('3') && rowStr.includes('ثانوي')) || rowStr.includes('باك')) detectedSheetLevel = '3AS';
+        }
+      }
+
+      // 2. Detect header row index
       let headerRowIndex = -1;
       let headerCols = [];
 
-      for (let r = 0; r < Math.min(rawRows.length, 10); r++) {
-        const row = rawRows[r].map(c => String(c || '').trim());
+      for (let r = 0; r < Math.min(rawRows.length, 25); r++) {
+        const row = (rawRows[r] || []).map(c => String(c || '').trim());
         const rowStr = row.join(' ');
         if ((rowStr.includes('اللقب') || rowStr.toLowerCase().includes('nom')) &&
             (rowStr.includes('الاسم') || rowStr.toLowerCase().includes('prenom') || rowStr.toLowerCase().includes('prénom'))) {
@@ -3755,11 +4981,12 @@ class EdumindApp {
 
       if (headerRowIndex === -1) {
         headerRowIndex = 0;
-        headerCols = rawRows[0].map(c => String(c || '').trim());
+        headerCols = (rawRows[0] || []).map(c => String(c || '').trim());
       }
 
       const colMap = {
         matricule: -1,
+        nationalId: -1,
         group: -1,
         statut: -1,
         gender: -1,
@@ -3768,49 +4995,60 @@ class EdumindApp {
         birthDate: -1,
         birthPlace: -1,
         parentName: -1,
+        motherName: -1,
         address: -1,
+        parentPhone: -1,
         phone: -1,
         level: -1
       };
 
       headerCols.forEach((col, idx) => {
         const c = col.trim().toLowerCase();
-        if (colMap.matricule === -1 && (c.includes('تعريف') || c.includes('معرف') || c.includes('تسجيل') || c.includes('matricule') || c.includes('identifiant') || c === 'id' || c === 'n°' || c === 'no' || c === 'رقم')) {
-          if (!c.includes('فوج') && !c.includes('قسم') && !c.includes('groupe')) {
+        if (colMap.nationalId === -1 && (c.includes('وطني') || c.includes('national') || c.includes('nin') || c.includes('nne'))) {
+          colMap.nationalId = idx;
+        }
+        if (colMap.matricule === -1 && (c.includes('تعريف') || c.includes('معرف') || c.includes('تسجيل') || c.includes('قيد') || c.includes('matricule') || c.includes('identifiant') || c === 'id' || c === 'n°' || c === 'no' || c === 'رقم')) {
+          if (!c.includes('فوج') && !c.includes('قسم') && !c.includes('groupe') && !c.includes('هاتف') && !c.includes('ترتيب')) {
             colMap.matricule = idx;
           }
         }
-        if (colMap.group === -1 && (c.includes('فوج') || c.includes('قسم') || c.includes('groupe') || c.includes('classe'))) {
+        if (colMap.group === -1 && (c.includes('فوج') || c.includes('قسم') || c.includes('groupe') || c.includes('classe') || c.includes('division'))) {
           colMap.group = idx;
         }
-        if (colMap.statut === -1 && (c.includes('صفة') || c.includes('صفة') || c.includes('وضعية') || c.includes('statut') || c.includes('qualité'))) {
+        if (colMap.statut === -1 && (c.includes('صفة') || c.includes('نظام') || c.includes('وضعية') || c.includes('statut') || c.includes('regime') || c.includes('régime') || c.includes('qualité'))) {
           colMap.statut = idx;
         }
-        if (colMap.gender === -1 && (c.includes('جنس') || c.includes('sexe') || c.includes('genre'))) {
+        if (colMap.gender === -1 && (c.includes('جنس') || c.includes('نوع') || c.includes('sexe') || c.includes('genre'))) {
           colMap.gender = idx;
         }
-        if (colMap.lastName === -1 && (c.includes('لقب') || c.includes('nom') || c.includes('nom de famille')) && !c.includes('أب') && !c.includes('pere') && !c.includes('père')) {
-          colMap.lastName = idx;
+        if (colMap.motherName === -1 && (c.includes('أم') || c.includes('ام') || c.includes('mère') || c.includes('mere'))) {
+          colMap.motherName = idx;
         }
-        if (colMap.firstName === -1 && (c.includes('اسم') || c.includes('إسم') || c.includes('prenom') || c.includes('prénom')) && !c.includes('أب') && !c.includes('pere') && !c.includes('père') && !c.includes('لقب')) {
-          colMap.firstName = idx;
+        if (colMap.parentPhone === -1 && ((c.includes('ولي') || c.includes('أب') || c.includes('اب') || c.includes('parent') || c.includes('pere')) && (c.includes('هاتف') || c.includes('tel') || c.includes('mobile')))) {
+          colMap.parentPhone = idx;
         }
-        if (colMap.birthDate === -1 && (c.includes('ميلاد') || c.includes('naissance')) && !c.includes('مكان') && !c.includes('lieu')) {
-          colMap.birthDate = idx;
-        }
-        if (colMap.birthPlace === -1 && (c.includes('مكان الميلاد') || c.includes('مكان') || c.includes('lieu'))) {
-          colMap.birthPlace = idx;
-        }
-        if (colMap.parentName === -1 && (c.includes('أب') || c.includes('اب') || c.includes('ولي') || c.includes('père') || c.includes('pere') || c.includes('tuteur') || c.includes('parent'))) {
+        if (colMap.parentName === -1 && (c.includes('أب') || c.includes('اب') || c.includes('ولي') || c.includes('père') || c.includes('pere') || c.includes('tuteur') || c.includes('parent')) && !c.includes('هاتف') && !c.includes('tel')) {
           colMap.parentName = idx;
         }
-        if (colMap.address === -1 && (c.includes('عنوان') || c.includes('إقامة') || c.includes('اقامة') || c.includes('adresse') || c.includes('domicile'))) {
+        if (colMap.lastName === -1 && (c.includes('لقب') || c.includes('nom')) && !c.includes('أب') && !c.includes('أم') && !c.includes('ام') && !c.includes('ولي') && !c.includes('pere') && !c.includes('père') && !c.includes('mere') && !c.includes('mère')) {
+          colMap.lastName = idx;
+        }
+        if (colMap.firstName === -1 && (c.includes('اسم') || c.includes('إسم') || c.includes('prenom') || c.includes('prénom')) && !c.includes('أب') && !c.includes('أم') && !c.includes('ام') && !c.includes('ولي') && !c.includes('لقب') && !c.includes('مؤسسة') && !c.includes('pere') && !c.includes('père') && !c.includes('mere') && !c.includes('mère')) {
+          colMap.firstName = idx;
+        }
+        if (colMap.birthDate === -1 && (c.includes('ميلاد') || c.includes('ازدياد') || c.includes('naissance')) && !c.includes('مكان') && !c.includes('lieu')) {
+          colMap.birthDate = idx;
+        }
+        if (colMap.birthPlace === -1 && (c.includes('مكان الميلاد') || c.includes('مكان الازدياد') || c.includes('مكان') || c.includes('بلدية الميلاد') || c.includes('lieu'))) {
+          colMap.birthPlace = idx;
+        }
+        if (colMap.address === -1 && (c.includes('عنوان') || c.includes('إقامة') || c.includes('اقامة') || c.includes('حي') || c.includes('بلدية') || c.includes('adresse') || c.includes('domicile'))) {
           colMap.address = idx;
         }
         if (colMap.phone === -1 && (c.includes('هاتف') || c.includes('téléphone') || c.includes('telephone') || c.includes('tel') || c.includes('mobile'))) {
           colMap.phone = idx;
         }
-        if (colMap.level === -1 && (c.includes('مستوى') || c.includes('niveau') || c.includes('سنة') || c.includes('année'))) {
+        if (colMap.level === -1 && (c.includes('مستوى') || c.includes('طور') || c.includes('سنة') || c.includes('niveau') || c.includes('année'))) {
           colMap.level = idx;
         }
       });
@@ -3823,20 +5061,45 @@ class EdumindApp {
         let firstName = colMap.firstName !== -1 ? String(row[colMap.firstName] || '').trim() : '';
         let lastName = colMap.lastName !== -1 ? String(row[colMap.lastName] || '').trim() : '';
         let matricule = colMap.matricule !== -1 ? String(row[colMap.matricule] || '').trim() : '';
+        let nationalId = colMap.nationalId !== -1 ? String(row[colMap.nationalId] || '').trim() : '';
         let gender = colMap.gender !== -1 ? String(row[colMap.gender] || '').trim() : 'ذكر';
         let rawDate = colMap.birthDate !== -1 ? row[colMap.birthDate] : '';
         let birthPlace = colMap.birthPlace !== -1 ? String(row[colMap.birthPlace] || '').trim() : '';
         let parentName = colMap.parentName !== -1 ? String(row[colMap.parentName] || '').trim() : '';
+        let motherName = colMap.motherName !== -1 ? String(row[colMap.motherName] || '').trim() : '';
         let address = colMap.address !== -1 ? String(row[colMap.address] || '').trim() : '';
         let phone = colMap.phone !== -1 ? String(row[colMap.phone] || '').trim() : '';
-        let groupName = colMap.group !== -1 ? String(row[colMap.group] || '').trim() : '';
+        let parentPhone = colMap.parentPhone !== -1 ? String(row[colMap.parentPhone] || '').trim() : phone;
+        let groupName = colMap.group !== -1 ? String(row[colMap.group] || '').trim() : detectedSheetGroup;
         let statut = colMap.statut !== -1 ? String(row[colMap.statut] || '').trim() : '';
-        let levelName = colMap.level !== -1 ? String(row[colMap.level] || '').trim() : '';
+        let levelName = colMap.level !== -1 ? String(row[colMap.level] || '').trim() : detectedSheetLevel;
 
         if (!lastName && firstName.includes(' ')) {
           const parts = firstName.split(' ');
           lastName = parts[0];
           firstName = parts.slice(1).join(' ');
+        }
+
+        // Formulate complete Parent Name: if father's first name only (e.g. "أحمد"), combine: "بن علي أحمد"
+        let parentFullName = parentName;
+        if (parentName) {
+          if (!parentName.includes(lastName) && parentName.split(/\s+/).length <= 2) {
+            parentFullName = `${lastName} ${parentName}`.trim();
+          }
+        } else if (parentPhone) {
+          parentFullName = `ولي أمر التلميذ ${lastName} ${firstName}`.trim();
+        }
+
+        // Auto-infer Level from Group Name if empty
+        if (!levelName && groupName) {
+          const gn = groupName.toLowerCase();
+          if (gn.includes('1م') || gn.includes('1am') || (gn.includes('1') && gn.includes('متوسط'))) levelName = '1AM';
+          else if (gn.includes('2م') || gn.includes('2am') || (gn.includes('2') && gn.includes('متوسط'))) levelName = '2AM';
+          else if (gn.includes('3م') || gn.includes('3am') || (gn.includes('3') && gn.includes('متوسط'))) levelName = '3AM';
+          else if (gn.includes('4م') || gn.includes('4am') || (gn.includes('4') && gn.includes('متوسط'))) levelName = '4AM';
+          else if (gn.includes('1as') || gn.includes('1ث') || (gn.includes('1') && gn.includes('ثانوي'))) levelName = '1AS';
+          else if (gn.includes('2as') || gn.includes('2ث') || (gn.includes('2') && gn.includes('ثانوي'))) levelName = '2AS';
+          else if (gn.includes('3as') || gn.includes('3ث') || (gn.includes('3') && gn.includes('ثانوي'))) levelName = '3AS';
         }
 
         let birthDate = '';
@@ -3859,13 +5122,15 @@ class EdumindApp {
 
         parsedStudents.push({
           matricule: matricule || null,
+          national_id: nationalId || null,
           first_name: firstName,
           last_name: lastName,
           gender: gender,
           birth_date: birthDate || null,
           birth_place: birthPlace || null,
-          parent_name: parentName || null,
-          parent_phone: phone || null,
+          parent_name: parentFullName || null,
+          parent_phone: parentPhone || null,
+          mother_name: motherName || null,
           phone: phone || null,
           address: address || null,
           raw_group: groupName || null,
@@ -3884,7 +5149,7 @@ class EdumindApp {
 
       this._importedStudentsData = parsedStudents;
       this.renderImportPreview(parsedStudents);
-      this.showToast(this.lang === 'ar' ? `تمت قراءة ${parsedStudents.length} تلميذ بنجاح!` : `${parsedStudents.length} élèves détectés avec succès !`, 'success');
+      this.showToast(this.lang === 'ar' ? `تمت قراءة ${parsedStudents.length} تلميذ بنجاح وتجهيز ربط الأولياء والأقسام تلقائياً!` : `${parsedStudents.length} élèves détectés avec liaison automatique parents & classes !`, 'success');
 
     } catch (err) {
       console.error('Import parse error:', err);
@@ -3924,13 +5189,25 @@ class EdumindApp {
       const genderBadge = isM
         ? `<span style="color: #38bdf8; font-weight: 700;">${isAr ? 'ذكر' : 'M'}</span>`
         : `<span style="color: #ec4899; font-weight: 700;">${isAr ? 'أنثى' : 'F'}</span>`;
-      
+
       const statusBadge = s.isValid
-        ? `<span style="background: rgba(16, 185, 129, 0.15); color: #10b981; padding: 2px 8px; border-radius: 6px; font-weight: 700; font-size: 11px;">${isAr ? 'جاهز' : 'Prêt'}</span>`
+        ? `<span style="background: rgba(16, 185, 129, 0.15); color: #10b981; padding: 2px 8px; border-radius: 6px; font-weight: 700; font-size: 11px;"><i class="fa-solid fa-check"></i> ${isAr ? 'جاهز ومربوط' : 'Prêt & Lié'}</span>`
         : `<span style="background: rgba(239, 68, 68, 0.15); color: #ef4444; padding: 2px 8px; border-radius: 6px; font-weight: 700; font-size: 11px;">${isAr ? 'اسم ناقص' : 'Incomplet'}</span>`;
 
-      const levelBadgeText = s.level_name || (isAr ? 'تلقائي / محدد أعلاه' : 'Auto / Défini');
-      const autoMatriculeText = isAr ? 'تلقائي' : 'Auto';
+      const levelBadgeText = s.level_name || (isAr ? 'تلقائي' : 'Auto');
+      const autoMatriculeText = isAr ? 'توليد تلقائي' : 'Génération auto';
+      const isDemi = String(s.statut || '').includes('نصف') || String(s.statut || '').includes('demi');
+      const regimeBadge = isDemi
+        ? `<span class="badge" style="background: rgba(16, 185, 129, 0.12); color: #10b981; font-weight: 700; font-size: 10.5px; padding: 2px 6px; border-radius: 4px; display: inline-block;">🍽️ ${isAr ? 'نصف داخلي' : 'Demi-pension'}</span>`
+        : (s.statut ? `<span style="font-size: 11px; color: var(--text-muted);">${this.escapeHtml(s.statut)}</span>` : '-');
+
+      const parentDisplay = s.parent_name
+        ? `<div style="font-weight: 700; color: var(--text-heading);">${this.escapeHtml(s.parent_name)}</div>${s.parent_phone ? `<div style="font-size: 11px; color: #10b981; font-family: monospace;"><i class="fa-solid fa-phone" style="font-size: 9px;"></i> ${this.escapeHtml(s.parent_phone)}</div>` : ''}`
+        : `<span style="color: var(--text-muted);">-</span>`;
+
+      const groupDisplay = (s.group_name || s.raw_group)
+        ? `<span style="background: rgba(37, 99, 235, 0.12); color: #2563eb; font-weight: 700; padding: 2px 7px; border-radius: 4px; font-size: 11px;">${this.escapeHtml(s.group_name || s.raw_group)}</span>`
+        : `<span style="color: var(--text-muted); font-size: 11px;">${isAr ? 'تلقائي' : 'Auto'}</span>`;
 
       return `
         <tr style="${!s.isValid ? 'background: rgba(239, 68, 68, 0.05);' : ''}">
@@ -3942,9 +5219,10 @@ class EdumindApp {
           <td><span style="background: rgba(56, 189, 248, 0.1); color: #38bdf8; font-weight: 600; padding: 2px 7px; border-radius: 4px; font-size: 11px;">${this.escapeHtml(levelBadgeText)}</span></td>
           <td>${this.escapeHtml(s.birth_date || '-')}</td>
           <td>${this.escapeHtml(s.birth_place || '-')}</td>
-          <td>${this.escapeHtml(s.parent_name || '-')}</td>
-          <td style="max-width: 140px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${this.escapeHtml(s.address || '-')}</td>
-          <td><span style="background: rgba(255,255,255,0.06); padding: 2px 6px; border-radius: 4px;">${this.escapeHtml(s.raw_group || s.statut || '-')}</span></td>
+          <td>${parentDisplay}</td>
+          <td style="max-width: 130px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${this.escapeHtml(s.address || '-')}</td>
+          <td>${groupDisplay}</td>
+          <td>${regimeBadge}</td>
           <td style="text-align: center;">${statusBadge}</td>
         </tr>
       `;
@@ -3953,7 +5231,7 @@ class EdumindApp {
     if (students.length > 100) {
       tableBody.innerHTML += `
         <tr>
-          <td colspan="12" style="text-align: center; color: var(--text-muted); padding: 10px; font-style: italic;">
+          <td colspan="13" style="text-align: center; color: var(--text-muted); padding: 10px; font-style: italic;">
             ${isAr ? `... وعرض باقي التلاميذ (${students.length - 100} تلميذ إضافي سيتم استيرادهم بالكامل) ...` : `... et affichage des ${students.length - 100} autres élèves importés au total ...`}
           </td>
         </tr>
@@ -3983,46 +5261,48 @@ class EdumindApp {
 
     const headers = [
       'رقم التعريف المدرسي',
-      'رقم الفوج',
-      'الصفة',
-      'الجنس',
-      'المستوى الدراسي',
       'اللقب',
       'الاسم',
+      'الجنس',
+      'المستوى الدراسي',
+      'الفوج التربوي (القسم)',
       'تاريخ الميلاد',
       'مكان الميلاد',
-      'إسم الأب',
+      'اسم الأب (أو الولي)',
+      'لقب الأم واسمها',
+      'رقم هاتف الولي',
       'العنوان',
-      'رقم هاتف الولي'
+      'الصفة (نصف داخلي / خارجي)'
     ];
 
     const sampleRows = [
       headers,
-      ['10458921', '1', 'متمدرس', 'ذكر', '4AM', 'بن علي', 'محمد', '2012-05-14', 'الجزائر العاصمة', 'أحمد', 'حي النصر عمارة 4', '0550123456'],
-      ['10458922', '1', 'متمدرس', 'أنثى', '4AM', 'بوزيد', 'مريم', '2013-11-20', 'البليدة', 'عبد الرحمن', 'شارع فلسطين رقم 12', '0661987654'],
-      ['10458923', '2', 'نصف داخلي', 'ذكر', '1AS', 'منصوري', 'يوسف', '2011-09-08', 'بومرداس', 'إبراهيم', 'وسط المدينة', '0770334455']
+      ['10458921', 'بن علي', 'محمد', 'ذكر', '1AM', '1م1', '2013-05-14', 'الجزائر العاصمة', 'أحمد', 'قادري فاطمة', '0550123456', 'حي النصر عمارة 4', 'نصف داخلي'],
+      ['10458922', 'بوزيد', 'مريم', 'أنثى', '1AM', '1م1', '2013-11-20', 'البليدة', 'عبد الرحمن', 'علالي مريم', '0661987654', 'شارع فلسطين رقم 12', 'خارجي'],
+      ['10458923', 'منصوري', 'يوسف', 'ذكر', '4AM', '4م2', '2010-09-08', 'بومرداس', 'إبراهيم', 'رحماني خديجة', '0770334455', 'وسط المدينة', 'نصف داخلي']
     ];
 
     const ws = XLSX.utils.aoa_to_sheet(sampleRows);
     ws['!cols'] = [
       { wch: 22 },
-      { wch: 12 },
-      { wch: 14 },
+      { wch: 16 },
+      { wch: 16 },
       { wch: 10 },
-      { wch: 18 }, // المستوى الدراسي
-      { wch: 16 },
-      { wch: 16 },
+      { wch: 18 },
+      { wch: 20 },
       { wch: 16 },
       { wch: 18 },
+      { wch: 20 },
       { wch: 18 },
-      { wch: 25 },
-      { wch: 16 }
+      { wch: 18 },
+      { wch: 26 },
+      { wch: 22 }
     ];
 
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, 'Eleves');
 
-    XLSX.writeFile(wb, 'modele_import_eleves_edumind.xlsx');
+    XLSX.writeFile(wb, 'modele_import_eleves_tarbiya_rakmana.xlsx');
     this.showToast(this.lang === 'ar' ? 'تم تحميل نموذج Excel الجاهز بنجاح!' : 'Modèle Excel téléchargé avec succès !', 'success');
   }
 
@@ -4055,7 +5335,7 @@ class EdumindApp {
     try {
       if (btnExec) {
         btnExec.disabled = true;
-        btnExec.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> <span>${this.lang === 'ar' ? 'جاري الاستيراد والحفظ...' : 'Importation en cours...'}</span>`;
+        btnExec.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> <span>${this.lang === 'ar' ? 'جاري الاستيراد والتسجيل والربط...' : 'Importation et liaison en cours...'}</span>`;
       }
 
       const response = await fetch('/api/students/import-batch', {
@@ -4074,9 +5354,24 @@ class EdumindApp {
         throw new Error(result.error || 'Erreur lors de l’importation');
       }
 
+      let detailParts = [];
+      if (this.lang === 'ar') {
+        detailParts.push(`تسجيل ${result.imported} تلميذ`);
+        if (result.updated > 0) detailParts.push(`تحديث ${result.updated}`);
+        if (result.parentsCreated > 0) detailParts.push(`إنشاء وربط ${result.parentsCreated} ولي أمر`);
+        if (result.enrollmentsCount > 0) detailParts.push(`تسجيل ${result.enrollmentsCount} تلميذ في الأقسام`);
+        if (result.groupsCreated > 0) detailParts.push(`إنشاء ${result.groupsCreated} قسم جديد`);
+      } else {
+        detailParts.push(`${result.imported} élèves inscrits`);
+        if (result.updated > 0) detailParts.push(`${result.updated} mis à jour`);
+        if (result.parentsCreated > 0) detailParts.push(`${result.parentsCreated} parents créés`);
+        if (result.enrollmentsCount > 0) detailParts.push(`${result.enrollmentsCount} affectés aux classes`);
+        if (result.groupsCreated > 0) detailParts.push(`${result.groupsCreated} classes créées`);
+      }
+
       const msg = this.lang === 'ar'
-        ? `✅ اكتمل الاستيراد: تم تسجيل ${result.imported} تلميذ جديد، تحديث ${result.updated}، وتخطي ${result.skipped}.`
-        : `✅ Importation réussie : ${result.imported} ajoutés, ${result.updated} mis à jour, ${result.skipped} ignorés.`;
+        ? `✅ اكتمل استيراد الرقمنة بنجاح! (${detailParts.join(' | ')})`
+        : `✅ Importation réussie ! (${detailParts.join(' | ')})`;
 
       this.showToast(msg, 'success');
       this.playChime('success');
@@ -4084,6 +5379,8 @@ class EdumindApp {
       this.resetImportFile();
 
       await this.loadStudents();
+      await this.loadParents();
+      await this.loadGroups();
       if (typeof this.loadDashboardStats === 'function') {
         this.loadDashboardStats();
       }
@@ -4099,6 +5396,90 @@ class EdumindApp {
     }
   }
 
+  async populateStudentGroupSelect(selectedGroupId = null, filterLevelId = null) {
+    if (!this.groups || this.groups.length === 0) {
+      await this.loadGroups();
+    }
+    const sel = document.getElementById('studentGroupId');
+    if (!sel) return;
+
+    const isAr = this.lang === 'ar';
+    let availableGroups = this.groups || [];
+    if (filterLevelId) {
+      availableGroups = availableGroups.filter(g => String(g.level_id) === String(filterLevelId));
+    }
+
+    let html = `<option value="">${isAr ? '-- اختر القسم أو اكتب رقمه جانباً --' : '-- Choisir la division ou taper son numéro --'}</option>`;
+    availableGroups.forEach(g => {
+      const gName = this.formatGroupName(g.name);
+      const lvlName = this.formatLevelName(g.level_name);
+      const isSelected = selectedGroupId && String(g.id) === String(selectedGroupId);
+      html += `<option value="${g.id}" ${isSelected ? 'selected' : ''}>${this.escapeHtml(gName)}${lvlName ? ` (${this.escapeHtml(lvlName)})` : ''}</option>`;
+    });
+
+    sel.innerHTML = html;
+    if (selectedGroupId && availableGroups.some(g => String(g.id) === String(selectedGroupId))) {
+      sel.value = String(selectedGroupId);
+    }
+  }
+
+  onStudentLevelChange() {
+    const levelId = document.getElementById('studentLevel')?.value;
+    const numInput = document.getElementById('studentGroupNum');
+    const groupNum = numInput ? numInput.value.trim() : '';
+
+    this.populateStudentGroupSelect(null, levelId).then(() => {
+      if (groupNum) {
+        this.onStudentGroupNumInput();
+      }
+    });
+  }
+
+  onStudentGroupSelectChange() {
+    const groupId = document.getElementById('studentGroupId')?.value;
+    const numInput = document.getElementById('studentGroupNum');
+    if (!groupId) {
+      if (numInput) numInput.value = '';
+      return;
+    }
+    const g = (this.groups || []).find(item => String(item.id) === String(groupId));
+    if (g) {
+      if (numInput) {
+        const num = g.name.match(/\d+$/)?.[0] || g.name.match(/[-_](\d+)/)?.[1] || g.name.match(/\s(\d+)\s/)?.[1] || '';
+        numInput.value = num;
+      }
+      const lvlSel = document.getElementById('studentLevel');
+      if (lvlSel && g.level_id && (!lvlSel.value || lvlSel.value !== String(g.level_id))) {
+        lvlSel.value = String(g.level_id);
+      }
+    }
+  }
+
+  onStudentGroupNumInput() {
+    const num = (document.getElementById('studentGroupNum')?.value || '').trim();
+    const levelId = document.getElementById('studentLevel')?.value;
+    const groupSel = document.getElementById('studentGroupId');
+    if (!groupSel) return;
+
+    if (!num) {
+      groupSel.value = '';
+      return;
+    }
+
+    const list = this.groups || [];
+    let matched = list.find(g => {
+      const lvlMatch = !levelId || String(g.level_id) === String(levelId);
+      const gnum = g.name.match(/\d+$/)?.[0] || g.name.match(/[-_](\d+)/)?.[1] || g.name.match(/\s(\d+)\s/)?.[1];
+      return lvlMatch && (gnum === num || g.name.endsWith(num) || g.name.includes(`-${num})`) || g.name.includes(` ${num}`));
+    });
+
+    if (matched) {
+      groupSel.value = String(matched.id);
+    } else {
+      groupSel.value = '';
+    }
+  }
+
   async openModalStudent() {
     // 1. Ensure levels are loaded and dropdown populated
     if (!this.levels || this.levels.length === 0) {
@@ -4110,11 +5491,17 @@ class EdumindApp {
         (this.levels || []).map(l => `<option value="${l.id}">${this.escapeHtml(l.name)}</option>`).join('');
     }
 
+    await this.populateStudentGroupSelect(null, null);
+
     // 2. Clean form reset
     const form = document.getElementById('studentForm');
     if (form) form.reset();
 
     document.getElementById('modalStudentTitle').textContent = this.lang === 'ar' ? 'تسجيل تلميذ جديد' : 'Inscrire un Nouvel Élève';
+    const subTitle = document.getElementById('modalStudentSubtitle');
+    if (subTitle) {
+      subTitle.textContent = this.lang === 'ar' ? 'بطاقة التعريف والمعلومات المدرسية للتلميذ' : "Fiche d'identification et scolarité du nouvel élève";
+    }
     document.getElementById('studentId').value = '';
     const matInput = document.getElementById('studentMatricule');
     if (matInput) matInput.value = '';
@@ -4122,6 +5509,9 @@ class EdumindApp {
     document.getElementById('studentLastName').value = '';
     document.getElementById('studentGender').value = 'M';
     document.getElementById('studentLevel').value = '';
+    if (document.getElementById('studentGroupId')) document.getElementById('studentGroupId').value = '';
+    if (document.getElementById('studentGroupNum')) document.getElementById('studentGroupNum').value = '';
+    if (document.getElementById('studentRegime')) document.getElementById('studentRegime').value = 'demi_pensionnaire';
     document.getElementById('studentPhone').value = '';
     document.getElementById('studentParentName').value = '';
     document.getElementById('studentParentPhone').value = '';
@@ -4130,12 +5520,12 @@ class EdumindApp {
     const submitBtn = document.querySelector('#studentForm button[type="submit"]');
     if (submitBtn) {
       submitBtn.disabled = false;
-      submitBtn.innerHTML = this.lang === 'ar' ? 'حفظ بيانات التلميذ' : "Enregistrer l'Élève";
+      submitBtn.innerHTML = `<i class="fa-solid fa-check"></i> <span>${this.lang === 'ar' ? 'حفظ بيانات التلميذ' : "Enregistrer l'Élève"}</span>`;
     }
 
     await this.fetchParentsList();
     this.populateStudentParentSelect();
-
+    this.setupInputRestrictions();
     document.getElementById('modalStudent').classList.add('active');
   }
 
@@ -4150,16 +5540,31 @@ class EdumindApp {
     }
 
     let s = (this.students || []).find(item => item.id === id);
-    if (!s) {
-      try {
-        const res = await fetch(`/api/students/${id}`);
-        const data = await res.json();
-        if (data.success) s = data.student;
-      } catch (e) { }
-    }
+    let enrollments = [];
+    try {
+      const res = await fetch(`/api/students/${id}`);
+      const data = await res.json();
+      if (data.success && data.student) {
+        s = data.student;
+        enrollments = data.enrollments || [];
+      }
+    } catch (e) { }
+
     if (!s) return;
 
+    const activeEnr = enrollments.find(e => e.enrollment_status === 'active') || enrollments[0];
+    const currentGroupId = s.group_id || (activeEnr ? activeEnr.group_id : null);
+
+    await this.populateStudentGroupSelect(currentGroupId, s.level_id);
+
     document.getElementById('modalStudentTitle').textContent = this.lang === 'ar' ? 'تعديل بيانات التلميذ' : "Modifier l'Élève";
+    const subTitle = document.getElementById('modalStudentSubtitle');
+    if (subTitle) {
+      const studentFullName = `${s.first_name || ''} ${s.last_name || ''}`.trim();
+      subTitle.textContent = this.lang === 'ar'
+        ? `تعديل معلومات وبيانات التلميذ: ${studentFullName}`
+        : `Modification du dossier de : ${studentFullName}`;
+    }
     document.getElementById('studentId').value = s.id;
     const matInput = document.getElementById('studentMatricule');
     if (matInput) matInput.value = s.matricule || '';
@@ -4167,6 +5572,14 @@ class EdumindApp {
     document.getElementById('studentLastName').value = s.last_name || '';
     document.getElementById('studentGender').value = s.gender || 'M';
     document.getElementById('studentLevel').value = s.level_id || '';
+    if (document.getElementById('studentGroupId')) document.getElementById('studentGroupId').value = currentGroupId ? String(currentGroupId) : '';
+    const numInput = document.getElementById('studentGroupNum');
+    if (numInput) {
+      const gName = activeEnr ? activeEnr.group_name : (s.group_name || '');
+      const num = gName.match(/\d+$/)?.[0] || gName.match(/[-_](\d+)/)?.[1] || gName.match(/\s(\d+)\s/)?.[1] || '';
+      numInput.value = num;
+    }
+    if (document.getElementById('studentRegime')) document.getElementById('studentRegime').value = s.regime || 'demi_pensionnaire';
     document.getElementById('studentPhone').value = s.phone || '';
     document.getElementById('studentParentName').value = s.parent_name || '';
     document.getElementById('studentParentPhone').value = s.parent_phone || '';
@@ -4175,12 +5588,13 @@ class EdumindApp {
     const submitBtn = document.querySelector('#studentForm button[type="submit"]');
     if (submitBtn) {
       submitBtn.disabled = false;
-      submitBtn.innerHTML = this.lang === 'ar' ? 'حفظ التعديلات' : "Mettre à jour l'Élève";
+      submitBtn.innerHTML = `<i class="fa-solid fa-floppy-disk"></i> <span>${this.lang === 'ar' ? 'حفظ التعديلات' : "Mettre à jour l'Élève"}</span>`;
     }
 
     await this.fetchParentsList();
     this.populateStudentParentSelect(s.parent_id);
 
+    this.setupInputRestrictions();
     document.getElementById('modalStudent').classList.add('active');
   }
 
@@ -4200,12 +5614,62 @@ class EdumindApp {
       return;
     }
 
+    const namePattern = /^[a-zA-Z\u00C0-\u024F\u0600-\u06FF\s'\-]+$/;
+    if (!namePattern.test(firstName)) {
+      this.showToast(isAr ? 'اسم التلميذ يجب أن يحتوي على حروف فقط (بدون أرقام أو رموز)' : 'Le prénom de l’élève ne doit contenir que des lettres (sans chiffres)', 'warning');
+      document.getElementById('studentFirstName')?.focus();
+      return;
+    }
+    if (!namePattern.test(lastName)) {
+      this.showToast(isAr ? 'لقب التلميذ يجب أن يحتوي على حروف فقط (بدون أرقام أو رموز)' : 'Le nom de l’élève ne doit contenir que des lettres (sans chiffres)', 'warning');
+      document.getElementById('studentLastName')?.focus();
+      return;
+    }
+
+    const studentPhone = (document.getElementById('studentPhone')?.value || '').trim();
+    if (studentPhone) {
+      if (!/^\d+$/.test(studentPhone)) {
+        this.showToast(isAr ? 'رقم هاتف التلميذ يجب أن يتكون من أرقام فقط' : 'Le numéro de téléphone de l’élève doit contenir des chiffres uniquement', 'warning');
+        document.getElementById('studentPhone')?.focus();
+        return;
+      }
+      if (studentPhone.length > 10) {
+        this.showToast(isAr ? 'رقم هاتف التلميذ لا يمكن أن يتجاوز 10 أرقام' : 'Le numéro de téléphone de l’élève ne peut pas dépasser 10 chiffres', 'warning');
+        document.getElementById('studentPhone')?.focus();
+        return;
+      }
+    }
+
+    const parentName = (document.getElementById('studentParentName')?.value || '').trim();
+    if (parentName && !namePattern.test(parentName)) {
+      this.showToast(isAr ? 'اسم ولي أمر التلميذ يجب أن يحتوي على حروف فقط' : 'Le nom du parent d’élève ne doit contenir que des lettres', 'warning');
+      document.getElementById('studentParentName')?.focus();
+      return;
+    }
+
+    const parentPhone = (document.getElementById('studentParentPhone')?.value || '').trim();
+    if (parentPhone) {
+      if (!/^\d+$/.test(parentPhone)) {
+        this.showToast(isAr ? 'رقم هاتف ولي الأمر يجب أن يتكون من أرقام فقط' : 'Le numéro de téléphone du parent doit contenir des chiffres uniquement', 'warning');
+        document.getElementById('studentParentPhone')?.focus();
+        return;
+      }
+      if (parentPhone.length > 10) {
+        this.showToast(isAr ? 'رقم هاتف ولي الأمر لا يمكن أن يتجاوز 10 أرقام' : 'Le numéro de téléphone du parent ne peut pas dépasser 10 chiffres', 'warning');
+        document.getElementById('studentParentPhone')?.focus();
+        return;
+      }
+    }
+
     const payload = {
       matricule: document.getElementById('studentMatricule')?.value?.trim() || '',
       first_name: firstName,
       last_name: lastName,
       gender: document.getElementById('studentGender')?.value || 'M',
       level_id: document.getElementById('studentLevel')?.value || '',
+      group_id: document.getElementById('studentGroupId')?.value || null,
+      group_num: document.getElementById('studentGroupNum')?.value?.trim() || '',
+      regime: document.getElementById('studentRegime')?.value || 'demi_pensionnaire',
       phone: document.getElementById('studentPhone')?.value?.trim() || '',
       parent_id: document.getElementById('studentParentId')?.value || null,
       parent_name: document.getElementById('studentParentName')?.value?.trim() || '',
@@ -4219,7 +5683,7 @@ class EdumindApp {
     this._savingStudent = true;
     if (submitBtn) {
       submitBtn.disabled = true;
-      submitBtn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> ${isAr ? 'جاري الحفظ...' : 'Enregistrement...'}`;
+      submitBtn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> ${isAr ? 'جاري الحفظ والربط بالقسم...' : 'Enregistrement et affectation...'}`;
     }
 
     const controller = new AbortController();
@@ -4241,8 +5705,15 @@ class EdumindApp {
         if (form) form.reset();
         document.getElementById('studentId').value = '';
         this.playChime('success');
-        this.showToast(isAr ? 'تم حفظ بيانات التلميذ بنجاح!' : 'Élève enregistré avec succès !', 'success');
-        this.loadStudents();
+        this.showToast(isAr ? 'تم حفظ وتحديث بيانات التلميذ وتسجيله بالقسم بنجاح!' : 'Élève enregistré et affecté à la classe avec succès !', 'success');
+        await this.loadStudents();
+        await this.loadGroups();
+        if (typeof this.loadGroupesView === 'function') {
+          await this.loadGroupesView();
+        }
+        if (typeof this.loadDashboardStats === 'function') {
+          this.loadDashboardStats();
+        }
         if (this.currentProfileStudentId && Number(this.currentProfileStudentId) === Number(id)) {
           this.openStudentProfile(id);
         }
@@ -4287,7 +5758,7 @@ class EdumindApp {
       if (phoneInput && p.phone) phoneInput.value = p.phone;
       if (badgeBox && badgeVal) {
         badgeVal.textContent = p.discount_percent || 0;
-        badgeBox.style.display = 'block';
+        badgeBox.style.display = (p.discount_percent > 0) ? 'inline-block' : 'none';
       }
     }
   }
@@ -4312,7 +5783,7 @@ class EdumindApp {
 
     const isAr = this.lang === 'ar';
     const list = this.parents || [];
-    let html = `<option value="">${isAr ? '-- اختار ولي مسجل مسبقاً (أو أدخل بياناته أدناه) --' : '-- Choisir un parent existant (ou saisir ci-dessous) --'}</option>`;
+    let html = `<option value="">${isAr ? '-- اختار ولي أمر مسجل مسبقاً (أو أدخل بياناته أدناه) --' : '-- Choisir un parent d\'élève existant (ou saisir ci-dessous) --'}</option>`;
 
     list.forEach(p => {
       const discText = p.discount_percent > 0 ? ` (${p.discount_percent}%)` : '';
@@ -4329,7 +5800,7 @@ class EdumindApp {
       const p = list.find(item => String(item.id) === String(selectedParentId));
       if (p && badgeBox && badgeVal) {
         badgeVal.textContent = p.discount_percent || 0;
-        badgeBox.style.display = 'block';
+        badgeBox.style.display = (p.discount_percent > 0) ? 'inline-block' : 'none';
       }
     } else if (badgeBox) {
       badgeBox.style.display = 'none';
@@ -4552,6 +6023,7 @@ class EdumindApp {
       if (titleEl) titleEl.textContent = isAr ? 'إضافة ولي أمر جديد' : "Nouveau Parent d'élève";
       if (idInput) idInput.value = '';
       if (discountInput) discountInput.value = '0';
+      this.setupInputRestrictions();
       document.getElementById('modalParent').classList.add('active');
       return;
     }
@@ -4576,6 +6048,7 @@ class EdumindApp {
       document.getElementById('parentDiscountPercent').value = p.discount_percent || 0;
       document.getElementById('parentNotes').value = p.notes || '';
 
+      this.setupInputRestrictions();
       document.getElementById('modalParent').classList.add('active');
     } catch (err) {
       console.error(err);
@@ -4592,6 +6065,37 @@ class EdumindApp {
     if (!fullName || !phone) {
       this.showToast(isAr ? 'يرجى إدخال اسم الولي ورقم هاتفه' : 'Veuillez renseigner le nom et le téléphone', 'warning');
       return;
+    }
+
+    const namePattern = /^[a-zA-Z\u00C0-\u024F\u0600-\u06FF\s'\-]+$/;
+    if (!namePattern.test(fullName)) {
+      this.showToast(isAr ? 'اسم الولي يجب أن يحتوي على حروف فقط (بدون أرقام أو رموز)' : 'Le nom du parent ne doit contenir que des lettres (sans chiffres)', 'warning');
+      document.getElementById('parentFullName')?.focus();
+      return;
+    }
+    if (!/^\d+$/.test(phone)) {
+      this.showToast(isAr ? 'رقم هاتف الولي يجب أن يتكون من أرقام فقط' : 'Le numéro de téléphone du parent doit contenir uniquement des chiffres', 'warning');
+      document.getElementById('parentPhone')?.focus();
+      return;
+    }
+    if (phone.length > 10) {
+      this.showToast(isAr ? 'رقم هاتف الولي لا يمكن أن يتجاوز 10 أرقام' : 'Le numéro de téléphone du parent ne peut pas dépasser 10 chiffres', 'warning');
+      document.getElementById('parentPhone')?.focus();
+      return;
+    }
+
+    const phoneSec = (document.getElementById('parentPhoneSecondary')?.value || '').trim();
+    if (phoneSec) {
+      if (!/^\d+$/.test(phoneSec)) {
+        this.showToast(isAr ? 'رقم الهاتف الثانوي يجب أن يتكون من أرقام فقط' : 'Le numéro de téléphone secondaire doit contenir uniquement des chiffres', 'warning');
+        document.getElementById('parentPhoneSecondary')?.focus();
+        return;
+      }
+      if (phoneSec.length > 10) {
+        this.showToast(isAr ? 'رقم الهاتف الثانوي لا يمكن أن يتجاوز 10 أرقام' : 'Le numéro de téléphone secondaire ne peut pas dépasser 10 chiffres', 'warning');
+        document.getElementById('parentPhoneSecondary')?.focus();
+        return;
+      }
     }
 
     const payload = {
@@ -4878,10 +6382,10 @@ class EdumindApp {
     // Student Info
     const fullName = `${s.first_name || ''} ${s.last_name || ''}`.trim();
     const matricule = s.matricule || `ETU-${String(s.id).padStart(4, '0')}`;
-    const levelName = s.level_name || 'Niveau non défini';
+    const levelName = this.formatLevelName(s.level_name) || (this.lang === 'ar' ? 'المستوى غير محدد' : 'Niveau non défini');
     const groupName = enrollments.length > 0
-      ? enrollments.map(e => e.group_name).slice(0, 2).join(' • ')
-      : (this.lang === 'ar' ? 'غير مسجل في فوج' : 'Non inscrit');
+      ? enrollments.map(e => this.formatGroupName(e.group_name)).slice(0, 2).join(' • ')
+      : (this.lang === 'ar' ? 'غير مسجل في قسم' : 'Non inscrit');
     const phone = s.phone || s.parent_phone || '-';
 
     const nameEl = document.getElementById('cardStudentName');
@@ -4913,14 +6417,14 @@ class EdumindApp {
           format: 'CODE128',
           lineColor: '#000000',
           background: '#ffffff',
-          width: 2.0,
-          height: 48,
+          width: 1.45,
+          height: 36,
           displayValue: true,
           font: 'monospace',
           fontOptions: 'bold',
-          fontSize: 13,
-          textMargin: 3,
-          margin: 4
+          fontSize: 11,
+          textMargin: 2,
+          margin: 2
         });
       }
     } catch (e) {
@@ -6101,7 +7605,7 @@ class EdumindApp {
           </div>
           <div style="text-align: right; font-size: 13px;">
             <div><strong>Date:</strong> ${date}</div>
-            <div><strong>Année scolaire:</strong> ${this.settings?.active_year || '2025-2026'}</div>
+            <div><strong>Année scolaire:</strong> ${this.settings?.active_year || '2026-2027'}</div>
           </div>
         </div>
 
@@ -6328,6 +7832,16 @@ class EdumindApp {
     if (!normalized) return;
 
     console.log('📡 Hardware Barcode Scanner captured:', rawCode, '->', normalized);
+
+    // If user is on Login Screen:
+    if (!this.isAuthenticated) {
+      if (this.loginMode === 'borne') {
+        const input = document.getElementById('loginEntranceScanInput');
+        if (input) input.value = normalized;
+        this.handleLoginEntranceScan();
+      }
+      return;
+    }
 
     // If currently on Pointage view:
     if (this.currentView === 'pointage') {
@@ -7262,14 +8776,14 @@ class EdumindApp {
             format: 'CODE128',
             lineColor: '#000000',
             background: '#ffffff',
-            width: 2.0,
-            height: 48,
+            width: 1.45,
+            height: 36,
             displayValue: true,
             font: 'monospace',
             fontOptions: 'bold',
-            fontSize: 13,
-            textMargin: 3,
-            margin: 4
+            fontSize: 11,
+            textMargin: 2,
+            margin: 2
           });
         }
       } catch (e) {
@@ -10672,9 +12186,10 @@ class EdumindApp {
         const fullName = `${this.escapeHtml(t.first_name || '')} ${this.escapeHtml(t.last_name || '')}`.trim();
         const gKey = t.grade || 'prof_titulaire';
         const gLabel = gradeLabels[gKey] || (isAr ? 'أستاذ تعليم' : 'Enseignant');
+        const formattedAssigned = this.formatGroupName(t.assigned_groups);
         const assignedClasses = t.assigned_groups
-          ? `<span class="badge-pill" style="background: rgba(16, 185, 129, 0.12); color: #047857; font-weight: 600; font-size: 11.5px;" title="${this.escapeHtml(t.assigned_groups)}">
-              <i class="fa-solid fa-users-rectangle"></i> ${this.escapeHtml(t.assigned_groups)}
+          ? `<span class="badge-pill" style="background: rgba(16, 185, 129, 0.12); color: #047857; font-weight: 600; font-size: 11.5px;" title="${this.escapeHtml(formattedAssigned)}">
+              <i class="fa-solid fa-users-rectangle"></i> ${this.escapeHtml(formattedAssigned)}
             </span>`
           : `<span style="color: var(--text-muted); font-size: 11.5px;">${isAr ? 'غير مسند' : 'Aucune classe'}</span>`;
 
@@ -11098,6 +12613,7 @@ class EdumindApp {
   populatePlanningFilters() {
     const teacherSelect = document.getElementById('filterPlanningTeacher');
     if (teacherSelect && this.teachers) {
+      const current = teacherSelect.value;
       const isAr = this.lang === 'ar';
       teacherSelect.innerHTML = `<option value="">${isAr ? 'جميع الأساتذة' : 'Tous les enseignants'}</option>` +
         this.teachers.map(t => `<option value="${t.id}">${this.escapeHtml(t.name || `${t.first_name || ''} ${t.last_name || ''}`.trim())}</option>`).join('');
@@ -11231,9 +12747,9 @@ class EdumindApp {
       return `
         <tr>
           <td>
-            <div style="font-weight: 700; color: var(--text-main);">${this.escapeHtml(g.name)}</div>
+            <div style="font-weight: 700; color: var(--text-main);">${this.escapeHtml(this.formatGroupName(g.name))}</div>
           </td>
-          <td><span class="badge-pill" style="background: rgba(59, 130, 246, 0.12); color: #60a5fa;">${this.escapeHtml(g.level_name || '-')}</span></td>
+          <td><span class="badge-pill" style="background: rgba(59, 130, 246, 0.12); color: #60a5fa;">${this.escapeHtml(this.formatLevelName(g.level_name || '-'))}</span></td>
           <td><span class="badge-pill" style="background: rgba(168, 85, 247, 0.12); color: #c084fc;">${this.escapeHtml(g.subject_name || '-')}</span></td>
           <td>
             <div style="display: flex; align-items: center; gap: 6px;">
@@ -11296,11 +12812,13 @@ class EdumindApp {
   // -------------------------------------------------------------
   // SCHOOLARIS STYLE: GROUPES VIEW & ACTIONS
   // -------------------------------------------------------------
+  // -------------------------------------------------------------
+  // SCHOOLARIS STYLE: GROUPES VIEW & ACTIONS
+  // -------------------------------------------------------------
   async loadGroupesView() {
     try {
-      // Ensure configuration data (levels, subjects, teachers) is available
-      if (!this.levels || this.levels.length === 0 || !this.teachers || this.teachers.length === 0) {
-        await Promise.all([this.loadLevels(), this.loadTeachers(), this.loadSubjects(), this.loadRooms()]);
+      if (!this.levels || this.levels.length === 0) {
+        await this.loadLevels();
       }
 
       const res = await fetch('/api/groups?status=all');
@@ -11313,11 +12831,10 @@ class EdumindApp {
       // Populate filter select options
       this.populateGroupesFilters();
 
-      // Update KPI cards matching Schoolaris
+      // Update KPI cards
       const activeCount = stats.active_groups_count !== undefined ? stats.active_groups_count : this.allGroupes.filter(g => g.active === 1).length;
-      const totalCapacity = stats.total_capacity || 0;
       const totalEnrolled = stats.total_enrolled || 0;
-      const fillRate = stats.fill_rate || (totalCapacity > 0 ? Math.min(100, Math.round((totalEnrolled / totalCapacity) * 100)) : 0);
+      const avgStudents = activeCount > 0 ? Math.round(totalEnrolled / activeCount) : 0;
 
       const kpiActiveEl = document.getElementById('groupesKpiActive');
       if (kpiActiveEl) kpiActiveEl.textContent = activeCount;
@@ -11325,18 +12842,10 @@ class EdumindApp {
       const kpiStudentsEl = document.getElementById('groupesKpiStudents');
       if (kpiStudentsEl) kpiStudentsEl.textContent = totalEnrolled;
 
-      const kpiCapacityEl = document.getElementById('groupesKpiCapacity');
-      if (kpiCapacityEl) {
-        kpiCapacityEl.textContent = this.lang === 'ar'
-          ? `من أصل ${totalCapacity} مقعد`
-          : `sur ${totalCapacity} places`;
+      const kpiAvgEl = document.getElementById('groupesKpiAverage');
+      if (kpiAvgEl) {
+        kpiAvgEl.textContent = `${avgStudents}`;
       }
-
-      const kpiFillRateEl = document.getElementById('groupesKpiFillRate');
-      if (kpiFillRateEl) kpiFillRateEl.textContent = `${fillRate}%`;
-
-      const fillRateBarEl = document.getElementById('groupesFillRateBar');
-      if (fillRateBarEl) fillRateBarEl.style.width = `${fillRate}%`;
 
       // Trigger table filtering & rendering
       this.filterGroupes();
@@ -11356,24 +12865,18 @@ class EdumindApp {
       levelSelect.setAttribute('data-loaded', '1');
     }
 
-    // 2. Subjects
-    const subjectSelect = document.getElementById('groupesFilterSubject');
-    if (subjectSelect && (subjectSelect.options.length <= 1 || subjectSelect.getAttribute('data-loaded') !== '1')) {
-      const currentVal = subjectSelect.value;
-      subjectSelect.innerHTML = `<option value="">${this.lang === 'ar' ? 'كل المواد' : 'Toutes matières'}</option>` +
-        (this.subjects || []).map(s => `<option value="${s.id}">${this.escapeHtml(s.name)}</option>`).join('');
-      subjectSelect.value = currentVal;
-      subjectSelect.setAttribute('data-loaded', '1');
-    }
-
-    // 3. Teachers
-    const teacherSelect = document.getElementById('groupesFilterTeacher');
-    if (teacherSelect && (teacherSelect.options.length <= 1 || teacherSelect.getAttribute('data-loaded') !== '1')) {
-      const currentVal = teacherSelect.value;
-      teacherSelect.innerHTML = `<option value="">${this.lang === 'ar' ? 'كل الأساتذة' : 'Tous enseignants'}</option>` +
-        (this.teachers || []).map(t => `<option value="${t.id}">${this.escapeHtml(t.first_name + ' ' + t.last_name)}</option>`).join('');
-      teacherSelect.value = currentVal;
-      teacherSelect.setAttribute('data-loaded', '1');
+    // 2. Spécialité / Filière
+    const specSelect = document.getElementById('groupesFilterSpecialite');
+    if (specSelect && (specSelect.options.length <= 1 || specSelect.getAttribute('data-loaded') !== '1')) {
+      const currentVal = specSelect.value;
+      const specs = [...new Set((this.allGroupes || []).map(g => g.specialite).filter(Boolean))];
+      let opts = `<option value="">${this.lang === 'ar' ? 'كل الشعب والتخصصات' : 'Toutes spécialités'}</option>`;
+      specs.forEach(sp => {
+        opts += `<option value="${this.escapeHtml(sp)}">${this.escapeHtml(sp)}</option>`;
+      });
+      specSelect.innerHTML = opts;
+      specSelect.value = currentVal;
+      specSelect.setAttribute('data-loaded', '1');
     }
   }
 
@@ -11382,32 +12885,21 @@ class EdumindApp {
 
     const search = (document.getElementById('groupesFilterSearch')?.value || '').trim().toLowerCase();
     const levelId = document.getElementById('groupesFilterLevel')?.value;
-    const subjectId = document.getElementById('groupesFilterSubject')?.value;
-    const teacherId = document.getElementById('groupesFilterTeacher')?.value;
-    const status = document.getElementById('groupesFilterStatus')?.value || 'active';
+    const specialite = document.getElementById('groupesFilterSpecialite')?.value;
 
     const filtered = this.allGroupes.filter(g => {
-      // Status filter
-      if (status === 'active' && g.active !== 1) return false;
-      if (status === 'inactive' && g.active !== 0) return false;
-
       // Level filter
       if (levelId && String(g.level_id) !== String(levelId)) return false;
 
-      // Subject filter
-      if (subjectId && String(g.subject_id) !== String(subjectId)) return false;
-
-      // Teacher filter
-      if (teacherId && String(g.teacher_id) !== String(teacherId)) return false;
+      // Specialite filter
+      if (specialite && g.specialite !== specialite) return false;
 
       // Text search
       if (search) {
         const nameMatch = (g.name || '').toLowerCase().includes(search);
-        const subMatch = (g.subject_name || '').toLowerCase().includes(search);
         const lvlMatch = (g.level_name || '').toLowerCase().includes(search);
-        const teachMatch = (g.teacher_name || '').toLowerCase().includes(search);
-        const roomMatch = (g.room_name || '').toLowerCase().includes(search);
-        if (!nameMatch && !subMatch && !lvlMatch && !teachMatch && !roomMatch) {
+        const specMatch = (g.specialite || '').toLowerCase().includes(search);
+        if (!nameMatch && !lvlMatch && !specMatch) {
           return false;
         }
       }
@@ -11419,7 +12911,7 @@ class EdumindApp {
     const counterEl = document.getElementById('groupesCounterDisplay');
     if (counterEl) {
       if (this.lang === 'ar') {
-        counterEl.textContent = filtered.length === 1 ? 'فوج واحد' : `${filtered.length} أفواج`;
+        counterEl.textContent = filtered.length === 1 ? 'قسم واحد' : `${filtered.length} أقسام`;
       } else {
         counterEl.textContent = filtered.length <= 1 ? `${filtered.length} groupe` : `${filtered.length} groupes`;
       }
@@ -11435,9 +12927,9 @@ class EdumindApp {
     if (groups.length === 0) {
       tbody.innerHTML = `
         <tr>
-          <td colspan="8" style="text-align: center; color: var(--text-muted); padding: 40px;">
+          <td colspan="5" style="text-align: center; color: var(--text-muted); padding: 40px;">
             <i class="fa-solid fa-folder-open" style="font-size: 32px; margin-bottom: 10px; opacity: 0.5; display: block;"></i>
-            ${this.lang === 'ar' ? 'لم يتم العثور على أي أفواج مطابقة' : 'Aucun groupe trouvé correspondant aux critères'}
+            ${this.lang === 'ar' ? 'لم يتم العثور على أي أقسام مطابقة' : 'Aucune classe trouvée correspondant aux critères'}
           </td>
         </tr>
       `;
@@ -11446,60 +12938,41 @@ class EdumindApp {
 
     tbody.innerHTML = groups.map(g => {
       const enrolled = g.enrolled_count || 0;
-      const max = g.max_students || 25;
-      const percent = max > 0 ? Math.min(100, Math.round((enrolled / max) * 100)) : 0;
-      const subjectColor = g.subject_color || '#3b82f6';
-      const isActive = g.active === 1;
 
       return `
         <tr>
           <td>
-            <strong style="color: var(--text-heading); font-size: 14.5px;">${this.escapeHtml(g.name)}</strong>
+            <strong style="color: var(--text-heading); font-size: 14.5px;">${this.escapeHtml(this.formatGroupName(g.name))}</strong>
           </td>
           <td>
-            <span style="font-weight: 700; color: #3b82f6; display: inline-flex; align-items: center; gap: 5px;">
+            <span style="font-weight: 700; color: #3b82f6; display: inline-flex; align-items: center; gap: 6px;">
               <i class="fa-solid fa-layer-group" style="font-size: 11px; opacity: 0.8;"></i>
-              ${this.escapeHtml(g.level_name || '-')}
+              ${this.escapeHtml(this.formatLevelName(g.level_name || '-'))}
             </span>
           </td>
           <td>
-            ${g.room_name && g.room_name !== '-' ? `
-              <span class="badge-room-tag" style="background: rgba(16, 185, 129, 0.12); color: #10b981; border: 1px solid rgba(16, 185, 129, 0.28); padding: 4px 10px; border-radius: 8px; font-weight: 700; display: inline-flex; align-items: center; gap: 6px;">
-                <i class="fa-solid fa-door-open" style="font-size: 11px;"></i>
-                <span>${this.escapeHtml(g.room_name.toUpperCase())}</span>
+            ${g.specialite && g.specialite.trim() ? `
+              <span class="badge-pill" style="background: rgba(139, 92, 246, 0.12); color: #8b5cf6; font-weight: 700; border: 1px solid rgba(139, 92, 246, 0.28); font-size: 12.5px; display: inline-flex; align-items: center; gap: 6px;">
+                <i class="fa-solid fa-graduation-cap" style="font-size: 11px;"></i>
+                <span>${this.escapeHtml(g.specialite)}</span>
               </span>
-            ` : `<span style="color: var(--text-muted); font-size: 12px;">غير محددة</span>`}
+            ` : `<span style="color: var(--text-muted); font-size: 13px;">-</span>`}
           </td>
           <td>
-            <div style="display: flex; align-items: center; gap: 6px;">
-              <span class="subject-dot" style="background-color: ${subjectColor};"></span>
-              <span style="font-weight: 600;">${this.escapeHtml(g.subject_name || '')}</span>
-              <span style="color: var(--text-muted); font-size: 12px;">(${this.escapeHtml(g.teacher_name || '-')})</span>
-            </div>
-          </td>
-          <td>
-            <div style="font-weight: 700; font-size: 13.5px; color: var(--text-heading);">${enrolled} / ${max}</div>
-            <div class="mini-cap-bar-track">
-              <div class="mini-cap-bar-fill" style="width: ${percent}%;"></div>
-            </div>
-          </td>
-          <td>
-            <span class="badge-status-pill ${isActive ? 'active' : 'inactive'}" 
-                  onclick="app.toggleGroupStatus(${g.id})" 
-                  title="${this.lang === 'ar' ? 'انقر لتغيير الحالة' : 'Cliquer pour changer le statut'}">
-              ${isActive ? (this.lang === 'ar' ? 'نشط' : 'Actif') : (this.lang === 'ar' ? 'غير نشط' : 'Inactif')}
+            <span class="badge-pill" style="font-weight: 800; font-size: 13.5px; background: rgba(59, 130, 246, 0.12); color: #2563eb; padding: 4px 12px; border-radius: 16px; border: 1px solid rgba(59, 130, 246, 0.25);">
+              ${enrolled}
             </span>
           </td>
           <td style="text-align: right;">
-            <div style="display: inline-flex; gap: 8px; align-items: center;">
-              <button class="btn-action-view" style="display: inline-flex; align-items: center; gap: 6px; padding: 5px 12px; border-radius: 8px; background: rgba(59, 130, 246, 0.15); color: #60a5fa; border: 1px solid rgba(59, 130, 246, 0.35); font-weight: 700; font-size: 12px; cursor: pointer;" title="عرض وطباعة قائمة تلاميذ القسم" onclick="app.viewGroupStudents(${g.id})">
-                <i class="fa-solid fa-users"></i>
-                <span>تلاميذ القسم</span>
+            <div style="display: inline-flex; gap: 8px; align-items: center; justify-content: flex-end;">
+              <button class="btn-group-students-action" style="display: inline-flex; align-items: center; gap: 6px; padding: 6px 13px; border-radius: 8px; background: rgba(59, 130, 246, 0.12); color: #2563eb; border: 1px solid rgba(59, 130, 246, 0.32); font-weight: 700; font-size: 12px; cursor: pointer; white-space: nowrap; transition: all 0.2s;" title="${this.lang === 'ar' ? 'عرض وإدارة تلاميذ هذا القسم' : 'Voir et gérer les élèves du groupe'}" onclick="app.viewGroupStudents(${g.id})">
+                <i class="fa-solid fa-users" style="font-size: 12px;"></i>
+                <span>${this.lang === 'ar' ? 'تلاميذ القسم' : 'Élèves du groupe'}</span>
               </button>
               <button class="btn-action-edit" title="${this.lang === 'ar' ? 'تعديل' : 'Modifier'}" onclick="app.editGroup(${g.id})">
                 <i class="fa-solid fa-pen-to-square"></i>
               </button>
-              <button class="btn-action-delete" title="${this.lang === 'ar' ? 'حذف / تعطيل' : 'Supprimer'}" onclick="app.deleteGroup(${g.id})">
+              <button class="btn-action-delete" title="${this.lang === 'ar' ? 'حذف' : 'Supprimer'}" onclick="app.deleteGroup(${g.id})">
                 <i class="fa-solid fa-trash-can"></i>
               </button>
             </div>
@@ -11531,46 +13004,33 @@ class EdumindApp {
     // Get current filtered list
     const search = (document.getElementById('groupesFilterSearch')?.value || '').trim().toLowerCase();
     const levelId = document.getElementById('groupesFilterLevel')?.value;
-    const subjectId = document.getElementById('groupesFilterSubject')?.value;
-    const teacherId = document.getElementById('groupesFilterTeacher')?.value;
-    const status = document.getElementById('groupesFilterStatus')?.value || 'active';
+    const specialite = document.getElementById('groupesFilterSpecialite')?.value;
 
-    const listToExport = this.allGroupes.filter(g => {
-      if (status === 'active' && g.active !== 1) return false;
-      if (status === 'inactive' && g.active !== 0) return false;
+    const listToExport = (this.allGroupes || []).filter(g => {
       if (levelId && String(g.level_id) !== String(levelId)) return false;
-      if (subjectId && String(g.subject_id) !== String(subjectId)) return false;
-      if (teacherId && String(g.teacher_id) !== String(teacherId)) return false;
+      if (specialite && g.specialite !== specialite) return false;
       if (search) {
         const nameMatch = (g.name || '').toLowerCase().includes(search);
-        const subMatch = (g.subject_name || '').toLowerCase().includes(search);
         const lvlMatch = (g.level_name || '').toLowerCase().includes(search);
-        const teachMatch = (g.teacher_name || '').toLowerCase().includes(search);
-        const roomMatch = (g.room_name || '').toLowerCase().includes(search);
-        if (!nameMatch && !subMatch && !lvlMatch && !teachMatch && !roomMatch) return false;
+        const specMatch = (g.specialite || '').toLowerCase().includes(search);
+        if (!nameMatch && !lvlMatch && !specMatch) return false;
       }
       return true;
     });
 
     const isAr = this.lang === 'ar';
     const headers = isAr ? [
-      'اسم الفوج', 'المادة', 'المستوى', 'الأستاذ', 'القاعة', 'اليوم', 'التوقيت', 'السعر الشهري (دج)', 'المسجلون', 'المقاعد', 'الحالة'
+      'القسم التربوي', 'المستوى الدراسي', 'الشعبة / التخصص', 'عدد التلاميذ المسجلين', 'السنة الدراسية'
     ] : [
-      'Nom du Groupe', 'Matière', 'Niveau', 'Enseignant', 'Salle', 'Jour', 'Horaires', 'Prix Mensuel (DA)', 'Élèves Inscrits', 'Capacité Max', 'Statut'
+      'Division / Classe', 'Niveau Scolaire', 'Filière / Spécialité', 'Nombre d\'élèves', 'Année Scolaire'
     ];
 
     const rows = listToExport.map(g => [
       `"${(g.name || '').replace(/"/g, '""')}"`,
-      `"${(g.subject_name || '').replace(/"/g, '""')}"`,
       `"${(g.level_name || '').replace(/"/g, '""')}"`,
-      `"${(g.teacher_name || '').replace(/"/g, '""')}"`,
-      `"${(g.room_name || '').replace(/"/g, '""')}"`,
-      `"${(g.day_of_week || '').replace(/"/g, '""')}"`,
-      `"${(g.start_time || '')} - ${(g.end_time || '')}"`,
-      g.price_monthly || 0,
+      `"${(g.specialite || '-').replace(/"/g, '""')}"`,
       g.enrolled_count || 0,
-      g.max_students || 25,
-      g.active ? (isAr ? 'نشط' : 'Actif') : (isAr ? 'غير نشط' : 'Inactif')
+      `"${(g.school_year || '2026-2027').replace(/"/g, '""')}"`
     ]);
 
     const csvContent = '\uFEFF' + [headers.join(';'), ...rows.map(r => r.join(';'))].join('\r\n');
@@ -11578,7 +13038,7 @@ class EdumindApp {
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `groupes_edumind_${new Date().toISOString().slice(0, 10)}.csv`;
+    a.download = `divisions_classes_${new Date().toISOString().slice(0, 10)}.csv`;
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
@@ -11592,47 +13052,377 @@ class EdumindApp {
       const res = await fetch(`/api/groups/${id}/students`);
       const data = await res.json();
       if (!data.success) {
-        alert(data.error || 'Erreur lors du chargement des élèves');
+        this.showToast(data.error || 'Erreur lors du chargement des élèves', 'error');
         return;
       }
 
       const { group, students } = data;
-      document.getElementById('modalGroupStudentsTitle').textContent = `${group.name}`;
-      document.getElementById('modalGroupStudentsSubtitle').textContent =
-        `${group.subject_name} — ${group.level_name} (${group.teacher_name}) — ${students.length} / ${group.max_students} inscrit(s)`;
+      this.currentSelectedGroupData = group;
+      this.currentSelectedGroupStudents = students;
 
+      const isAr = this.lang === 'ar';
+      const cleanGName = this.formatGroupName(group.name);
+      const cleanLvlName = this.formatLevelName(group.level_name);
+
+      const titleEl = document.getElementById('modalGroupStudentsTitleText');
+      if (titleEl) {
+        titleEl.textContent = isAr ? `قائمة تلاميذ: ${cleanGName}` : `Liste des élèves : ${cleanGName}`;
+      }
+      const subTitleEl = document.getElementById('modalGroupStudentsSubtitle');
+      if (subTitleEl) {
+        const teacherPart = group.teacher_name && group.teacher_name !== 'Non assigné' ? ` • ${isAr ? 'الأستاذ' : 'Ens.'}: ${group.teacher_name}` : '';
+        const roomPart = group.room_name && group.room_name !== '-' ? ` • ${isAr ? 'القاعة' : 'Salle'}: ${group.room_name}` : '';
+        subTitleEl.textContent = `${cleanLvlName}${teacherPart}${roomPart} • ${students.length} / ${group.max_students || 35} ${isAr ? 'تلميذ مسجل' : 'inscrit(s)'}`;
+      }
+
+      // Populate quick enroll student select
+      const quickSel = document.getElementById('quickEnrollStudentSelect');
+      if (quickSel) {
+        if (!this.students || this.students.length === 0) {
+          await this.loadStudents();
+        }
+        const enrolledStudentIds = new Set(students.map(s => s.student_id));
+        const availableToAdd = (this.students || []).filter(s => !enrolledStudentIds.has(s.id));
+
+        let selHtml = `<option value="">${isAr ? '-- اختر تلميذاً لإضافته لهذا القسم --' : '-- Choisir un élève à ajouter à cette classe --'}</option>`;
+        availableToAdd.forEach(s => {
+          const sName = `${s.first_name || ''} ${s.last_name || ''}`.trim();
+          selHtml += `<option value="${s.id}">[${this.escapeHtml(s.matricule || '')}] ${this.escapeHtml(sName)} (${this.escapeHtml(this.formatLevelName(s.level_name || ''))})</option>`;
+        });
+        quickSel.innerHTML = selHtml;
+      }
+
+      // Populate Table
       const tbody = document.getElementById('groupStudentsTableBody');
       if (students.length === 0) {
         tbody.innerHTML = `
           <tr>
-            <td colspan="6" style="text-align: center; color: var(--text-muted); padding: 24px;">
-              ${this.lang === 'ar' ? 'لا يوجد أي تلميذ مسجل في هذا الفوج حالياً.' : 'Aucun élève inscrit dans ce groupe pour le moment.'}
+            <td colspan="7" style="text-align: center; color: var(--text-muted); padding: 36px;">
+              <i class="fa-solid fa-user-group" style="font-size: 32px; margin-bottom: 10px; opacity: 0.4; display: block;"></i>
+              ${isAr ? 'لا يوجد أي تلميذ مسجل في هذا القسم حالياً.' : 'Aucun élève inscrit dans cette classe pour le moment.'}
             </td>
           </tr>
         `;
       } else {
-        tbody.innerHTML = students.map(s => `
-          <tr>
-            <td><strong style="color: #60a5fa;">${this.escapeHtml(s.matricule)}</strong></td>
-            <td><strong>${this.escapeHtml(s.first_name + ' ' + s.last_name)}</strong></td>
-            <td>${this.escapeHtml(s.phone || s.parent_phone || '-')}</td>
-            <td>${s.registration_date || '-'}</td>
-            <td>${Number(s.discount_amount) > 0 ? `<span style="color: #f59e0b;">-${Number(s.discount_amount)} DA</span>` : '0 DA'}</td>
-            <td><span class="badge-pill" style="background: rgba(16, 185, 129, 0.12); color: #10b981;">${s.payments_count} reçu(s)</span></td>
-          </tr>
-        `).join('');
+        tbody.innerHTML = students.map((s, idx) => {
+          const isGirl = (s.gender === 'F');
+          const genderBadge = isGirl
+            ? `<span style="color: #ec4899; font-weight: 700; font-size: 12px;"><i class="fa-solid fa-venus"></i> ${isAr ? 'أنثى' : 'F'}</span>`
+            : `<span style="color: #3b82f6; font-weight: 700; font-size: 12px;"><i class="fa-solid fa-mars"></i> ${isAr ? 'ذكر' : 'M'}</span>`;
+
+          const regimeBadge = (s.regime === 'interne')
+            ? `<span class="badge-pill" style="background: rgba(139, 92, 246, 0.15); color: #a78bfa; font-weight: 700; font-size: 11px;">${isAr ? 'داخلي' : 'Interne'}</span>`
+            : (s.regime === 'externe')
+              ? `<span class="badge-pill" style="background: rgba(100, 116, 139, 0.15); color: #94a3b8; font-weight: 700; font-size: 11px;">${isAr ? 'خارجي' : 'Externe'}</span>`
+              : `<span class="badge-pill" style="background: rgba(16, 185, 129, 0.15); color: #10b981; font-weight: 700; font-size: 11px;">${isAr ? 'نصف داخلي' : 'Demi-pension'}</span>`;
+
+          const phoneInfo = s.phone || s.parent_phone || '—';
+          const pName = s.parent_name ? `<div style="font-size: 11px; color: var(--text-muted);">${this.escapeHtml(s.parent_name)}</div>` : '';
+
+          return `
+            <tr>
+              <td style="text-align: center; font-weight: 700; color: var(--text-muted); font-size: 12px;">${idx + 1}</td>
+              <td><span style="font-weight: 700; color: #2563eb; font-family: monospace; font-size: 12.5px;">${this.escapeHtml(s.matricule || '')}</span></td>
+              <td>
+                <strong style="color: var(--text-heading); font-size: 13.5px; cursor: pointer;" onclick="app.openStudentProfile(${s.student_id})" title="${isAr ? 'عرض ملف التلميذ' : 'Voir la fiche'}">
+                  ${this.escapeHtml(s.last_name || '')} ${this.escapeHtml(s.first_name || '')}
+                </strong>
+              </td>
+              <td style="text-align: center;">${genderBadge}</td>
+              <td>
+                <span style="font-size: 12.5px;">${this.escapeHtml(phoneInfo)}</span>
+                ${pName}
+              </td>
+              <td style="text-align: center;">${regimeBadge}</td>
+              <td style="text-align: right;">
+                <div style="display: inline-flex; gap: 6px; align-items: center; justify-content: flex-end;">
+                  <button class="btn-icon" title="${isAr ? 'ملف التلميذ' : 'Profil'}" onclick="app.openStudentProfile(${s.student_id})">
+                    <i class="fa-solid fa-address-card"></i>
+                  </button>
+                  <button class="btn-icon" style="color: #ef4444;" title="${isAr ? 'إلغاء تسجيل التلميذ من هذا القسم' : 'Retirer du groupe'}" onclick="app.removeStudentFromGroup(${s.student_id}, ${group.id})">
+                    <i class="fa-solid fa-user-minus"></i>
+                  </button>
+                </div>
+              </td>
+            </tr>
+          `;
+        }).join('');
+      }
+
+      const totalBadge = document.getElementById('groupStudentsTotalCountBadge');
+      if (totalBadge) {
+        totalBadge.textContent = isAr
+          ? `عدد تلاميذ القسم: ${students.length} تلميذ (السعة: ${group.max_students || 35})`
+          : `Effectif : ${students.length} élève(s) (Capacité : ${group.max_students || 35})`;
       }
 
       document.getElementById('modalGroupStudents').classList.add('active');
     } catch (err) {
       console.error(err);
+      this.showToast('Erreur lors du chargement des élèves', 'error');
     }
   }
 
-  async quickEnrollFromGroupModal() {
+  async quickAddStudentToCurrentGroup() {
     const groupId = this.currentSelectedGroupId;
-    this.closeModals();
-    await this.openEnrollmentWizard(null, groupId);
+    const studentId = document.getElementById('quickEnrollStudentSelect')?.value;
+    const isAr = this.lang === 'ar';
+    if (!groupId || !studentId) {
+      this.showToast(isAr ? 'يرجى اختيار التلميذ أولاً' : 'Veuillez sélectionner un élève', 'warning');
+      return;
+    }
+
+    try {
+      const res = await fetch(`/api/groups/${groupId}/students`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ student_id: studentId })
+      });
+      const data = await res.json();
+      if (data.success) {
+        this.playChime('success');
+        this.showToast(isAr ? 'تمت إضافة التلميذ إلى القسم بنجاح' : 'Élève ajouté au groupe avec succès', 'success');
+        await this.viewGroupStudents(groupId);
+        await this.loadGroupesView();
+        await this.loadStudents();
+      } else {
+        this.showToast(data.error || 'Erreur', 'error');
+      }
+    } catch (e) {
+      console.error(e);
+      this.showToast(isAr ? 'حدث خطأ في الاتصال' : 'Erreur réseau', 'error');
+    }
+  }
+
+  async removeStudentFromGroup(studentId, groupId) {
+    const isAr = this.lang === 'ar';
+    const msg = isAr
+      ? 'هل أنت متأكد من إلغاء تسجيل هذا التلميذ من هذا القسم؟'
+      : 'Voulez-vous vraiment retirer cet élève de ce groupe ?';
+    if (!confirm(msg)) return;
+
+    try {
+      const res = await fetch(`/api/groups/${groupId}/students/${studentId}`, { method: 'DELETE' });
+      const data = await res.json();
+      if (data.success) {
+        this.playChime('success');
+        this.showToast(isAr ? 'تم سحب التلميذ من هذا القسم بنجاح' : 'Élève retiré du groupe avec succès', 'success');
+        await this.viewGroupStudents(groupId);
+        await this.loadGroupesView();
+        await this.loadStudents();
+      } else {
+        this.showToast(data.error || 'Erreur', 'error');
+      }
+    } catch (e) {
+      console.error(e);
+      this.showToast(isAr ? 'حدث خطأ أثناء العملية' : 'Erreur réseau', 'error');
+    }
+  }
+
+  printCurrentGroupStudentsList() {
+    const group = this.currentSelectedGroupData;
+    const students = this.currentSelectedGroupStudents || [];
+    const isAr = this.lang === 'ar';
+
+    if (!group) return;
+
+    const cleanGName = this.formatGroupName(group.name);
+    const cleanLvlName = this.formatLevelName(group.level_name);
+    const todayStr = new Date().toLocaleDateString(isAr ? 'ar-DZ' : 'fr-FR', {
+      year: 'numeric', month: 'long', day: 'numeric'
+    });
+
+    const rowsHtml = students.length === 0
+      ? `<tr><td colspan="7" style="text-align: center; padding: 25px; color: #666;">لا توجد بيانات مسجلة في هذا القسم</td></tr>`
+      : students.map((s, idx) => {
+          const genderText = (s.gender === 'F') ? (isAr ? 'أنثى' : 'Féminin') : (isAr ? 'ذكر' : 'Masculin');
+          const regimeText = (s.regime === 'interne') ? (isAr ? 'داخلي' : 'Interne')
+            : (s.regime === 'externe') ? (isAr ? 'خارجي' : 'Externe')
+            : (isAr ? 'نصف داخلي' : 'Demi-pension');
+
+          const birthInfo = s.birth_date ? `${s.birth_date}${s.birth_place ? ` بـ ${s.birth_place}` : ''}` : '—';
+          const contactInfo = s.phone || s.parent_phone || '—';
+
+          return `
+            <tr>
+              <td style="text-align: center; font-weight: bold; width: 40px;">${idx + 1}</td>
+              <td style="font-family: monospace; font-weight: bold; text-align: center; width: 130px;">${this.escapeHtml(s.matricule || '')}</td>
+              <td style="font-weight: bold;">${this.escapeHtml(s.last_name || '')} ${this.escapeHtml(s.first_name || '')}</td>
+              <td style="text-align: center; font-size: 11px;">${this.escapeHtml(birthInfo)}</td>
+              <td style="text-align: center; width: 70px;">${this.escapeHtml(genderText)}</td>
+              <td style="text-align: center; width: 100px;">${this.escapeHtml(regimeText)}</td>
+              <td style="text-align: center; font-size: 11px; width: 110px;">${this.escapeHtml(contactInfo)}</td>
+            </tr>
+          `;
+        }).join('');
+
+    const printWin = window.open('', '_blank');
+    if (!printWin) {
+      alert('Veuillez autoriser les fenêtres pop-up pour imprimer.');
+      return;
+    }
+
+    printWin.document.write(`
+      <!DOCTYPE html>
+      <html dir="${isAr ? 'rtl' : 'ltr'}" lang="${isAr ? 'ar' : 'fr'}">
+      <head>
+        <meta charset="utf-8">
+        <title>${isAr ? 'قائمة تلاميذ القسم' : 'Liste des élèves'} - ${cleanGName}</title>
+        <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+        <style>
+          @page { size: A4 portrait; margin: 12mm 15mm; }
+          * { box-sizing: border-box; }
+          body {
+            font-family: 'Cairo', 'Segoe UI', Tahoma, sans-serif;
+            color: #111;
+            margin: 0;
+            padding: 0;
+            background: #fff;
+            -webkit-print-color-adjust: exact;
+            print-color-adjust: exact;
+          }
+          .header-bloc {
+            text-align: center;
+            border-bottom: 2px solid #2563eb;
+            padding-bottom: 10px;
+            margin-bottom: 16px;
+          }
+          .republic-text {
+            font-size: 13.5px;
+            font-weight: 700;
+            color: #333;
+            margin-bottom: 3px;
+          }
+          .ministry-text {
+            font-size: 12.5px;
+            font-weight: 600;
+            color: #555;
+            margin-bottom: 6px;
+          }
+          .school-title {
+            font-size: 17px;
+            font-weight: 800;
+            color: #1e3a8a;
+          }
+          .meta-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 14px;
+            font-size: 12.5px;
+            background: #f1f5f9;
+            padding: 8px 14px;
+            border-radius: 6px;
+            border: 1px solid #cbd5e1;
+          }
+          .meta-item strong { color: #1e40af; }
+          .doc-title {
+            text-align: center;
+            font-size: 18px;
+            font-weight: 900;
+            color: #0f172a;
+            margin-bottom: 14px;
+            background: #e0f2fe;
+            padding: 6px 0;
+            border-radius: 6px;
+            border: 1px solid #bae6fd;
+            letter-spacing: 0.5px;
+          }
+          table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 24px;
+            font-size: 12px;
+          }
+          th, td {
+            border: 1px solid #94a3b8;
+            padding: 6px 8px;
+            vertical-align: middle;
+          }
+          th {
+            background-color: #f8fafc;
+            color: #1e293b;
+            font-weight: 800;
+            font-size: 12px;
+          }
+          tr:nth-child(even) td { background-color: #fbfcfe; }
+          .footer-signs {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 30px;
+            padding: 0 40px;
+          }
+          .sign-box {
+            text-align: center;
+            font-size: 13px;
+            font-weight: 700;
+          }
+          .sign-line {
+            margin-top: 50px;
+            font-size: 11px;
+            color: #64748b;
+          }
+          @media print {
+            .no-print { display: none !important; }
+          }
+        </style>
+      </head>
+      <body>
+        <div class="header-bloc">
+          <div class="republic-text">الجمهورية الجزائرية الديمقراطية الشعبية</div>
+          <div class="ministry-text">وزارة التربية الوطنية</div>
+          <div class="school-title">مؤسسة التعليم والتربية - EDUMIND SCOLAIRE</div>
+        </div>
+
+        <div class="doc-title">
+          ${isAr ? 'قائمة تلاميذ الفوج التربوي' : 'LISTE OFFICIELLE DES ÉLÈVES DE LA DIVISION'} : ${cleanGName}
+        </div>
+
+        <div class="meta-bar">
+          <div class="meta-item"><span>${isAr ? 'المستوى' : 'Niveau'} : </span><strong>${cleanLvlName}</strong></div>
+          <div class="meta-item"><span>${isAr ? 'الأستاذ المسؤول' : 'Enseignant'} : </span><strong>${group.teacher_name || '—'}</strong></div>
+          <div class="meta-item"><span>${isAr ? 'القاعة' : 'Salle'} : </span><strong>${group.room_name || '—'}</strong></div>
+          <div class="meta-item"><span>${isAr ? 'عدد التلاميذ' : 'Effectif'} : </span><strong>${students.length} ${isAr ? 'تلميذ' : 'élève(s)'}</strong></div>
+          <div class="meta-item"><span>${isAr ? 'تاريخ الاستخراج' : 'Date'} : </span><strong>${todayStr}</strong></div>
+        </div>
+
+        <table>
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>${isAr ? 'رقم القيد' : 'Matricule'}</th>
+              <th>${isAr ? 'اللقب والاسم' : 'Nom & Prénom'}</th>
+              <th>${isAr ? 'تاريخ ومكان الميلاد' : 'Date & Lieu de Naissance'}</th>
+              <th>${isAr ? 'الجنس' : 'Sexe'}</th>
+              <th>${isAr ? 'الصفة' : 'Régime'}</th>
+              <th>${isAr ? 'هاتف الاتصال' : 'Contact'}</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${rowsHtml}
+          </tbody>
+        </table>
+
+        <div class="footer-signs">
+          <div class="sign-box">
+            <div>الأستاذ المسؤول / الحراسة العامة</div>
+            <div class="sign-line">التوقيع : .........................</div>
+          </div>
+          <div class="sign-box">
+            <div>مدير المؤسسة / الأمانة</div>
+            <div class="sign-line">الختم والتوقيع : .........................</div>
+          </div>
+        </div>
+
+        <script>
+          window.onload = function() {
+            setTimeout(function() { window.print(); }, 400);
+          };
+        </script>
+      </body>
+      </html>
+    `);
+    printWin.document.close();
   }
 
   // -------------------------------------------------------------
@@ -12153,70 +13943,273 @@ class EdumindApp {
   }
 
   // -------------------------------------------------------------
-  // CONFIGURATION: MATIÈRES (SUBJECTS)
+  // CONFIGURATION: MATIÈRES (SUBJECTS) & CYCLE LINKAGE
   // -------------------------------------------------------------
+  getSchoolCycles() {
+    let cycles = [];
+    if (this.settings && this.settings.school_cycles) {
+      try {
+        const parsed = JSON.parse(this.settings.school_cycles);
+        if (Array.isArray(parsed) && parsed.length > 0) cycles = parsed;
+      } catch (e) {}
+    }
+    if (cycles.length === 0 && this.settings && this.settings.school_type) {
+      if (this.settings.school_type === 'public_primaire') cycles = ['Primaire'];
+      else if (this.settings.school_type === 'public_cem') cycles = ['CEM'];
+      else if (this.settings.school_type === 'public_lycee') cycles = ['Lycee'];
+    }
+    if (cycles.length === 0) {
+      cycles = ['Primaire', 'CEM', 'Lycee'];
+    }
+    return cycles;
+  }
+
+  updateSubjectCycleTabs() {
+    const schoolCycles = this.getSchoolCycles();
+    const isAr = this.lang === 'ar';
+
+    // 1. Update School Cycle Badge Text
+    const badgeTextEl = document.getElementById('subjectSchoolCycleText');
+    if (badgeTextEl) {
+      if (schoolCycles.length === 1) {
+        if (schoolCycles[0] === 'Primaire') {
+          badgeTextEl.textContent = isAr ? 'الطور الابتدائي فقط' : 'Cycle Primaire uniquement';
+        } else if (schoolCycles[0] === 'CEM') {
+          badgeTextEl.textContent = isAr ? 'الطور المتوسط فقط (CEM)' : 'Cycle Moyen (CEM) uniquement';
+        } else if (schoolCycles[0] === 'Lycee') {
+          badgeTextEl.textContent = isAr ? 'الطور الثانوي فقط (Lycée)' : 'Cycle Secondaire (Lycée) uniquement';
+        }
+      } else if (schoolCycles.length === 3) {
+        badgeTextEl.textContent = isAr ? 'مجمع مدرسي (ابتدائي + متوسط + ثانوي)' : 'Complexe (Tous cycles)';
+      } else {
+        const names = schoolCycles.map(c => {
+          if (c === 'Primaire') return isAr ? 'ابتدائي' : 'Primaire';
+          if (c === 'CEM') return isAr ? 'متوسط' : 'CEM';
+          if (c === 'Lycee') return isAr ? 'ثانوي' : 'Lycée';
+          return c;
+        });
+        badgeTextEl.textContent = names.join(' + ');
+      }
+    }
+
+    // 2. Hide or Show Tabs matching School Cycles
+    const tabPrimaire = document.getElementById('subjectFilterTab-Primaire');
+    const tabCEM = document.getElementById('subjectFilterTab-CEM');
+    const tabLycee = document.getElementById('subjectFilterTab-Lycee');
+    const labelAll = document.getElementById('subjectFilterTabLabel-all');
+
+    if (tabPrimaire) {
+      tabPrimaire.style.display = schoolCycles.includes('Primaire') ? 'inline-flex' : 'none';
+    }
+    if (tabCEM) {
+      tabCEM.style.display = schoolCycles.includes('CEM') ? 'inline-flex' : 'none';
+    }
+    if (tabLycee) {
+      tabLycee.style.display = schoolCycles.includes('Lycee') ? 'inline-flex' : 'none';
+    }
+
+    if (labelAll) {
+      if (schoolCycles.length === 1) {
+        const c = schoolCycles[0];
+        if (c === 'Primaire') labelAll.textContent = isAr ? 'جميع مواد الابتدائي' : 'Matières du Primaire';
+        else if (c === 'CEM') labelAll.textContent = isAr ? 'جميع مواد المتوسط' : 'Matières du CEM';
+        else if (c === 'Lycee') labelAll.textContent = isAr ? 'جميع مواد الثانوي' : 'Matières du Lycée';
+      } else {
+        labelAll.textContent = isAr ? 'جميع المواد المعتمدة' : 'Toutes les matières';
+      }
+    }
+
+    // If active filter belongs to a cycle that is not active in this school, reset to 'all'
+    if (this.currentSubjectCycleFilter && this.currentSubjectCycleFilter !== 'all' && this.currentSubjectCycleFilter !== 'commune') {
+      if (!schoolCycles.includes(this.currentSubjectCycleFilter)) {
+        this.currentSubjectCycleFilter = 'all';
+      }
+    }
+  }
+
+  filterSubjectsByCycle(cycle) {
+    this.currentSubjectCycleFilter = cycle || 'all';
+    ['all', 'CEM', 'Lycee', 'Primaire', 'commune'].forEach(c => {
+      const btn = document.getElementById(`subjectFilterTab-${c}`);
+      if (btn) {
+        if (c === this.currentSubjectCycleFilter) btn.classList.add('active');
+        else btn.classList.remove('active');
+      }
+    });
+    this.renderSubjectsTable();
+  }
+
   async loadSubjects() {
     try {
       const res = await fetch('/api/subjects');
       const data = await res.json();
       if (!data.success) return;
-      this.subjects = data.subjects;
-
-      const tbody = document.getElementById('subjectsTableBody');
-      if (this.subjects.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="4" style="text-align: center; color: var(--text-muted); padding: 24px;">Aucune matière configurée</td></tr>`;
-        return;
-      }
-
-      tbody.innerHTML = this.subjects.map(s => `
-        <tr>
-          <td><strong>${s.name}</strong></td>
-          <td><span class="badge-pill" style="background: rgba(255,255,255,0.06);">${s.code || '-'}</span></td>
-          <td><span style="display: inline-block; width: 18px; height: 18px; border-radius: 4px; background: ${s.color}; vertical-align: middle;"></span></td>
-          <td>
-            <div style="display: flex; gap: 8px;">
-              <button class="btn-icon" title="Modifier" onclick="app.editSubject(${s.id})">
-                <i class="fa-solid fa-pen-to-square"></i>
-              </button>
-              <button class="btn-icon" style="color: #ef4444;" title="Supprimer" onclick="app.deleteSubject(${s.id})">
-                <i class="fa-solid fa-trash"></i>
-              </button>
-            </div>
-          </td>
-        </tr>
-      `).join('');
+      this.subjects = data.subjects || [];
+      this.renderSubjectsTable();
     } catch (err) {
       console.error(err);
     }
   }
 
+  renderSubjectsTable() {
+    const tbody = document.getElementById('subjectsTableBody');
+    if (!tbody) return;
+
+    this.updateSubjectCycleTabs();
+
+    const schoolCycles = this.getSchoolCycles();
+    const allSubjects = this.subjects || [];
+
+    // Update Counts per tab
+    const countAllEl = document.getElementById('subjectCount-all');
+    const countPrimaireEl = document.getElementById('subjectCount-Primaire');
+    const countCEMEl = document.getElementById('subjectCount-CEM');
+    const countLyceeEl = document.getElementById('subjectCount-Lycee');
+    const countCommuneEl = document.getElementById('subjectCount-commune');
+
+    const pCount = allSubjects.filter(s => s.category === 'Primaire').length;
+    const cCount = allSubjects.filter(s => s.category === 'CEM').length;
+    const lCount = allSubjects.filter(s => s.category === 'Lycee').length;
+    const comCount = allSubjects.filter(s => !s.category || s.category === 'all').length;
+
+    // Subjects relevant to this school according to settings
+    const schoolRelevantSubjects = allSubjects.filter(s => {
+      if (!s.category || s.category === 'all') return true;
+      return schoolCycles.includes(s.category);
+    });
+
+    if (countAllEl) countAllEl.textContent = schoolRelevantSubjects.length;
+    if (countPrimaireEl) countPrimaireEl.textContent = pCount;
+    if (countCEMEl) countCEMEl.textContent = cCount;
+    if (countLyceeEl) countLyceeEl.textContent = lCount;
+    if (countCommuneEl) countCommuneEl.textContent = comCount;
+
+    // Filter subjects according to current tab selection
+    const filter = this.currentSubjectCycleFilter || 'all';
+    let filtered;
+    if (filter === 'all') {
+      filtered = schoolRelevantSubjects;
+    } else if (filter === 'commune') {
+      filtered = allSubjects.filter(s => !s.category || s.category === 'all');
+    } else {
+      filtered = allSubjects.filter(s => s.category && s.category.toLowerCase() === filter.toLowerCase());
+    }
+
+    if (filtered.length === 0) {
+      tbody.innerHTML = `<tr><td colspan="5" style="text-align: center; color: var(--text-muted); padding: 36px 20px;">
+        <i class="fa-solid fa-folder-open" style="font-size: 32px; opacity: 0.35; margin-bottom: 10px; display: block;"></i>
+        ${this.lang === 'ar' ? 'لا توجد مواد تعليمية مسجلة في هذا الطور' : 'Aucune matière dans ce cycle'}
+      </td></tr>`;
+      return;
+    }
+
+    const getCycleBadge = (cat) => {
+      if (cat === 'CEM') {
+        return `<span class="badge-pill" style="background: rgba(59, 130, 246, 0.15); color: #3b82f6; font-weight: 700; border: 1px solid rgba(59, 130, 246, 0.3);"><i class="fa-solid fa-graduation-cap"></i> متوسط (CEM)</span>`;
+      } else if (cat === 'Lycee') {
+        return `<span class="badge-pill" style="background: rgba(168, 85, 247, 0.15); color: #a855f7; font-weight: 700; border: 1px solid rgba(168, 85, 247, 0.3);"><i class="fa-solid fa-landmark"></i> ثانوي (Lycée)</span>`;
+      } else if (cat === 'Primaire') {
+        return `<span class="badge-pill" style="background: rgba(16, 185, 129, 0.15); color: #10b981; font-weight: 700; border: 1px solid rgba(16, 185, 129, 0.3);"><i class="fa-solid fa-child-reaching"></i> ابتدائي (Primaire)</span>`;
+      } else {
+        return `<span class="badge-pill" style="background: rgba(245, 158, 11, 0.15); color: #f59e0b; font-weight: 700; border: 1px solid rgba(245, 158, 11, 0.3);"><i class="fa-solid fa-asterisk"></i> مشترك (Commun)</span>`;
+      }
+    };
+
+    tbody.innerHTML = filtered.map(s => `
+      <tr>
+        <td>
+          <div style="display: flex; align-items: center; gap: 12px;">
+            <span style="display: inline-flex; align-items: center; justify-content: center; width: 34px; height: 34px; border-radius: 10px; background: ${s.color}22; color: ${s.color}; border: 1px solid ${s.color}44;">
+              <i class="fa-solid fa-${s.icon || 'book'}"></i>
+            </span>
+            <div>
+              <strong style="font-size: 14px; display: block; color: var(--text-color);">${this.escapeHtml(s.name)}</strong>
+            </div>
+          </div>
+        </td>
+        <td><span class="badge-pill" style="background: rgba(255,255,255,0.06); font-family: monospace; font-size: 12.5px; border: 1px solid rgba(255,255,255,0.08);">${this.escapeHtml(s.code || '-')}</span></td>
+        <td>${getCycleBadge(s.category)}</td>
+        <td>
+          <div style="display: flex; align-items: center; gap: 8px;">
+            <span style="display: inline-block; width: 22px; height: 22px; border-radius: 6px; background: ${s.color}; border: 1px solid rgba(255,255,255,0.25); box-shadow: 0 2px 6px ${s.color}44;"></span>
+            <span style="font-family: monospace; font-size: 12px; color: var(--text-muted);">${s.color}</span>
+          </div>
+        </td>
+        <td>
+          <div style="display: flex; gap: 8px;">
+            <button class="btn-icon" title="Modifier" onclick="app.editSubject(${s.id})">
+              <i class="fa-solid fa-pen-to-square"></i>
+            </button>
+            <button class="btn-icon" style="color: #ef4444;" title="Supprimer" onclick="app.deleteSubject(${s.id})">
+              <i class="fa-solid fa-trash"></i>
+            </button>
+          </div>
+        </td>
+      </tr>
+    `).join('');
+  }
+
+  populateSubjectCategoryOptions(selectedVal = 'all') {
+    const catEl = document.getElementById('subjectCategory');
+    if (!catEl) return;
+    const isAr = this.lang === 'ar';
+    const schoolCycles = this.getSchoolCycles();
+
+    let options = `<option value="all">${isAr ? 'مشترك بين جميع الأطوار (Commun à tous)' : 'Commun à tous'}</option>`;
+
+    if (schoolCycles.includes('Primaire')) {
+      options += `<option value="Primaire">${isAr ? 'الطور الابتدائي (Primaire)' : 'Cycle Primaire'}</option>`;
+    }
+    if (schoolCycles.includes('CEM')) {
+      options += `<option value="CEM">${isAr ? 'الطور المتوسط (CEM)' : 'Cycle Moyen (CEM)'}</option>`;
+    }
+    if (schoolCycles.includes('Lycee')) {
+      options += `<option value="Lycee">${isAr ? 'الطور الثانوي (Lycée)' : 'Cycle Secondaire (Lycée)'}</option>`;
+    }
+
+    catEl.innerHTML = options;
+    if (selectedVal && Array.from(catEl.options).some(o => o.value === selectedVal)) {
+      catEl.value = selectedVal;
+    } else {
+      catEl.value = schoolCycles.length === 1 ? schoolCycles[0] : 'all';
+    }
+  }
+
   openModalSubject() {
-    document.getElementById('modalSubjectTitle').textContent = 'Ajouter une Matière';
+    document.getElementById('modalSubjectTitle').textContent = this.lang === 'ar' ? 'إضافة مادة تعليمية جديدة' : 'Ajouter une Matière';
     document.getElementById('subjectId').value = '';
     document.getElementById('subjectName').value = '';
     document.getElementById('subjectCode').value = '';
     document.getElementById('subjectColor').value = '#3b82f6';
+    this.populateSubjectCategoryOptions('all');
     document.getElementById('modalSubject').classList.add('active');
   }
 
   editSubject(id) {
     const s = this.subjects.find(item => item.id === id);
     if (!s) return;
-    document.getElementById('modalSubjectTitle').textContent = 'Modifier la Matière';
+    document.getElementById('modalSubjectTitle').textContent = this.lang === 'ar' ? 'تعديل المادة التعليمية' : 'Modifier la Matière';
     document.getElementById('subjectId').value = s.id;
     document.getElementById('subjectName').value = s.name;
     document.getElementById('subjectCode').value = s.code || '';
     document.getElementById('subjectColor').value = s.color || '#3b82f6';
+    this.populateSubjectCategoryOptions(s.category || 'all');
     document.getElementById('modalSubject').classList.add('active');
   }
 
   async saveSubject() {
     const id = document.getElementById('subjectId').value;
+    const catEl = document.getElementById('subjectCategory');
     const payload = {
-      name: document.getElementById('subjectName').value,
-      code: document.getElementById('subjectCode').value,
+      name: document.getElementById('subjectName').value.trim(),
+      code: document.getElementById('subjectCode').value.trim(),
+      category: catEl ? catEl.value : 'all',
       color: document.getElementById('subjectColor').value
     };
+    if (!payload.name) {
+      alert(this.lang === 'ar' ? 'يرجى إدخال اسم المادة' : 'Veuillez saisir le nom de la matière');
+      return;
+    }
     const url = id ? `/api/subjects/${id}` : '/api/subjects';
     const method = id ? 'PUT' : 'POST';
 
@@ -12234,7 +14227,8 @@ class EdumindApp {
   }
 
   async deleteSubject(id) {
-    if (!confirm('Voulez-vous vraiment supprimer cette matière ?')) return;
+    const confirmMsg = this.lang === 'ar' ? 'هل تريد حقاً حذف هذه المادة؟' : 'Voulez-vous vraiment supprimer cette matière ?';
+    if (!confirm(confirmMsg)) return;
     const res = await fetch(`/api/subjects/${id}`, { method: 'DELETE' });
     const data = await res.json();
     if (data.success) {
@@ -12275,6 +14269,7 @@ class EdumindApp {
       submitBtn.innerHTML = this.lang === 'ar' ? 'حفظ الأستاذ' : "Enregistrer l'Enseignant";
     }
 
+    this.setupInputRestrictions();
     document.getElementById('modalTeacher').classList.add('active');
   }
 
@@ -12307,6 +14302,7 @@ class EdumindApp {
       submitBtn.innerHTML = this.lang === 'ar' ? 'حفظ التعديلات' : "Mettre à jour l'Enseignant";
     }
 
+    this.setupInputRestrictions();
     document.getElementById('modalTeacher').classList.add('active');
   }
 
@@ -12324,6 +14320,32 @@ class EdumindApp {
     if (!firstName || !lastName) {
       this.showToast(isAr ? 'يرجى إدخال الاسم واللقب للأستاذ' : 'Veuillez saisir le nom et prénom de l’enseignant.', 'warning');
       return;
+    }
+
+    const namePattern = /^[a-zA-Z\u00C0-\u024F\u0600-\u06FF\s'\-]+$/;
+    if (!namePattern.test(firstName)) {
+      this.showToast(isAr ? 'اسم الأستاذ يجب أن يحتوي على حروف فقط (بدون أرقام أو رموز)' : 'Le prénom de l’enseignant ne doit contenir que des lettres (sans chiffres)', 'warning');
+      document.getElementById('teacherFirstName')?.focus();
+      return;
+    }
+    if (!namePattern.test(lastName)) {
+      this.showToast(isAr ? 'لقب الأستاذ يجب أن يحتوي على حروف فقط (بدون أرقام أو رموز)' : 'Le nom de l’enseignant ne doit contenir que des lettres (sans chiffres)', 'warning');
+      document.getElementById('teacherLastName')?.focus();
+      return;
+    }
+
+    const teacherPhone = (document.getElementById('teacherPhone')?.value || '').trim();
+    if (teacherPhone) {
+      if (!/^\d+$/.test(teacherPhone)) {
+        this.showToast(isAr ? 'رقم هاتف الأستاذ يجب أن يتكون من أرقام فقط' : 'Le numéro de téléphone de l’enseignant doit contenir des chiffres uniquement', 'warning');
+        document.getElementById('teacherPhone')?.focus();
+        return;
+      }
+      if (teacherPhone.length > 10) {
+        this.showToast(isAr ? 'رقم هاتف الأستاذ لا يمكن أن يتجاوز 10 أرقام' : 'Le numéro de téléphone de l’enseignant ne peut pas dépasser 10 chiffres', 'warning');
+        document.getElementById('teacherPhone')?.focus();
+        return;
+      }
     }
 
     const payload = {
@@ -12525,7 +14547,7 @@ class EdumindApp {
   printPlanning() {
     const filtered = this.getFilteredPlanningGroups ? this.getFilteredPlanningGroups() : (this.groups || []);
     const schoolName = this.settings?.school_name || 'EDUMIND Academy';
-    const activeYear = this.settings?.active_year || '2025-2026';
+    const activeYear = this.settings?.active_year || '2026-2027';
     const phone = this.settings?.school_phone || '';
     const nowStr = new Date().toLocaleDateString('fr-FR', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
 
@@ -12762,105 +14784,110 @@ class EdumindApp {
     this.checkGroupFormConflicts();
   }
 
+  // Dynamically filter subjects according to the cycle of the selected level
+  onGroupLevelChange() {
+    const lvlSelect = document.getElementById('groupLevel');
+    const specSelect = document.getElementById('groupSpecialite');
+    if (!lvlSelect || !specSelect) return;
+
+    const levelId = lvlSelect.value;
+    const selectedLevel = (this.levels || []).find(l => String(l.id) === String(levelId));
+    const cycle = selectedLevel ? selectedLevel.category : '';
+
+    // If Primary or Middle School (CEM), there are no specialties: set empty and disable
+    if (cycle === 'Primaire' || cycle === 'CEM') {
+      specSelect.value = '';
+      specSelect.disabled = true;
+      specSelect.style.opacity = '0.6';
+    } else {
+      specSelect.disabled = false;
+      specSelect.style.opacity = '1';
+    }
+  }
+
   async openModalGroup() {
-    await this.loadConfigurationData();
-    await this.loadTeachers();
+    if (!this.levels || this.levels.length === 0) {
+      await this.loadLevels();
+    }
 
     const lvlSelect = document.getElementById('groupLevel');
-    lvlSelect.innerHTML = this.levels.map(l => `<option value="${l.id}">${this.escapeHtml(l.name)}</option>`).join('');
+    if (lvlSelect) {
+      lvlSelect.innerHTML = (this.levels || []).map(l => `<option value="${l.id}">${this.escapeHtml(l.name)}</option>`).join('');
+    }
 
-    const subSelect = document.getElementById('groupSubject');
-    subSelect.innerHTML = this.subjects.map(s => `<option value="${s.id}">${this.escapeHtml(s.name)}</option>`).join('');
+    const titleEl = document.getElementById('modalGroupTitle');
+    if (titleEl) titleEl.textContent = this.lang === 'ar' ? 'إضافة قسم تربوي جديد' : 'Créer une Nouvelle Classe';
 
-    const isAr = this.lang === 'ar';
-    const tchSelect = document.getElementById('groupTeacher');
-    tchSelect.innerHTML = `<option value="">${isAr ? '-- اختر الأستاذ --' : '-- Choisir un enseignant --'}</option>` +
-      this.teachers.map(t => `<option value="${t.id}">${this.escapeHtml(t.name || `${t.first_name || ''} ${t.last_name || ''}`.trim())}</option>`).join('');
+    const idEl = document.getElementById('groupId');
+    if (idEl) idEl.value = '';
 
-    const rmSelect = document.getElementById('groupRoom');
-    rmSelect.innerHTML = '<option value="">-- Choisir une salle --</option>' +
-      this.rooms.map(r => `<option value="${r.id}">${this.escapeHtml(r.name)} (${r.capacity} pl)</option>`).join('');
+    const nameEl = document.getElementById('groupName');
+    if (nameEl) nameEl.value = '';
 
-    document.getElementById('modalGroupTitle').textContent = 'Créer un Nouveau Groupe';
-    document.getElementById('groupId').value = '';
-    document.getElementById('groupName').value = '';
-    document.getElementById('groupDay').value = 'Samedi';
-    document.getElementById('groupStartTime').value = '14:00';
-    document.getElementById('groupEndTime').value = '16:00';
-    document.getElementById('groupPrice').value = '2000';
-    document.getElementById('groupMaxStudents').value = '25';
+    const specSelect = document.getElementById('groupSpecialite');
+    if (specSelect) specSelect.value = '';
 
-    // Reset conflict elements
-    document.getElementById('groupConflictAlert').style.display = 'none';
-    document.getElementById('forceConflictCheckLabel').style.display = 'none';
-    const forceCheck = document.getElementById('forceScheduleConflict');
-    if (forceCheck) forceCheck.checked = false;
+    const yearEl = document.getElementById('groupSchoolYear');
+    if (yearEl) yearEl.value = (this.settings && this.settings.active_year) || '2026-2027';
 
+    this.onGroupLevelChange();
     document.getElementById('modalGroup').classList.add('active');
   }
 
   async editGroup(id) {
-    await this.loadConfigurationData();
-    await this.loadTeachers();
-    const g = this.groups.find(item => item.id === id);
+    if (!this.levels || this.levels.length === 0) {
+      await this.loadLevels();
+    }
+
+    const g = (this.allGroupes || this.groups || []).find(item => item.id === id);
     if (!g) return;
 
     const lvlSelect = document.getElementById('groupLevel');
-    lvlSelect.innerHTML = this.levels.map(l => `<option value="${l.id}" ${l.id == g.level_id ? 'selected' : ''}>${this.escapeHtml(l.name)}</option>`).join('');
+    if (lvlSelect) {
+      lvlSelect.innerHTML = (this.levels || []).map(l => `<option value="${l.id}" ${l.id == g.level_id ? 'selected' : ''}>${this.escapeHtml(l.name)}</option>`).join('');
+    }
 
-    const subSelect = document.getElementById('groupSubject');
-    subSelect.innerHTML = this.subjects.map(s => `<option value="${s.id}" ${s.id == g.subject_id ? 'selected' : ''}>${this.escapeHtml(s.name)}</option>`).join('');
+    const titleEl = document.getElementById('modalGroupTitle');
+    if (titleEl) titleEl.textContent = this.lang === 'ar' ? 'تعديل القسم التربوي' : 'Modifier la Classe';
 
-    const isAr = this.lang === 'ar';
-    const tchSelect = document.getElementById('groupTeacher');
-    tchSelect.innerHTML = `<option value="">${isAr ? '-- اختر الأستاذ --' : '-- Choisir un enseignant --'}</option>` +
-      this.teachers.map(t => `<option value="${t.id}" ${t.id == g.teacher_id ? 'selected' : ''}>${this.escapeHtml(t.name || `${t.first_name || ''} ${t.last_name || ''}`.trim())}</option>`).join('');
+    const idEl = document.getElementById('groupId');
+    if (idEl) idEl.value = g.id;
 
-    const rmSelect = document.getElementById('groupRoom');
-    rmSelect.innerHTML = '<option value="">-- Choisir une salle --</option>' +
-      this.rooms.map(r => `<option value="${r.id}" ${r.id == g.room_id ? 'selected' : ''}>${this.escapeHtml(r.name)} (${r.capacity} pl)</option>`).join('');
+    const nameEl = document.getElementById('groupName');
+    if (nameEl) nameEl.value = g.name || '';
 
-    document.getElementById('modalGroupTitle').textContent = 'Modifier le Groupe';
-    document.getElementById('groupId').value = g.id;
-    document.getElementById('groupName').value = g.name;
-    document.getElementById('groupDay').value = g.day_of_week || 'Samedi';
-    document.getElementById('groupStartTime').value = g.start_time || '14:00';
-    document.getElementById('groupEndTime').value = g.end_time || '16:00';
-    document.getElementById('groupPrice').value = g.price_monthly;
-    document.getElementById('groupMaxStudents').value = g.max_students;
+    const specSelect = document.getElementById('groupSpecialite');
+    if (specSelect) specSelect.value = g.specialite || '';
 
-    // Reset conflict elements
-    document.getElementById('groupConflictAlert').style.display = 'none';
-    document.getElementById('forceConflictCheckLabel').style.display = 'none';
-    const forceCheck = document.getElementById('forceScheduleConflict');
-    if (forceCheck) forceCheck.checked = false;
+    const yearEl = document.getElementById('groupSchoolYear');
+    if (yearEl) yearEl.value = g.school_year || (this.settings && this.settings.active_year) || '2026-2027';
 
+    this.onGroupLevelChange();
     document.getElementById('modalGroup').classList.add('active');
-    this.checkGroupFormConflicts();
   }
 
   async saveGroup() {
-    const id = document.getElementById('groupId').value;
-    const force = document.getElementById('forceScheduleConflict')?.checked || false;
+    const id = document.getElementById('groupId')?.value;
+    const name = document.getElementById('groupName')?.value?.trim();
+    const levelId = document.getElementById('groupLevel')?.value;
+    const specialite = document.getElementById('groupSpecialite')?.value?.trim() || null;
+    const schoolYear = document.getElementById('groupSchoolYear')?.value?.trim() || '2026-2027';
 
-    const payload = {
-      name: document.getElementById('groupName').value.trim(),
-      level_id: document.getElementById('groupLevel').value,
-      subject_id: document.getElementById('groupSubject').value,
-      teacher_id: document.getElementById('groupTeacher').value,
-      room_id: document.getElementById('groupRoom').value,
-      day_of_week: document.getElementById('groupDay').value,
-      start_time: document.getElementById('groupStartTime').value,
-      end_time: document.getElementById('groupEndTime').value,
-      price_monthly: document.getElementById('groupPrice').value,
-      max_students: document.getElementById('groupMaxStudents').value,
-      force: force
-    };
-
-    if (!payload.name) {
-      alert('Veuillez saisir un nom pour le groupe.');
+    if (!name) {
+      alert(this.lang === 'ar' ? 'يرجى إدخال اسم القسم' : 'Veuillez saisir un nom pour la classe.');
       return;
     }
+    if (!levelId) {
+      alert(this.lang === 'ar' ? 'يرجى اختيار المستوى الدراسي' : 'Veuillez choisir un niveau scolaire.');
+      return;
+    }
+
+    const payload = {
+      name,
+      level_id: levelId,
+      specialite,
+      school_year: schoolYear
+    };
 
     const url = id ? `/api/groups/${id}` : '/api/groups';
     const method = id ? 'PUT' : 'POST';
@@ -12873,24 +14900,12 @@ class EdumindApp {
       });
       const data = await res.json();
 
-      if (res.status === 409 || (!data.success && data.conflicts)) {
-        // Schedule Conflict triggered!
-        const alertBox = document.getElementById('groupConflictAlert');
-        const alertMsg = document.getElementById('groupConflictMessage');
-        const forceLabel = document.getElementById('forceConflictCheckLabel');
-
-        const msgs = (data.conflicts || [{ message: data.error }]).map(c => `• ${this.escapeHtml(c.message || data.error)}`).join('<br>');
-        alertMsg.innerHTML = msgs;
-        alertBox.style.display = 'block';
-        forceLabel.style.display = 'block';
-        return;
-      }
-
       if (data.success) {
         this.closeModals();
-        await this.loadGroups();
+        this.playChime('success');
+        this.showToast(this.lang === 'ar' ? 'تم حفظ بيانات القسم بنجاح' : 'Classe enregistrée avec succès', 'success');
+        if (typeof this.loadGroups === 'function') await this.loadGroups();
         if (typeof this.loadGroupesView === 'function') await this.loadGroupesView();
-        if (typeof this.renderWeeklyScheduleGrid === 'function') this.renderWeeklyScheduleGrid();
       } else {
         alert(data.error || 'Erreur lors de l’enregistrement');
       }
@@ -14217,7 +16232,7 @@ class EdumindApp {
       // Set school year
       const schoolYearSelect = document.getElementById('bulkEnrollSchoolYear');
       if (schoolYearSelect) {
-        const activeYear = this.settings?.active_year || '2025-2026';
+        const activeYear = this.settings?.active_year || '2026-2027';
         if (!Array.from(schoolYearSelect.options).some(o => o.value === activeYear)) {
           const opt = document.createElement('option');
           opt.value = activeYear;
@@ -14584,7 +16599,7 @@ class EdumindApp {
 
     const discount_amount = parseFloat(document.getElementById('bulkEnrollDiscount')?.value) || 0;
     const registration_date = document.getElementById('bulkEnrollRegDate')?.value || new Date().toISOString().split('T')[0];
-    const school_year = document.getElementById('bulkEnrollSchoolYear')?.value || '2025-2026';
+    const school_year = document.getElementById('bulkEnrollSchoolYear')?.value || '2026-2027';
 
     const btn = document.getElementById('btnConfirmBulkEnrollment');
     const btnText = document.getElementById('btnConfirmBulkEnrollText');
@@ -14819,6 +16834,9 @@ class EdumindApp {
         // Refresh all levels dropdowns across the UI
         this.refreshAllLevelDropdowns();
 
+        // Refresh subjects list and cycle filter tabs according to new school cycles
+        await this.loadSubjects();
+
         this.playChime('success');
         this.showToast(isAr ? 'تم حفظ نوع المؤسسة وتحديث المستويات الدراسية المتاحة بنجاح!' : 'Cycles et niveaux scolaires mis à jour avec succès !', 'success');
       } else {
@@ -14921,7 +16939,7 @@ class EdumindApp {
     const currencyInput = document.getElementById('settingCurrency');
     if (currencyInput) currencyInput.value = this.settings.currency || 'DA';
     const activeYearInput = document.getElementById('settingActiveYear');
-    if (activeYearInput) activeYearInput.value = this.settings.active_year || '2025-2026';
+    if (activeYearInput) activeYearInput.value = this.settings.active_year || '2026-2027';
 
     // Logo
     this.schoolLogoBase64 = this.settings.school_logo || '';
@@ -14998,13 +17016,28 @@ class EdumindApp {
   }
 
   async saveEtablissementSettings() {
+    const isAr = this.lang === 'ar';
+    const schoolPhone = (document.getElementById('settingSchoolPhone')?.value || '').trim();
+    if (schoolPhone) {
+      if (!/^\d+$/.test(schoolPhone)) {
+        this.showToast(isAr ? 'رقم هاتف المؤسسة يجب أن يتكون من أرقام فقط' : 'Le numéro de téléphone de l’établissement doit contenir uniquement des chiffres', 'warning');
+        document.getElementById('settingSchoolPhone')?.focus();
+        return;
+      }
+      if (schoolPhone.length > 10) {
+        this.showToast(isAr ? 'رقم هاتف المؤسسة لا يمكن أن يتجاوز 10 أرقام' : 'Le numéro de téléphone de l’établissement ne peut pas dépasser 10 chiffres', 'warning');
+        document.getElementById('settingSchoolPhone')?.focus();
+        return;
+      }
+    }
+
     const payload = {
       school_name: document.getElementById('settingSchoolName')?.value || '',
       school_address: document.getElementById('settingSchoolAddress')?.value || '',
-      school_phone: document.getElementById('settingSchoolPhone')?.value || '',
+      school_phone: schoolPhone,
       school_email: document.getElementById('settingSchoolEmail')?.value || '',
       currency: document.getElementById('settingCurrency')?.value || 'DA',
-      active_year: document.getElementById('settingActiveYear')?.value || '2025-2026',
+      active_year: document.getElementById('settingActiveYear')?.value || '2026-2027',
       school_logo: this.schoolLogoBase64 || ''
     };
 

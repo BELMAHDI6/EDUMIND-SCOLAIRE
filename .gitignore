@@ -7,6 +7,18 @@ bin/
 temp_*
 *.zip
 !updates/*.zip
+*.bak
+
+# Chromium unpacked binaries
+*.dll
+*.pak
+*.dat
+*.bin
+vk_swiftshader_icd.json
+LICENSES.chromium.html
+version
+locales/
+resources/
 
 # Client databases & secrets
 *.sqlite

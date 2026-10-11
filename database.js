@@ -433,6 +433,7 @@ function initDatabase() {
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       name TEXT NOT NULL,
       code TEXT,
+      category TEXT DEFAULT 'all', -- 'all', 'CEM', 'Lycee', 'Primaire'
       color TEXT DEFAULT '#3b82f6',
       icon TEXT DEFAULT 'book'
     );
@@ -470,7 +471,7 @@ function initDatabase() {
       subject_id INTEGER NOT NULL,
       teacher_id INTEGER NOT NULL,
       room_id INTEGER,
-      school_year TEXT DEFAULT '2025-2026',
+      school_year TEXT DEFAULT '2026-2027',
       day_of_week TEXT,                       -- 'Lundi', 'Mardi', etc.
       start_time TEXT,                        -- '14:00'
       end_time TEXT,                          -- '16:00'
@@ -534,7 +535,7 @@ function initDatabase() {
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       student_id INTEGER NOT NULL,
       group_id INTEGER NOT NULL,
-      school_year TEXT DEFAULT '2025-2026',
+      school_year TEXT DEFAULT '2026-2027',
       registration_date DATE DEFAULT (DATE('now')),
       discount_amount REAL DEFAULT 0,         -- Remise mensuelle accordée (ex: orphelin ou frères)
       status TEXT DEFAULT 'active',           -- 'active', 'suspended', 'cancelled'
@@ -685,7 +686,7 @@ function initDatabase() {
       ('school_name', 'EDUMIND Academy'),
       ('school_phone', '0550 00 00 00'),
       ('school_address', 'Alger, Algérie'),
-      ('active_year', '2025-2026'),
+      ('active_year', '2026-2027'),
       ('currency', 'DA'),
       ('language', 'fr'),
       ('theme', 'dark');
@@ -779,6 +780,96 @@ function initDatabase() {
   addColumnIfNotExists('attendance', 'notes', 'TEXT');
   addColumnIfNotExists('attendance', 'session_id', 'INTEGER');
   addColumnIfNotExists('teachers', 'photo_url', 'TEXT');
+  addColumnIfNotExists('subjects', 'category', "TEXT DEFAULT 'all'");
+  addColumnIfNotExists('groups', 'specialite', 'TEXT');
+
+  try {
+    db.exec(`
+      UPDATE subjects SET category = 'all' WHERE category IS NULL OR category = '';
+      UPDATE subjects SET category = 'Lycee' WHERE (name LIKE '%Philo%' OR name LIKE '%فلسفة%' OR name LIKE '%Compta%' OR name LIKE '%محاسبة%' OR name LIKE '%Génie%' OR name LIKE '%هندسة%') AND (category = 'all' OR category IS NULL);
+    `);
+  } catch (e) {}
+
+  // Migration & Pre-population: Official Algerian Curriculum Subjects by Cycle
+  try {
+    const algerianSubjects = [
+      // --- الطور الابتدائي (Primaire) ---
+      { name: 'اللغة العربية والأنشطة اللغوية', code: 'AR', category: 'Primaire', color: '#0284c7', icon: 'feather' },
+      { name: 'الرياضيات', code: 'MATH', category: 'Primaire', color: '#2563eb', icon: 'calculator' },
+      { name: 'التربية الإسلامية', code: 'ISLAM', category: 'Primaire', color: '#059669', icon: 'book-quran' },
+      { name: 'التربية العلمية والتكنولوجية', code: 'SCI_TECH', category: 'Primaire', color: '#0d9488', icon: 'flask' },
+      { name: 'التربية المدنية', code: 'CIVIL', category: 'Primaire', color: '#d97706', icon: 'scale-balanced' },
+      { name: 'التاريخ والجغرافيا', code: 'HIST_GEO', category: 'Primaire', color: '#7c3aed', icon: 'map-location-dot' },
+      { name: 'اللغة الفرنسية', code: 'FR', category: 'Primaire', color: '#db2777', icon: 'book-open' },
+      { name: 'اللغة الإنجليزية', code: 'EN', category: 'Primaire', color: '#0891b2', icon: 'globe' },
+      { name: 'التربية الفنية والتشكيلية', code: 'ART', category: 'Primaire', color: '#e11d48', icon: 'palette' },
+      { name: 'التربية الموسيقية', code: 'MUS', category: 'Primaire', color: '#9333ea', icon: 'music' },
+      { name: 'التربية البدنية والرياضية', code: 'EPS', category: 'Primaire', color: '#16a34a', icon: 'person-running' },
+      { name: 'أنشطة القسم التحضيري', code: 'PREP', category: 'Primaire', color: '#ca8a04', icon: 'shapes' },
+      { name: 'اللغة الأمازيغية', code: 'AMAZIGH', category: 'Primaire', color: '#10b981', icon: 'language' },
+
+      // --- الطور المتوسط (CEM) ---
+      { name: 'اللغة العربية', code: 'AR', category: 'CEM', color: '#0284c7', icon: 'feather' },
+      { name: 'الرياضيات', code: 'MATH', category: 'CEM', color: '#2563eb', icon: 'calculator' },
+      { name: 'العلوم الفيزيائية والتكنولوجيا', code: 'PHYS', category: 'CEM', color: '#7c3aed', icon: 'atom' },
+      { name: 'علوم الطبيعة والحياة', code: 'SNV', category: 'CEM', color: '#059669', icon: 'leaf' },
+      { name: 'اللغة الفرنسية', code: 'FR', category: 'CEM', color: '#db2777', icon: 'book-open' },
+      { name: 'اللغة الإنجليزية', code: 'EN', category: 'CEM', color: '#0891b2', icon: 'globe' },
+      { name: 'التاريخ والجغرافيا', code: 'HIST_GEO', category: 'CEM', color: '#d97706', icon: 'map-location-dot' },
+      { name: 'التربية الإسلامية', code: 'ISLAM', category: 'CEM', color: '#0d9488', icon: 'book-quran' },
+      { name: 'التربية المدنية', code: 'CIVIL', category: 'CEM', color: '#4f46e5', icon: 'scale-balanced' },
+      { name: 'الإعلام الآلي', code: 'INFO', category: 'CEM', color: '#0284c7', icon: 'laptop-code' },
+      { name: 'التربية التشكيلية', code: 'ART', category: 'CEM', color: '#e11d48', icon: 'palette' },
+      { name: 'التربية الموسيقية', code: 'MUS', category: 'CEM', color: '#9333ea', icon: 'music' },
+      { name: 'التربية البدنية والرياضية', code: 'EPS', category: 'CEM', color: '#16a34a', icon: 'person-running' },
+      { name: 'اللغة الأمازيغية', code: 'AMAZIGH', category: 'CEM', color: '#10b981', icon: 'language' },
+
+      // --- الطور الثانوي (Lycée) ---
+      { name: 'اللغة العربية وآدابها', code: 'AR', category: 'Lycee', color: '#0284c7', icon: 'feather' },
+      { name: 'الرياضيات', code: 'MATH', category: 'Lycee', color: '#2563eb', icon: 'calculator' },
+      { name: 'العلوم الفيزيائية', code: 'PHYS', category: 'Lycee', color: '#7c3aed', icon: 'atom' },
+      { name: 'علوم الطبيعة والحياة', code: 'SNV', category: 'Lycee', color: '#059669', icon: 'leaf' },
+      { name: 'الفلسفة', code: 'PHILO', category: 'Lycee', color: '#4f46e5', icon: 'brain' },
+      { name: 'التاريخ والجغرافيا', code: 'HIST_GEO', category: 'Lycee', color: '#d97706', icon: 'map-location-dot' },
+      { name: 'العلوم الإسلامية', code: 'ISLAM', category: 'Lycee', color: '#0d9488', icon: 'book-quran' },
+      { name: 'اللغة الفرنسية', code: 'FR', category: 'Lycee', color: '#db2777', icon: 'book-open' },
+      { name: 'اللغة الإنجليزية', code: 'EN', category: 'Lycee', color: '#0891b2', icon: 'globe' },
+      { name: 'التسيير المحاسبي والمالي', code: 'COMPTA', category: 'Lycee', color: '#059669', icon: 'chart-line' },
+      { name: 'الاقتصاد والمناجمنت', code: 'ECO', category: 'Lycee', color: '#b45309', icon: 'coins' },
+      { name: 'القانون', code: 'DROIT', category: 'Lycee', color: '#6d28d9', icon: 'scale-balanced' },
+      { name: 'التكنولوجيا - هندسة كهربائية', code: 'GE', category: 'Lycee', color: '#ea580c', icon: 'bolt' },
+      { name: 'التكنولوجيا - هندسة ميكانيكية', code: 'GM', category: 'Lycee', color: '#475569', icon: 'gears' },
+      { name: 'التكنولوجيا - هندسة مدنية', code: 'GC', category: 'Lycee', color: '#c2410c', icon: 'building' },
+      { name: 'التكنولوجيا - هندسة الطرائق', code: 'GP', category: 'Lycee', color: '#047857', icon: 'flask-vial' },
+      { name: 'اللغة الألمانية', code: 'ALL', category: 'Lycee', color: '#be123c', icon: 'language' },
+      { name: 'اللغة الإسبانية', code: 'ESP', category: 'Lycee', color: '#b91c1c', icon: 'language' },
+      { name: 'اللغة الإيطالية', code: 'IT', category: 'Lycee', color: '#15803d', icon: 'language' },
+      { name: 'اللغة الأمازيغية', code: 'AMAZIGH', category: 'Lycee', color: '#10b981', icon: 'language' },
+      { name: 'التربية البدنية والرياضية', code: 'EPS', category: 'Lycee', color: '#16a34a', icon: 'person-running' },
+
+      // --- مواد مشتركة بين الأطوار (Communes) ---
+      { name: 'الدعم والمرافقة البيداغوجية', code: 'SOUTIEN', category: 'all', color: '#6366f1', icon: 'chalkboard-user' },
+      { name: 'الحساب الذهني والسوروبان', code: 'SOROBAN', category: 'all', color: '#f59e0b', icon: 'abacus' },
+      { name: 'الروبوتيك والبرمجة', code: 'ROBOT', category: 'all', color: '#06b6d4', icon: 'microchip' }
+    ];
+
+    const insertSubjectStmt = db.prepare(`
+      INSERT INTO subjects (name, code, category, color, icon)
+      VALUES (?, ?, ?, ?, ?)
+    `);
+
+    for (const sub of algerianSubjects) {
+      const existing = DB.queryOne(
+        "SELECT id FROM subjects WHERE name = ? AND category = ?",
+        [sub.name, sub.category]
+      );
+      if (!existing) {
+        insertSubjectStmt.run(sub.name, sub.code, sub.category, sub.color, sub.icon);
+      }
+    }
+  } catch (err) {
+    console.warn('⚠️ Seeding Algerian subjects error:', err.message);
+  }
 
   // Parents Table Migration & Initial Sync from existing students
   try {

@@ -4,39 +4,39 @@ const path = require('path');
 const crypto = require('crypto');
 const { execSync } = require('child_process');
 
-// Master Secret Key for Veloce Craft (Keep secure)
-const MASTER_KEY = 'VELOCE_CRAFT_EDUMIND_CORE_SECURITY_KEY_2026_@#!';
+// Master Secret Key for Veloce Craft (Dedicated to EDUMIND Scolaire - Public Sector)
+const MASTER_KEY = 'VELOCE_CRAFT_EDUMIND_SCOLAIRE_PUBLIC_KEY_2026_@#!';
 
 // Trial duration: 7 days in milliseconds
 const TRIAL_DURATION_MS = 7 * 24 * 60 * 60 * 1000;
 
-// Secondary system marker file to prevent trial resets by deleting the database
+// Secondary system marker file to prevent trial resets by deleting the database (Scolaire specific)
 function getSystemMarkerPath() {
   try {
     const base = process.env.LOCALAPPDATA || process.env.APPDATA || os.homedir();
-    return path.join(base, '.edumind_lic_t.sys');
+    return path.join(base, '.edumind_scolaire_lic_t.sys');
   } catch (e) {
-    return path.join(os.tmpdir(), '.edumind_lic_t.sys');
+    return path.join(os.tmpdir(), '.edumind_scolaire_lic_t.sys');
   }
 }
 
-// Persistent machine hardware ID storage so updates and clean DB installs retain the exact same HWID
+// Persistent machine hardware ID storage for Scolaire
 function getSystemHwidPath() {
   try {
     const base = process.env.LOCALAPPDATA || process.env.APPDATA || os.homedir();
-    return path.join(base, '.edumind_hwid.sys');
+    return path.join(base, '.edumind_scolaire_hwid.sys');
   } catch (e) {
-    return path.join(os.tmpdir(), '.edumind_hwid.sys');
+    return path.join(os.tmpdir(), '.edumind_scolaire_hwid.sys');
   }
 }
 
-// Persistent machine license key storage so reinstallations/updates automatically retain the paid license
+// Persistent machine license key storage for Scolaire
 function getSystemLicensePath() {
   try {
     const base = process.env.LOCALAPPDATA || process.env.APPDATA || os.homedir();
-    return path.join(base, '.edumind_lic_key.sys');
+    return path.join(base, '.edumind_scolaire_lic_key.sys');
   } catch (e) {
-    return path.join(os.tmpdir(), '.edumind_lic_key.sys');
+    return path.join(os.tmpdir(), '.edumind_scolaire_lic_key.sys');
   }
 }
 
@@ -60,7 +60,7 @@ class LicenseManager {
       const hwidFile = getSystemHwidPath();
       if (fs.existsSync(hwidFile)) {
         const savedHwid = fs.readFileSync(hwidFile, 'utf8').trim();
-        if (savedHwid && savedHwid.startsWith('EDUM-') && savedHwid !== 'EDUM-EC81-CB26-74C1-D57E') {
+        if (savedHwid && savedHwid.startsWith('SCOL-')) {
           this.cachedHWID = savedHwid;
           if (this.db) {
             try {
@@ -148,8 +148,8 @@ class LicenseManager {
     const rawString = rawTokens.join('|');
     const hash = crypto.createHash('sha256').update(rawString).digest('hex').toUpperCase();
 
-    // Format as EDUM-XXXX-XXXX-XXXX-XXXX
-    return `EDUM-${hash.substring(0, 4)}-${hash.substring(4, 8)}-${hash.substring(8, 12)}-${hash.substring(12, 16)}`;
+    // Format as SCOL-XXXX-XXXX-XXXX-XXXX (Distinct for Public Schools / Scolaire)
+    return `SCOL-${hash.substring(0, 4)}-${hash.substring(4, 8)}-${hash.substring(8, 12)}-${hash.substring(12, 16)}`;
   }
 
   /**
@@ -186,7 +186,7 @@ class LicenseManager {
       .substring(0, 16)
       .toUpperCase();
 
-    return `EDUMIND-V1.${b64Payload}.${signature}`;
+    return `EDUMIND-SCOL-V1.${b64Payload}.${signature}`;
   }
 
   /**
@@ -198,12 +198,12 @@ class LicenseManager {
     }
 
     let cleanKey = key.trim();
-    if (cleanKey.startsWith('V1.')) {
+    if (cleanKey.startsWith('SCOL-V1.')) {
       cleanKey = 'EDUMIND-' + cleanKey;
     }
 
-    if (!cleanKey.startsWith('EDUMIND-V1.')) {
-      return { valid: false, reason: 'Format de clé invalide' };
+    if (!cleanKey.startsWith('EDUMIND-SCOL-V1.')) {
+      return { valid: false, reason: 'Format de clé invalide (Cette clé ne correspond pas à la version EDUMIND Scolaire)' };
     }
 
     const parts = cleanKey.split('.');
@@ -222,7 +222,7 @@ class LicenseManager {
       .toUpperCase();
 
     if (signature.toUpperCase() !== expectedSig) {
-      return { valid: false, reason: 'Signature cryptographique invalide (clé falsifiée)' };
+      return { valid: false, reason: 'Signature cryptographique invalide (clé falsifiée ou destinée à une autre version)' };
     }
 
     let payload;
@@ -234,9 +234,7 @@ class LicenseManager {
     }
 
     const currentHWID = this.getHardwareID();
-    const isLegacyOldHwid = (payload.h === 'EDUM-EC81-CB26-74C1-D57E');
-
-    if (payload.h !== currentHWID && !isLegacyOldHwid) {
+    if (payload.h !== currentHWID) {
       return {
         valid: false,
         reason: 'Cette clé est associée à un autre ordinateur. Veuillez contacter le support Veloce Craft.'
@@ -258,7 +256,7 @@ class LicenseManager {
     return {
       valid: true,
       payload,
-      migrated: (payload.h !== currentHWID && isLegacyOldHwid),
+      migrated: false,
       cleanKey
     };
   }
@@ -409,7 +407,7 @@ class LicenseManager {
         const licFile = getSystemLicensePath();
         if (fs.existsSync(licFile)) {
           const fileKey = fs.readFileSync(licFile, 'utf8').trim();
-          if (fileKey && fileKey.startsWith('EDUMIND-V1.')) {
+          if (fileKey && fileKey.startsWith('EDUMIND-SCOL-V1.')) {
             const check = this.verifyLicenseKey(fileKey);
             if (check.valid) {
               storedKey = fileKey;
