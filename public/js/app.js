@@ -5040,15 +5040,6 @@ class EdumindApp {
         return;
       }
 
-      // 1. Détection globale du groupe ou niveau depuis l'en-tête ou le nom de feuille
-      let detectedSheetGroup = '';
-      let detectedSheetLevel = '';
-      const sheetNameClean = normAr(chosenSheetName);
-      const groupMatchInSheet = sheetNameClean.match(/([1-4]\s*(?:am|as|ap|م|ث|متوسط|ثانوي)\s*[\-\_\s]?\s*\d+)|([1-4]\s*م\s*\d+)|([1-4]\s*ث\s*\d+)/i);
-      if (groupMatchInSheet) {
-        detectedSheetGroup = groupMatchInSheet[0].trim();
-      }
-
       // 1. Détection intelligente de la ligne des en-têtes (headerRowIndex) EN PREMIER
       let headerRowIndex = -1;
       let headerCols = [];

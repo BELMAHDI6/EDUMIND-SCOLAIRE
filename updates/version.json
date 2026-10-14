@@ -1,7 +1,7 @@
 {
-  "version": "1.0.4",
+  "version": "1.0.5",
   "releaseDate": "2026-10-14",
-  "zipUrl": "https://raw.githubusercontent.com/BELMAHDI6/EDUMIND-SCOLAIRE/main/updates/edumind_scolaire_patch_v1.0.4.zip",
-  "notes": "Correction du redemarrage automatique apres mise a jour et fiabilisation de la connexion",
-  "notes_ar": "Correction du redemarrage automatique apres mise a jour et fiabilisation de la connexion"
+  "zipUrl": "https://raw.githubusercontent.com/BELMAHDI6/EDUMIND-SCOLAIRE/main/updates/edumind_scolaire_patch_v1.0.5.zip",
+  "notes": "Correction critique: syntaxe du parseur et debloquage complet de la connexion",
+  "notes_ar": "Correction critique: syntaxe du parseur et debloquage complet de la connexion"
 }
