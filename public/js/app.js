@@ -5556,15 +5556,27 @@ class EdumindApp {
         throw new Error(result.error || 'Erreur lors de l’importation');
       }
 
+      const totalEffected = (result.imported || 0) + (result.updated || 0);
+      if (totalEffected === 0) {
+        const errorReason = (result.errors && result.errors.length > 0)
+          ? result.errors[0].error
+          : (result.skipped > 0
+              ? (this.lang === 'ar' ? `تم تخطي ${result.skipped} تلميذ لأنهم مسجلون بالفعل مسبقاً (اختر "تحديث البيانات" إذا كنت ترغب في تحديثهم)` : `${result.skipped} élèves ignorés car déjà existants`)
+              : (this.lang === 'ar' ? 'تعذر إدخال التلاميذ، تأكد من صحة أعمدة الأسماء في الملف' : 'Aucun élève importé'));
+
+        this.showToast(this.lang === 'ar' ? `⚠️ ${errorReason}` : `⚠️ ${errorReason}`, 'warning');
+        return;
+      }
+
       let detailParts = [];
       if (this.lang === 'ar') {
-        detailParts.push(`تسجيل ${result.imported} تلميذ`);
-        if (result.updated > 0) detailParts.push(`تحديث ${result.updated}`);
-        if (result.parentsCreated > 0) detailParts.push(`إنشاء وربط ${result.parentsCreated} ولي أمر`);
+        if (result.imported > 0) detailParts.push(`تسجيل ${result.imported} تلميذ جديد`);
+        if (result.updated > 0) detailParts.push(`تحديث ${result.updated} تلميذ`);
+        if (result.parentsCreated > 0) detailParts.push(`إنشاء ${result.parentsCreated} ولي أمر`);
         if (result.enrollmentsCount > 0) detailParts.push(`تسجيل ${result.enrollmentsCount} تلميذ في الأقسام`);
         if (result.groupsCreated > 0) detailParts.push(`إنشاء ${result.groupsCreated} قسم جديد`);
       } else {
-        detailParts.push(`${result.imported} élèves inscrits`);
+        if (result.imported > 0) detailParts.push(`${result.imported} élèves inscrits`);
         if (result.updated > 0) detailParts.push(`${result.updated} mis à jour`);
         if (result.parentsCreated > 0) detailParts.push(`${result.parentsCreated} parents créés`);
         if (result.enrollmentsCount > 0) detailParts.push(`${result.enrollmentsCount} affectés aux classes`);
@@ -5580,11 +5592,26 @@ class EdumindApp {
       this.closeModals();
       this.resetImportFile();
 
+      // Clear any search / filters that could hide the imported students
+      const searchInp = document.getElementById('searchStudentInput');
+      if (searchInp) searchInp.value = '';
+      const lvlFilter = document.getElementById('filterStudentLevel');
+      if (lvlFilter) lvlFilter.value = '';
+      const statusFilter = document.getElementById('filterStudentStatus');
+      if (statusFilter) statusFilter.value = 'active';
+      const payFilter = document.getElementById('filterStudentPayment');
+      if (payFilter) payFilter.value = 'all';
+
+      // Switch directly to students list view and force reload
+      if (typeof this.switchView === 'function') {
+        this.switchView('eleves', true);
+      }
+
       await this.loadStudents();
       await this.loadParents();
       await this.loadGroups();
-      if (typeof this.loadDashboardStats === 'function') {
-        this.loadDashboardStats();
+      if (typeof this.loadDashboardData === 'function') {
+        await this.loadDashboardData();
       }
 
     } catch (err) {
