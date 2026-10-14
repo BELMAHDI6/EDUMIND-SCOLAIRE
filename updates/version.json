@@ -1,7 +1,7 @@
 {
-  "version": "1.0.2",
+  "version": "1.0.3",
   "releaseDate": "2026-10-14",
-  "zipUrl": "https://raw.githubusercontent.com/BELMAHDI6/EDUMIND-SCOLAIRE/main/updates/edumind_scolaire_patch_v1.0.2.zip",
-  "notes": "مزامنة كاملة مع حل EDUMIND PRIVEE: دمج دوال الحماية للمستويات والأساتذة والأقسام وضمان الربط التلقائي بدون أخطاء قيود Foreign Keys",
-  "notes_ar": "مزامنة كاملة مع حل EDUMIND PRIVEE: دمج دوال الحماية للمستويات والأساتذة والأقسام وضمان الربط التلقائي بدون أخطاء قيود Foreign Keys"
+  "zipUrl": "https://raw.githubusercontent.com/BELMAHDI6/EDUMIND-SCOLAIRE/main/updates/edumind_scolaire_patch_v1.0.3.zip",
+  "notes": "إصلاح جذري للتعرف على الأقسام وتوزيع التلاميذ بدقة تامة حسب المستوى الدراسي باللغتين العربية والفرنسية (1AM-4AM / 1AS-3AS / 1AP-5AP) مع ضبط صفة الإطعام",
+  "notes_ar": "إصلاح جذري للتعرف على الأقسام وتوزيع التلاميذ بدقة تامة حسب المستوى الدراسي باللغتين العربية والفرنسية (1AM-4AM / 1AS-3AS / 1AP-5AP) مع ضبط صفة الإطعام"
 }

@@ -4945,8 +4945,11 @@ class EdumindApp {
         throw new Error(this.lang === 'ar' ? 'الملف لا يحتوي على أوراق عمل صالحة' : 'Fichier Excel invalide ou vide');
       }
 
-      // Fonction d'aide pour normaliser l'arabe et le français (suppression hamzat, harakat, accents, etc.)
-      const normAr = (s) => String(s || '').toLowerCase()
+      // Fonction d'aide pour normaliser l'arabe et le français (suppression hamzat, harakat, accents, chiffres arabes, etc.)
+      const normAr = (s) => String(s || '')
+        .replace(/[٠-٩]/g, d => '٠١٢٣٤٥٦٧٨٩'.indexOf(d))
+        .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+        .toLowerCase()
         .replace(/[أإآٱ]/g, 'ا')
         .replace(/ة/g, 'ه')
         .replace(/ى/g, 'ي')
@@ -4998,35 +5001,7 @@ class EdumindApp {
         detectedSheetGroup = groupMatchInSheet[0].trim();
       }
 
-      // Scanner les 25 premières lignes pour trouver des bannières (ex: "الفوج التربوي: 1م2" ou "القسم: 4 متوسط 1")
-      for (let r = 0; r < Math.min(rawRows.length, 25); r++) {
-        const rowStr = normAr((rawRows[r] || []).map(c => String(c || '')).join(' '));
-        if (!detectedSheetGroup) {
-          const gm = rowStr.match(/(?:فوج تربوي|فوج|قسم تربوي|قسم|classe|groupe|division)\s*[:：\-]?\s*([0-9a-zA-Z\u0621-\u064A\s\-\_]+)/i);
-          if (gm && gm[1] && gm[1].trim().length <= 25) {
-            const candidate = gm[1].trim();
-            if (/\d+/.test(candidate) && !candidate.includes('سنه') && !candidate.includes('تاريخ') && !candidate.includes('مدرسه')) {
-              detectedSheetGroup = candidate;
-            }
-          }
-        }
-        if (!detectedSheetLevel) {
-          if (rowStr.includes('1م') || rowStr.includes('1ام') || rowStr.includes('1am') || (rowStr.includes('1') && rowStr.includes('متوسط')) || rowStr.includes('اولي متوسط')) detectedSheetLevel = '1AM';
-          else if (rowStr.includes('2م') || rowStr.includes('2ام') || rowStr.includes('2am') || (rowStr.includes('2') && rowStr.includes('متوسط')) || rowStr.includes('ثانيه متوسط')) detectedSheetLevel = '2AM';
-          else if (rowStr.includes('3م') || rowStr.includes('3ام') || rowStr.includes('3am') || (rowStr.includes('3') && rowStr.includes('متوسط')) || rowStr.includes('ثالثه متوسط')) detectedSheetLevel = '3AM';
-          else if (rowStr.includes('4م') || rowStr.includes('4ام') || rowStr.includes('4am') || (rowStr.includes('4') && rowStr.includes('متوسط')) || rowStr.includes('رابعه متوسط') || rowStr.includes('بيام') || rowStr.includes('bem')) detectedSheetLevel = '4AM';
-          else if (rowStr.includes('1as') || rowStr.includes('1ث') || (rowStr.includes('1') && rowStr.includes('ثانوي'))) detectedSheetLevel = '1AS';
-          else if (rowStr.includes('2as') || rowStr.includes('2ث') || (rowStr.includes('2') && rowStr.includes('ثانوي'))) detectedSheetLevel = '2AS';
-          else if (rowStr.includes('3as') || rowStr.includes('3ث') || (rowStr.includes('3') && rowStr.includes('ثانوي')) || rowStr.includes('باك') || rowStr.includes('bac')) detectedSheetLevel = '3AS';
-          else if (rowStr.includes('1ap') || (rowStr.includes('1') && rowStr.includes('ابتدائي'))) detectedSheetLevel = '1AP';
-          else if (rowStr.includes('2ap') || (rowStr.includes('2') && rowStr.includes('ابتدائي'))) detectedSheetLevel = '2AP';
-          else if (rowStr.includes('3ap') || (rowStr.includes('3') && rowStr.includes('ابتدائي'))) detectedSheetLevel = '3AP';
-          else if (rowStr.includes('4ap') || (rowStr.includes('4') && rowStr.includes('ابتدائي'))) detectedSheetLevel = '4AP';
-          else if (rowStr.includes('5ap') || (rowStr.includes('5') && rowStr.includes('ابتدائي'))) detectedSheetLevel = '5AP';
-        }
-      }
-
-      // 2. Détection intelligente de la ligne des en-têtes (headerRowIndex)
+      // 1. Détection intelligente de la ligne des en-têtes (headerRowIndex) EN PREMIER
       let headerRowIndex = -1;
       let headerCols = [];
 
@@ -5062,6 +5037,44 @@ class EdumindApp {
         }
       }
 
+      // 2. Détection globale du groupe ou niveau depuis l'en-tête de feuille (AVANT la ligne des en-têtes de colonnes)
+      let detectedSheetGroup = '';
+      let detectedSheetLevel = '';
+      const sheetNameClean = normAr(chosenSheetName);
+      const groupMatchInSheet = sheetNameClean.match(/([1-5]\s*(?:am|as|ap|ms|م|ث|متوسط|ثانوي|ابتدائي)\s*[\-\_\s]?\s*\d+)|([1-5]\s*م\s*\d+)|([1-5]\s*ث\s*\d+)/i);
+      if (groupMatchInSheet) {
+        detectedSheetGroup = groupMatchInSheet[0].trim();
+      }
+
+      // Scanner UNIQUEMENT les lignes au-dessus des en-têtes de colonnes pour les bannières d'établissement
+      const bannerMaxRow = headerRowIndex > 0 ? headerRowIndex : 0;
+      for (let r = 0; r < bannerMaxRow; r++) {
+        const rowStr = normAr((rawRows[r] || []).map(c => String(c || '')).join(' '));
+        if (!detectedSheetGroup) {
+          const gm = rowStr.match(/(?:فوج تربوي|فوج|قسم تربوي|قسم|classe|groupe|division|section)\s*[:：\-]\s*([0-9a-zA-Z\u0621-\u064A\s\-\_]+)/i);
+          if (gm && gm[1] && gm[1].trim().length <= 25) {
+            const candidate = gm[1].trim();
+            if (/\d+/.test(candidate) && !candidate.includes('سنه') && !candidate.includes('تاريخ') && !candidate.includes('مدرسه') && !candidate.includes('متوسطه') && !candidate.includes('ثانويه')) {
+              detectedSheetGroup = candidate;
+            }
+          }
+        }
+        if (!detectedSheetLevel) {
+          if (rowStr.includes('1م') || rowStr.includes('1ام') || rowStr.includes('1am') || (rowStr.includes('1') && rowStr.includes('متوسط')) || rowStr.includes('اولي متوسط')) detectedSheetLevel = '1AM';
+          else if (rowStr.includes('2م') || rowStr.includes('2ام') || rowStr.includes('2am') || (rowStr.includes('2') && rowStr.includes('متوسط')) || rowStr.includes('ثانيه متوسط')) detectedSheetLevel = '2AM';
+          else if (rowStr.includes('3م') || rowStr.includes('3ام') || rowStr.includes('3am') || (rowStr.includes('3') && rowStr.includes('متوسط')) || rowStr.includes('ثالثه متوسط')) detectedSheetLevel = '3AM';
+          else if (rowStr.includes('4م') || rowStr.includes('4ام') || rowStr.includes('4am') || (rowStr.includes('4') && rowStr.includes('متوسط')) || rowStr.includes('رابعه متوسط') || rowStr.includes('بيام') || rowStr.includes('bem')) detectedSheetLevel = '4AM';
+          else if (rowStr.includes('1as') || rowStr.includes('1ث') || (rowStr.includes('1') && rowStr.includes('ثانوي'))) detectedSheetLevel = '1AS';
+          else if (rowStr.includes('2as') || rowStr.includes('2ث') || (rowStr.includes('2') && rowStr.includes('ثانوي'))) detectedSheetLevel = '2AS';
+          else if (rowStr.includes('3as') || rowStr.includes('3ث') || (rowStr.includes('3') && rowStr.includes('ثانوي')) || rowStr.includes('باك') || rowStr.includes('bac')) detectedSheetLevel = '3AS';
+          else if (rowStr.includes('1ap') || (rowStr.includes('1') && rowStr.includes('ابتدائي'))) detectedSheetLevel = '1AP';
+          else if (rowStr.includes('2ap') || (rowStr.includes('2') && rowStr.includes('ابتدائي'))) detectedSheetLevel = '2AP';
+          else if (rowStr.includes('3ap') || (rowStr.includes('3') && rowStr.includes('ابتدائي'))) detectedSheetLevel = '3AP';
+          else if (rowStr.includes('4ap') || (rowStr.includes('4') && rowStr.includes('ابتدائي'))) detectedSheetLevel = '4AP';
+          else if (rowStr.includes('5ap') || (rowStr.includes('5') && rowStr.includes('ابتدائي'))) detectedSheetLevel = '5AP';
+        }
+      }
+
       const colMap = {
         matricule: -1,
         nationalId: -1,
@@ -5094,7 +5107,7 @@ class EdumindApp {
 
         // Matricule / Identifiant (exclure le simple compteur de ligne "الرقم" ou "N°")
         const isCounter = c === 'رقم' || c === 'الرقم' || c === 'ر.ت' || c === 'ترتيب' || c === 'الرقم الترتيبي' || c === 'رقم ترتيبي' || c === 'n°' || c === 'no' || c === 'ordre' || c === 'n° ordre';
-        if (!isCounter && colMap.matricule === -1 && (c.includes('تعريف مدرسي') || c.includes('معرف مدرسي') || c.includes('رقم التعريف') || c.includes('معرف التلميذ') || c.includes('المعرف') || c.includes('رقم القيد') || c.includes('رقم التسجيل') || c.includes('matricule') || c.includes('identifiant') || c.includes('code eleve') || c.includes('code élève') || c === 'id')) {
+        if (!isCounter && colMap.matricule === -1 && (c.includes('تعريف مدرسي') || c.includes('معرف مدرسي') || c.includes('رقم التعريف') || c.includes('معرف التلميذ') || c.includes('المعرف') || c.includes('رقم القيد') || c.includes('رقم التسجيل') || c.includes('matricule') || c.includes('identifiant') || c.includes('code eleve') || c === 'id')) {
           if (!c.includes('فوج') && !c.includes('قسم') && !c.includes('groupe') && !c.includes('هاتف') && !c.includes('ترتيب')) {
             colMap.matricule = idx;
             return;
@@ -5108,31 +5121,45 @@ class EdumindApp {
         }
 
         // Nom de famille
-        if (colMap.lastName === -1 && (c.includes('لقب') || c.includes('nom')) && !c.includes('اب') && !c.includes('ام') && !c.includes('ولي') && !c.includes('pere') && !c.includes('père') && !c.includes('mere') && !c.includes('mère')) {
+        if (colMap.lastName === -1 && (c.includes('لقب') || c.includes('nom')) && !c.includes('اب') && !c.includes('ام') && !c.includes('ولي') && !c.includes('pere') && !c.includes('mere')) {
           colMap.lastName = idx;
           return;
         }
 
         // Prénom
-        if (colMap.firstName === -1 && (c.includes('اسم') || c.includes('prenom')) && !c.includes('اب') && !c.includes('ام') && !c.includes('ولي') && !c.includes('لقب') && !c.includes('مؤسسة') && !c.includes('pere') && !c.includes('père') && !c.includes('mere') && !c.includes('mère')) {
+        if (colMap.firstName === -1 && (c.includes('اسم') || c.includes('prenom')) && !c.includes('اب') && !c.includes('ام') && !c.includes('ولي') && !c.includes('لقب') && !c.includes('مؤسسة') && !c.includes('pere') && !c.includes('mere')) {
           colMap.firstName = idx;
           return;
         }
 
-        // Nom de la mère
-        if (colMap.motherName === -1 && (c.includes('ام') || c.includes('والدة') || c.includes('mere') || c.includes('mère'))) {
+        // Statut / Régime / Cantine / Restauration (PRIORITAIRE sur le nom de la mère pour éviter confusion avec 'إطعام')
+        if (colMap.statut === -1 && (
+          c.includes('اطعام') || c.includes('مطعم') || c.includes('نظام') || c.includes('صفة') ||
+          c.includes('وضعية') || c.includes('تمدرس') || c.includes('نصف داخلي') || c.includes('خارجي') ||
+          c.includes('statut') || c.includes('regime') || c.includes('qualite') || c.includes('cantine') ||
+          c.includes('restauration') || c.includes('demi-pension') || c.includes('demi pension')
+        )) {
+          colMap.statut = idx;
+          return;
+        }
+
+        // Nom de la mère (Exclure formellement 'إطعام', 'طعام', 'العام', 'دوام')
+        if (colMap.motherName === -1 && !c.includes('اطعام') && !c.includes('طعام') && !c.includes('عام') && !c.includes('دوام') && (
+          /(?:^|\s)(?:ام|الام|والدة|الوالدة|اسم الام|لقب الام|اسم ولقب الام)(?:$|\s)/.test(c) ||
+          c.includes('mere') || c.includes('maman')
+        )) {
           colMap.motherName = idx;
           return;
         }
 
         // Téléphone parent
-        if (colMap.parentPhone === -1 && ((c.includes('ولي') || c.includes('اب') || c.includes('parent') || c.includes('pere') || c.includes('père')) && (c.includes('هاتف') || c.includes('tel') || c.includes('mobile')))) {
+        if (colMap.parentPhone === -1 && ((c.includes('ولي') || c.includes('اب') || c.includes('parent') || c.includes('pere')) && (c.includes('هاتف') || c.includes('tel') || c.includes('mobile')))) {
           colMap.parentPhone = idx;
           return;
         }
 
         // Nom du tuteur / père
-        if (colMap.parentName === -1 && (c.includes('اب') || c.includes('ولي') || c.includes('père') || c.includes('pere') || c.includes('tuteur') || c.includes('parent')) && !c.includes('هاتف') && !c.includes('tel')) {
+        if (colMap.parentName === -1 && (c.includes('اب') || c.includes('ولي') || c.includes('pere') || c.includes('tuteur') || c.includes('parent')) && !c.includes('هاتف') && !c.includes('tel')) {
           colMap.parentName = idx;
           return;
         }
@@ -5167,15 +5194,14 @@ class EdumindApp {
           return;
         }
 
-        // Classe / Groupe / Division
-        if (colMap.group === -1 && (c.includes('فوج') || c.includes('قسم') || c.includes('فرع') || c.includes('groupe') || c.includes('classe') || c.includes('division'))) {
+        // Classe / Groupe / Section / Division / Filière / Structure (Bilingue Arabe / Français)
+        if (colMap.group === -1 && (
+          c.includes('فوج') || c.includes('قسم') || c.includes('فرع') || c.includes('شعبة') || c.includes('صف') ||
+          c.includes('classe') || c.includes('groupe') || c.includes('division') || c.includes('section') ||
+          c.includes('structure') || c.includes('filiere') ||
+          c === 'div' || c === 'grp' || c === 'cls' || c === 'grpe' || c === 'str'
+        )) {
           colMap.group = idx;
-          return;
-        }
-
-        // Statut / Régime (demi-pensionnaire ou externe)
-        if (colMap.statut === -1 && (c.includes('صفة') || c.includes('نظام') || c.includes('وضعية') || c.includes('مطعم') || c.includes('داخلي') || c.includes('statut') || c.includes('regime') || c.includes('qualite'))) {
-          colMap.statut = idx;
           return;
         }
 
@@ -5270,6 +5296,12 @@ class EdumindApp {
         let statut = colMap.statut !== -1 ? String(row[colMap.statut] || '').trim() : '';
         let levelName = colMap.level !== -1 ? String(row[colMap.level] || '').trim() : detectedSheetLevel;
 
+        // Si la colonne mère contient en réalité la صفة/الإطعام (خارجي أو نصف داخلي)
+        if (motherName && (motherName.includes('خارجي') || motherName.includes('نصف') || motherName.includes('داخلي') || motherName.toLowerCase().includes('demi') || motherName.toLowerCase().includes('externe'))) {
+          if (!statut) statut = motherName;
+          motherName = '';
+        }
+
         // Découpage intelligent si colonne combinée ou prénom/nom avec espaces
         if (!firstName && !lastName && rawFullName) {
           const split = splitFullName(rawFullName);
@@ -5310,16 +5342,42 @@ class EdumindApp {
           parentFullName = `ولي أمر التلميذ ${lastName} ${firstName}`.trim();
         }
 
-        // Déduction automatique du niveau si vide
+        // Déduction automatique et complète du niveau (Bilingue Arabe / Français)
+        const combinedLvlText = normAr(`${levelName} ${groupName}`);
         if (!levelName && groupName) {
-          const gn = normAr(groupName);
-          if (gn.includes('1م') || gn.includes('1ام') || gn.includes('1am') || (gn.includes('1') && gn.includes('متوسط'))) levelName = '1AM';
-          else if (gn.includes('2م') || gn.includes('2ام') || gn.includes('2am') || (gn.includes('2') && gn.includes('متوسط'))) levelName = '2AM';
-          else if (gn.includes('3م') || gn.includes('3ام') || gn.includes('3am') || (gn.includes('3') && gn.includes('متوسط'))) levelName = '3AM';
-          else if (gn.includes('4م') || gn.includes('4ام') || gn.includes('4am') || (gn.includes('4') && gn.includes('متوسط')) || gn.includes('بيام')) levelName = '4AM';
-          else if (gn.includes('1as') || gn.includes('1ث') || (gn.includes('1') && gn.includes('ثانوي'))) levelName = '1AS';
-          else if (gn.includes('2as') || gn.includes('2ث') || (gn.includes('2') && gn.includes('ثانوي'))) levelName = '2AS';
-          else if (gn.includes('3as') || gn.includes('3ث') || (gn.includes('3') && gn.includes('ثانوي'))) levelName = '3AS';
+          if (combinedLvlText.includes('1am') || combinedLvlText.includes('1م') || combinedLvlText.includes('1ام') || (combinedLvlText.includes('1') && combinedLvlText.includes('متوسط')) || combinedLvlText.includes('اولي متوسط') || combinedLvlText.includes('س1م')) levelName = '1AM';
+          else if (combinedLvlText.includes('2am') || combinedLvlText.includes('2م') || combinedLvlText.includes('2ام') || (combinedLvlText.includes('2') && combinedLvlText.includes('متوسط')) || combinedLvlText.includes('ثانيه متوسط') || combinedLvlText.includes('س2م')) levelName = '2AM';
+          else if (combinedLvlText.includes('3am') || combinedLvlText.includes('3م') || combinedLvlText.includes('3ام') || (combinedLvlText.includes('3') && combinedLvlText.includes('متوسط')) || combinedLvlText.includes('ثالثه متوسط') || combinedLvlText.includes('س3م')) levelName = '3AM';
+          else if (combinedLvlText.includes('4am') || combinedLvlText.includes('4م') || combinedLvlText.includes('4ام') || (combinedLvlText.includes('4') && combinedLvlText.includes('متوسط')) || combinedLvlText.includes('رابعه متوسط') || combinedLvlText.includes('بيام') || combinedLvlText.includes('bem') || combinedLvlText.includes('س4م')) levelName = '4AM';
+          else if (combinedLvlText.includes('1as') || combinedLvlText.includes('1ث') || (combinedLvlText.includes('1') && combinedLvlText.includes('ثانوي')) || combinedLvlText.includes('اولي ثانوي') || combinedLvlText.includes('س1ث') || combinedLvlText.includes('tcst') || combinedLvlText.includes('tcl')) levelName = '1AS';
+          else if (combinedLvlText.includes('2as') || combinedLvlText.includes('2ث') || (combinedLvlText.includes('2') && combinedLvlText.includes('ثانوي')) || combinedLvlText.includes('ثانيه ثانوي') || combinedLvlText.includes('س2ث')) levelName = '2AS';
+          else if (combinedLvlText.includes('3as') || combinedLvlText.includes('3ث') || (combinedLvlText.includes('3') && combinedLvlText.includes('ثانوي')) || combinedLvlText.includes('ثالثه ثانوي') || combinedLvlText.includes('باك') || combinedLvlText.includes('bac') || combinedLvlText.includes('س3ث')) levelName = '3AS';
+          else if (combinedLvlText.includes('1ap') || (combinedLvlText.includes('1') && combinedLvlText.includes('ابتدائي'))) levelName = '1AP';
+          else if (combinedLvlText.includes('2ap') || (combinedLvlText.includes('2') && combinedLvlText.includes('ابتدائي'))) levelName = '2AP';
+          else if (combinedLvlText.includes('3ap') || (combinedLvlText.includes('3') && combinedLvlText.includes('ابتدائي'))) levelName = '3AP';
+          else if (combinedLvlText.includes('4ap') || (combinedLvlText.includes('4') && combinedLvlText.includes('ابتدائي'))) levelName = '4AP';
+          else if (combinedLvlText.includes('5ap') || (combinedLvlText.includes('5') && combinedLvlText.includes('ابتدائي'))) levelName = '5AP';
+        }
+
+        // Formatage bilingue élégant de l'affichage du groupe pour la prévisualisation
+        let displayGroupName = groupName;
+        if (groupName) {
+          const gnClean = normAr(groupName);
+          // Extraire le numéro de division (ex: '3' dans '1م3', '1AM 3', 'قسم 3' ou '3')
+          const divMatch = gnClean.match(/(?:[1-5]\s*(?:am|as|ap|ms|م|ث|ب|متوسط|ثانوي|ابتدائي))\s*[\-\_\s/:]*(\d+)/i) ||
+                           gnClean.match(/(?:فوج|قسم|فرع|groupe|classe|section|division|div|grp|cls)\s*[:：\-\s]*(\d+)/i) ||
+                           gnClean.match(/^(\d+)$/);
+          const divNum = divMatch ? divMatch[1] : null;
+          if (divNum && levelName) {
+            if (levelName === '1AM') displayGroupName = `1 متوسط ${divNum} (1AM-${divNum})`;
+            else if (levelName === '2AM') displayGroupName = `2 متوسط ${divNum} (2AM-${divNum})`;
+            else if (levelName === '3AM') displayGroupName = `3 متوسط ${divNum} (3AM-${divNum})`;
+            else if (levelName === '4AM') displayGroupName = `4 متوسط ${divNum} (4AM-${divNum})`;
+            else if (levelName === '1AS') displayGroupName = `1 ثانوي ${divNum} (1AS-${divNum})`;
+            else if (levelName === '2AS') displayGroupName = `2 ثانوي ${divNum} (2AS-${divNum})`;
+            else if (levelName === '3AS') displayGroupName = `3 ثانوي ${divNum} (3AS-${divNum})`;
+            else if (levelName.endsWith('AP')) displayGroupName = `${levelName[0]} ابتدائي ${divNum} (${levelName}-${divNum})`;
+          }
         }
 
         parsedStudents.push({
@@ -5336,7 +5394,7 @@ class EdumindApp {
           phone: phone || null,
           address: address || null,
           raw_group: groupName || null,
-          group_name: groupName || null,
+          group_name: displayGroupName || groupName || null,
           statut: statut || null,
           level_name: levelName || null,
           isValid: Boolean(firstName || lastName || matricule)
