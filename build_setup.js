@@ -68,7 +68,6 @@ async function main() {
     'package.json',
     'license_manager.js',
     'updater.js',
-    'find_sections.js',
     'seed.js',
     'public',
     'node_modules'

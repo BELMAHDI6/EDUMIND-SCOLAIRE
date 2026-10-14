@@ -53,10 +53,12 @@ async function main() {
 
   console.log(`\n📦 Préparation du patch v${newVer}...`);
 
-  // 1. Update version in package.json
+  // 1. Update version in package.json and version file
   pkg.version = newVer;
   fs.writeFileSync(pkgPath, JSON.stringify(pkg, null, 2) + '\n', 'utf8');
-  console.log(`✅ 1. package.json mis à jour vers v${newVer}`);
+  const verFilePath = path.join(PROJECT_DIR, 'version');
+  fs.writeFileSync(verFilePath, newVer + '\n', 'utf8');
+  console.log(`✅ 1. package.json et version mis à jour vers v${newVer}`);
 
   // 2. Prepare staging folder
   const tempDir = path.join(os.tmpdir(), `edumind_scolaire_patch_${Date.now()}`);
@@ -67,9 +69,9 @@ async function main() {
     'database.js',
     'main.js',
     'package.json',
+    'version',
     'updater.js',
     'license_manager.js',
-    'find_sections.js',
     'public'
   ];
 
