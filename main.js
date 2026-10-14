@@ -70,7 +70,10 @@ async function ensureServerRunning() {
   return activePort;
 }
 
+let isNormalQuit = false;
+
 function cleanupServer() {
+  isNormalQuit = true;
   if (serverProcess) {
     const pid = serverProcess.pid;
     try {
@@ -93,6 +96,55 @@ function cleanupServer() {
 
     serverProcess = null;
   }
+}
+
+async function ensureServerRunning() {
+  const alreadyUp = await isServerReady(activePort);
+  if (alreadyUp) return activePort;
+
+  let appRootDir = __dirname;
+  if (__dirname.includes('app.asar')) {
+    const unpackedDir = path.join(process.resourcesPath, 'app');
+    if (fs.existsSync(unpackedDir)) {
+      appRootDir = unpackedDir;
+    }
+  }
+
+  const serverScript = path.join(appRootDir, 'server.js');
+  const nodeCandidates = [
+    path.join(appRootDir, 'bin', 'node.exe'),
+    path.join(__dirname, 'bin', 'node.exe'),
+    path.join(process.resourcesPath, 'app', 'bin', 'node.exe'),
+    path.join(path.dirname(process.execPath), 'bin', 'node.exe'),
+    'C:\\Program Files\\node.exe',
+    'C:\\Program Files\\nodejs\\node.exe',
+    'node'
+  ];
+  const nodeExe = nodeCandidates.find(p => p === 'node' || fs.existsSync(p)) || 'node';
+
+  serverProcess = spawn(nodeExe, [serverScript], {
+    cwd: appRootDir,
+    env: { ...process.env, PORT: String(activePort) },
+    stdio: ['ignore', 'pipe', 'pipe'],
+    windowsHide: true
+  });
+
+  serverProcess.on('exit', (code) => {
+    serverProcess = null;
+    // If server exited unexpectedly or after an update restart:
+    if (!isNormalQuit) {
+      console.log(`[Main] Serveur Node arrêté (code: ${code}). Redémarrage automatique d'EDUMIND...`);
+      app.relaunch();
+      app.exit(0);
+    }
+  });
+
+  for (let i = 0; i < 40; i++) {
+    const ready = await isServerReady(activePort);
+    if (ready) return activePort;
+    await new Promise((r) => setTimeout(r, 250));
+  }
+  return activePort;
 }
 
 async function createMainWindow() {
@@ -120,6 +172,16 @@ async function createMainWindow() {
 
   mainWindow.on('closed', () => {
     mainWindow = null;
+  });
+
+  // Auto-retry connection if backend server is still starting or restarting
+  mainWindow.webContents.on('did-fail-load', (event, errorCode, errorDescription) => {
+    console.log(`[Main] En attente du serveur (${errorCode}: ${errorDescription})... Nouvelle tentative dans 1s`);
+    setTimeout(() => {
+      if (mainWindow && !mainWindow.isDestroyed()) {
+        mainWindow.loadURL(`http://127.0.0.1:${activePort}`);
+      }
+    }, 1000);
   });
 
   try {

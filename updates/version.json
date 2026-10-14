@@ -1,7 +1,7 @@
 {
-  "version": "1.0.3",
+  "version": "1.0.4",
   "releaseDate": "2026-10-14",
-  "zipUrl": "https://raw.githubusercontent.com/BELMAHDI6/EDUMIND-SCOLAIRE/main/updates/edumind_scolaire_patch_v1.0.3.zip",
-  "notes": "إصلاح جذري للتعرف على الأقسام وتوزيع التلاميذ بدقة تامة حسب المستوى الدراسي باللغتين العربية والفرنسية (1AM-4AM / 1AS-3AS / 1AP-5AP) مع ضبط صفة الإطعام",
-  "notes_ar": "إصلاح جذري للتعرف على الأقسام وتوزيع التلاميذ بدقة تامة حسب المستوى الدراسي باللغتين العربية والفرنسية (1AM-4AM / 1AS-3AS / 1AP-5AP) مع ضبط صفة الإطعام"
+  "zipUrl": "https://raw.githubusercontent.com/BELMAHDI6/EDUMIND-SCOLAIRE/main/updates/edumind_scolaire_patch_v1.0.4.zip",
+  "notes": "Correction du redemarrage automatique apres mise a jour et fiabilisation de la connexion",
+  "notes_ar": "Correction du redemarrage automatique apres mise a jour et fiabilisation de la connexion"
 }

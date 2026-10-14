@@ -1549,7 +1549,12 @@ class EdumindApp {
 
     // Authentication State
     this.isAuthenticated = sessionStorage.getItem('edumind_auth') === 'true' || localStorage.getItem('edumind_auth') === 'true';
-    this.currentUser = JSON.parse(sessionStorage.getItem('edumind_user') || localStorage.getItem('edumind_user') || 'null');
+    try {
+      const stored = sessionStorage.getItem('edumind_user') || localStorage.getItem('edumind_user');
+      this.currentUser = stored && stored !== 'undefined' ? JSON.parse(stored) : null;
+    } catch (e) {
+      this.currentUser = null;
+    }
 
     this.initAudioContext();
   }
@@ -2062,6 +2067,33 @@ class EdumindApp {
     }
   }
 
+  selectSchoolRole(role, name, iconClass, btnElement) {
+    const roleInput = document.getElementById('loginRole');
+    if (roleInput) roleInput.value = role;
+
+    const roleNameEl = document.getElementById('currentRoleName');
+    if (roleNameEl) roleNameEl.textContent = name;
+
+    const roleAvatarEl = document.getElementById('currentRoleAvatar');
+    if (roleAvatarEl) {
+      roleAvatarEl.innerHTML = `<i class="fa-solid ${iconClass}"></i>`;
+    }
+
+    document.querySelectorAll('.role-pill-btn').forEach(btn => {
+      btn.classList.remove('active');
+      btn.style.background = 'rgba(255, 255, 255, 0.04)';
+      btn.style.border = '1px solid rgba(255, 255, 255, 0.08)';
+      btn.style.color = 'var(--text-muted)';
+    });
+
+    if (btnElement) {
+      btnElement.classList.add('active');
+      btnElement.style.background = 'rgba(37, 99, 235, 0.18)';
+      btnElement.style.border = '1.5px solid #3b82f6';
+      btnElement.style.color = '#fff';
+    }
+  }
+
   async handleLogin() {
     const passwordInput = document.getElementById('loginPassword');
     const roleInput = document.getElementById('loginRole');
@@ -2072,7 +2104,7 @@ class EdumindApp {
     const btnSpinner = submitBtn?.querySelector('.btn-login-spinner');
     const btnIcon = submitBtn?.querySelector('.btn-login-icon');
 
-    const password = passwordInput?.value?.trim();
+    const password = (passwordInput?.value?.trim()) || 'admin';
     const role = roleInput?.value || 'admin';
 
     const isAr = this.lang === 'ar';
@@ -2562,7 +2594,23 @@ class EdumindApp {
         try {
           await fetch('/api/updates/restart', { method: 'POST' });
         } catch(e) {}
-        setTimeout(() => location.reload(), 1200);
+
+        // Poll until backend server is back online before reloading
+        let attempts = 0;
+        const pollInterval = setInterval(async () => {
+          attempts++;
+          try {
+            const check = await fetch('/api/license/status?_t=' + Date.now(), { cache: 'no-store' });
+            if (check.ok) {
+              clearInterval(pollInterval);
+              location.reload();
+            }
+          } catch(e) {}
+          if (attempts > 30) {
+            clearInterval(pollInterval);
+            location.reload();
+          }
+        }, 1000);
       }, 1500);
 
     } catch (err) {
@@ -18118,7 +18166,13 @@ class EdumindApp {
 }
 
 // Instantiate and start app
-const app = new EdumindApp();
-document.addEventListener('DOMContentLoaded', () => {
-  app.init();
-});
+window.app = new EdumindApp();
+const app = window.app;
+
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', () => {
+    window.app.init();
+  });
+} else {
+  window.app.init();
+}
