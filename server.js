@@ -2986,7 +2986,7 @@ app.get('/api/attendance/sheet', (req, res) => {
 
     // Get all enrolled students in this group
     const students = DB.queryAll(`
-      SELECT s.id as student_id, s.matricule, s.first_name, s.last_name, s.gender,
+      SELECT s.id as student_id, s.matricule, s.first_name, s.last_name, s.gender, s.regime,
              s.phone, s.parent_phone, s.parent_name, s.photo_url,
              e.id as enrollment_id, e.registration_date, e.discount_amount
       FROM enrollments e
@@ -2995,30 +2995,11 @@ app.get('/api/attendance/sheet', (req, res) => {
       ORDER BY s.last_name ASC, s.first_name ASC
     `, [group_id]);
 
-    // Attach payment status, current date attendance, and cumulative attendance per student
+    // Attach regime, current date attendance, and cumulative attendance per student (Public School: free education)
     const studentRows = students.map(s => {
-      // 1. Payment check for this month
-      const payment = DB.queryOne(`
-        SELECT paid_amount, remaining_amount, month_period
-        FROM payments
-        WHERE student_id = ? AND group_id = ? AND strftime('%Y-%m', payment_date) = ?
-        ORDER BY id DESC LIMIT 1
-      `, [s.student_id, group_id, monthStr]);
-
-      let is_paid = false;
-      let payment_badge = 'due';
-      let payment_text = 'Impayé';
-
-      if (payment) {
-        if (payment.remaining_amount <= 0) {
-          is_paid = true;
-          payment_badge = 'paid';
-          payment_text = 'À jour';
-        } else {
-          payment_badge = 'partial';
-          payment_text = `Reste: ${payment.remaining_amount} DA`;
-        }
-      }
+      const is_paid = true;
+      const payment_badge = 'paid';
+      const payment_text = 'Gratuit (Public)';
 
       // 2. Attendance on this session_date
       const att = DB.queryOne(`
@@ -3111,13 +3092,8 @@ app.post('/api/attendance/sheet/save', (req, res) => {
         const status = item.status || 'present';
         const itemNotes = item.notes || '';
 
-        // Check payment snapshot
-        const payment = DB.queryOne(`
-          SELECT id, remaining_amount FROM payments
-          WHERE student_id = ? AND group_id = ? AND strftime('%Y-%m', payment_date) = ?
-        `, [item.student_id, group_id, monthStr]);
-
-        const paymentSnapshot = (payment && (payment.remaining_amount === 0 || payment.remaining_amount === null)) ? 'paid' : 'due';
+        // In public school, education is free for all students
+        const paymentSnapshot = 'free';
 
         DB.run(`
           INSERT INTO attendance (student_id, group_id, session_date, check_in_time, status, payment_status_snapshot, notes, session_id)
@@ -3392,21 +3368,13 @@ app.post('/api/pointage/scan', (req, res) => {
 
     const now = new Date();
     const todayDate = session_date || now.toISOString().split('T')[0];
-    const currentMonthStr = todayDate.substring(0, 7);
-    let isPaid = false;
+    // In public schools, education is free for all students: isPaid is always true
+    let isPaid = true;
     let paymentInfo = null;
     let alreadyMarked = false;
     let existingTime = null;
 
     if (targetGroupId && !notInSelectedGroup) {
-      // Check monthly payment
-      paymentInfo = DB.queryOne(`
-        SELECT * FROM payments 
-        WHERE student_id = ? AND group_id = ? AND strftime('%Y-%m', payment_date) = ?
-      `, [student.id, targetGroupId, currentMonthStr]);
-
-      isPaid = !!(paymentInfo && (paymentInfo.remaining_amount === 0 || paymentInfo.remaining_amount === null));
-
       const checkInTime = now.toTimeString().split(' ')[0];
 
       // Check if already checked-in today for this group
@@ -3422,12 +3390,12 @@ app.post('/api/pointage/scan', (req, res) => {
         // Insert or update attendance record to present
         DB.run(`
           INSERT INTO attendance (student_id, group_id, session_date, check_in_time, status, payment_status_snapshot)
-          VALUES (?, ?, ?, ?, 'present', ?)
+          VALUES (?, ?, ?, ?, 'present', 'free')
           ON CONFLICT(student_id, group_id, session_date) DO UPDATE SET
             status = 'present',
             check_in_time = excluded.check_in_time,
-            payment_status_snapshot = excluded.payment_status_snapshot
-        `, [student.id, targetGroupId, todayDate, checkInTime, isPaid ? 'paid' : 'due']);
+            payment_status_snapshot = 'free'
+        `, [student.id, targetGroupId, todayDate, checkInTime]);
       }
     }
 
@@ -3465,10 +3433,10 @@ app.post('/api/pointage/scan', (req, res) => {
       notInSelectedGroup,
       alreadyMarked,
       existingTime,
-      isPaid,
-      paymentInfo,
+      isPaid: true,
+      paymentInfo: null,
       groupStats,
-      status: isPaid ? 'PAID' : 'DUE',
+      status: 'PRESENT',
       timestamp: new Date().toLocaleTimeString('fr-FR')
     });
   } catch (err) {
@@ -3486,9 +3454,9 @@ app.get('/api/pointage/live-list', (req, res) => {
     const todayDate = session_date || new Date().toISOString().split('T')[0];
     const monthStr = todayDate.substring(0, 7);
 
-    // Enrolled students in this group
+    // Enrolled students in this group (including regime for public schools)
     const students = DB.queryAll(`
-      SELECT s.id, s.matricule, s.first_name, s.last_name, s.photo_url, s.phone, s.parent_phone,
+      SELECT s.id, s.matricule, s.first_name, s.last_name, s.photo_url, s.phone, s.parent_phone, s.regime,
              a.id as attendance_id, a.check_in_time, a.status as attendance_status,
              p.id as payment_id, p.paid_amount, p.remaining_amount
       FROM enrollments e
@@ -3581,12 +3549,8 @@ app.post('/api/attendance/close-session', (req, res) => {
           DB.run('UPDATE attendance SET session_id = ? WHERE id = ?', [sessionObj.id, existing.id]);
         }
       } else {
-        // Not checked-in -> Automatically mark as absent!
-        const payment = DB.queryOne(`
-          SELECT id, remaining_amount FROM payments
-          WHERE student_id = ? AND group_id = ? AND strftime('%Y-%m', payment_date) = ?
-        `, [st.id, group_id, monthStr]);
-        const paymentSnapshot = (payment && (payment.remaining_amount === 0 || payment.remaining_amount === null)) ? 'paid' : 'due';
+        // In public schools, education is free for all students
+        const paymentSnapshot = 'free';
 
         DB.run(`
           INSERT INTO attendance (student_id, group_id, session_date, check_in_time, status, payment_status_snapshot, session_id)

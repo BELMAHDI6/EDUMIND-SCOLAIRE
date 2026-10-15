@@ -7479,14 +7479,12 @@ class EdumindApp {
       const record = this.attendanceRecords[s.student_id] || { status: 'present', notes: '' };
       const currentStatus = record.status;
 
-      // Payment badge
-      let paymentBadgeHtml = '';
-      if (s.is_paid) {
-        paymentBadgeHtml = `<span class="att-badge-paid"><i class="fa-solid fa-circle-check"></i> ${this.lang === 'ar' ? 'مسدد' : 'À jour'}</span>`;
-      } else if (s.payment_badge === 'partial') {
-        paymentBadgeHtml = `<span class="att-badge-partial"><i class="fa-solid fa-circle-exclamation"></i> ${s.payment_text}</span>`;
-      } else {
-        paymentBadgeHtml = `<span class="att-badge-due"><i class="fa-solid fa-triangle-exclamation"></i> ${this.lang === 'ar' ? 'غير مسدد' : 'Impayé'}</span>`;
+      // Regime badge (Public School)
+      let regimeBadgeHtml = `<span style="background: rgba(59, 130, 246, 0.12); color: #3b82f6; padding: 4px 10px; border-radius: 6px; font-size: 11px; font-weight: 700;"><i class="fa-solid fa-utensils"></i> ${this.lang === 'ar' ? 'نصف داخلي' : 'Demi-pension'}</span>`;
+      if (s.regime === 'externe') {
+        regimeBadgeHtml = `<span style="background: rgba(148, 163, 184, 0.12); color: #94a3b8; padding: 4px 10px; border-radius: 6px; font-size: 11px; font-weight: 700;"><i class="fa-solid fa-person-walking"></i> ${this.lang === 'ar' ? 'خارجي' : 'Externe'}</span>`;
+      } else if (s.regime === 'interne') {
+        regimeBadgeHtml = `<span style="background: rgba(168, 85, 247, 0.12); color: #a855f7; padding: 4px 10px; border-radius: 6px; font-size: 11px; font-weight: 700;"><i class="fa-solid fa-bed"></i> ${this.lang === 'ar' ? 'داخلي' : 'Interne'}</span>`;
       }
 
       // Attendance rate in this group
@@ -7532,7 +7530,7 @@ class EdumindApp {
             </div>
           </td>
           <td>
-            ${paymentBadgeHtml}
+            ${regimeBadgeHtml}
           </td>
           <td style="text-align: center;">
             <div class="att-status-group" id="statusGroup_${s.student_id}">
@@ -8277,31 +8275,19 @@ class EdumindApp {
             ${this.lang === 'ar' ? 'تم تسجيل حضور هذا التلميذ سابقاً عند: ' + (data.existingTime || '') : 'Pointage déjà validé précédemment à ' + (data.existingTime || '')}
           </p>
         `;
-      } else if (data.isPaid) {
+      } else {
+        // Attendance successfully recorded (Public school: free for all students)
         this.playChime('success');
         card.className = 'pointage-result-card status-paid';
         badge.style.background = '#10b981';
-        badge.textContent = this.lang === 'ar' ? '✅ الحساب مسدد (حاضر)' : '✅ INSCRIPTION À JOUR (PAYÉ)';
+        badge.textContent = this.lang === 'ar' ? '✅ تم تسجيل الحضور (حاضر)' : '✅ PRÉSENCE ENREGISTRÉE (PRÉSENT)';
         infoText.innerHTML = `
           <h3 style="font-size: 20px; font-weight: 800; color: #fff;">${this.escapeHtml(s.first_name)} ${this.escapeHtml(s.last_name)}</h3>
           <p style="color: #94a3b8; font-size: 13.5px;">Matricule: <strong style="color: #60a5fa;">${s.matricule}</strong> | ${s.level_name || '-'}</p>
           <p style="color: #10b981; font-weight: 700; margin-top: 4px; font-size: 13.5px;">
-            ${this.lang === 'ar' ? 'تم تأكيد دفع اشتراك الشهر. سُجّل الحضور عند ' + data.timestamp : 'Paiement vérifié pour ce mois. Présence enregistrée à ' + data.timestamp}
+            ${this.lang === 'ar' ? 'تم تسجيل حضور التلميذ بنجاح عند الساعة ' + data.timestamp : 'Présence enregistrée avec succès à ' + data.timestamp}
           </p>
-          ${data.autoAssignedGroup ? `<p style="color: #38bdf8; font-size: 12.5px; margin-top: 4px; font-weight: 700;"><i class="fa-solid fa-users"></i> ${this.lang === 'ar' ? 'الفوج:' : 'Groupe:'} ${this.escapeHtml(data.autoAssignedGroup.name)} (${this.escapeHtml(data.autoAssignedGroup.subject_name || '')})</p>` : ''}
-        `;
-      } else {
-        this.playChime('warning');
-        card.className = 'pointage-result-card status-due';
-        badge.style.background = '#ef4444';
-        badge.textContent = this.lang === 'ar' ? '⚠️ تنبيه: اشتراك غير مسدد' : '⚠️ ATTENTION: ABONNEMENT IMPAYÉ';
-        infoText.innerHTML = `
-          <h3 style="font-size: 20px; font-weight: 800; color: #fff;">${this.escapeHtml(s.first_name)} ${this.escapeHtml(s.last_name)}</h3>
-          <p style="color: #94a3b8; font-size: 13.5px;">Matricule: <strong style="color: #60a5fa;">${s.matricule}</strong> | Tél: ${s.phone || s.parent_phone || '-'}</p>
-          <p style="color: #ef4444; font-weight: 700; margin-top: 4px; font-size: 13.5px;">
-            ${this.lang === 'ar' ? 'التلميذ لم يسدد اشتراك هذا الشهر بعد. تم تسجيل الحضور مع تنبيه بالمستحقات.' : 'L\'élève n\'a pas encore réglé ce mois. Présence notée avec retard de paiement.'}
-          </p>
-          ${data.autoAssignedGroup ? `<p style="color: #38bdf8; font-size: 12.5px; margin-top: 4px; font-weight: 700;"><i class="fa-solid fa-users"></i> ${this.lang === 'ar' ? 'الفوج:' : 'Groupe:'} ${this.escapeHtml(data.autoAssignedGroup.name)} (${this.escapeHtml(data.autoAssignedGroup.subject_name || '')})</p>` : ''}
+          ${data.autoAssignedGroup ? `<p style="color: #38bdf8; font-size: 12.5px; margin-top: 4px; font-weight: 700;"><i class="fa-solid fa-users"></i> ${this.lang === 'ar' ? 'القسم / الفوج:' : 'Classe / Groupe:'} ${this.escapeHtml(data.autoAssignedGroup.name)} (${this.escapeHtml(data.autoAssignedGroup.subject_name || '')})</p>` : ''}
         `;
       }
 
@@ -8375,11 +8361,11 @@ class EdumindApp {
           statusBadge = `<span style="background: rgba(239, 68, 68, 0.15); color: #ef4444; padding: 4px 10px; border-radius: 6px; font-size: 11px; font-weight: 800; display: inline-flex; align-items: center; gap: 4px;"><i class="fa-solid fa-xmark"></i> ${this.lang === 'ar' ? 'غائب' : 'Absent'}</span>`;
         }
 
-        let paymentBadge = `<span style="color: #ef4444; font-size: 12px; font-weight: 700;"><i class="fa-solid fa-circle-exclamation"></i> ${this.lang === 'ar' ? 'غير مسدد' : 'Impayé'}</span>`;
-        if (isPaid) {
-          paymentBadge = `<span style="color: #10b981; font-size: 12px; font-weight: 700;"><i class="fa-solid fa-circle-check"></i> ${this.lang === 'ar' ? 'مسدد' : 'Réglé'}</span>`;
-        } else if (s.remaining_amount > 0) {
-          paymentBadge = `<span style="color: #f59e0b; font-size: 12px; font-weight: 700;"><i class="fa-solid fa-clock"></i> ${this.lang === 'ar' ? 'متبقي ' + s.remaining_amount + ' دج' : 'Reste ' + s.remaining_amount + ' DA'}</span>`;
+        let regimeBadge = `<span style="background: rgba(59, 130, 246, 0.12); color: #3b82f6; padding: 3px 8px; border-radius: 6px; font-size: 11px; font-weight: 700;"><i class="fa-solid fa-utensils"></i> ${this.lang === 'ar' ? 'نصف داخلي' : 'Demi-pension'}</span>`;
+        if (s.regime === 'externe') {
+          regimeBadge = `<span style="background: rgba(148, 163, 184, 0.12); color: #94a3b8; padding: 3px 8px; border-radius: 6px; font-size: 11px; font-weight: 700;"><i class="fa-solid fa-person-walking"></i> ${this.lang === 'ar' ? 'خارجي' : 'Externe'}</span>`;
+        } else if (s.regime === 'interne') {
+          regimeBadge = `<span style="background: rgba(168, 85, 247, 0.12); color: #a855f7; padding: 3px 8px; border-radius: 6px; font-size: 11px; font-weight: 700;"><i class="fa-solid fa-bed"></i> ${this.lang === 'ar' ? 'داخلي' : 'Interne'}</span>`;
         }
 
         return `
@@ -8395,7 +8381,7 @@ class EdumindApp {
                 <strong>${this.escapeHtml(s.last_name)} ${this.escapeHtml(s.first_name)}</strong>
               </div>
             </td>
-            <td>${paymentBadge}</td>
+            <td>${regimeBadge}</td>
             <td style="text-align: center;">${statusBadge}</td>
             <td style="text-align: center;">
               ${isPresent ? `

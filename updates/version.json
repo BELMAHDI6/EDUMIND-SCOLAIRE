@@ -1,7 +1,7 @@
 {
-  "version": "1.0.5",
-  "releaseDate": "2026-10-14",
-  "zipUrl": "https://raw.githubusercontent.com/BELMAHDI6/EDUMIND-SCOLAIRE/main/updates/edumind_scolaire_patch_v1.0.5.zip",
-  "notes": "Correction critique: syntaxe du parseur et debloquage complet de la connexion",
-  "notes_ar": "Correction critique: syntaxe du parseur et debloquage complet de la connexion"
+  "version": "1.0.6",
+  "releaseDate": "2026-10-15",
+  "zipUrl": "https://raw.githubusercontent.com/BELMAHDI6/EDUMIND-SCOLAIRE/main/updates/edumind_scolaire_patch_v1.0.6.zip",
+  "notes": "Suppression des alertes de cotisation pour le pointage des ecoles publiques (CEM/Lycee) et affichage du regime scolaire",
+  "notes_ar": "إلغاء تنبيهات الاشتراكات المدفوعة في تسجيل الحضور للمدارس العمومية وإظهار الصفة المدرسية (نصف داخلي/خارجي)"
 }
