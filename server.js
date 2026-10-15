@@ -3251,14 +3251,17 @@ function normalizeBarcodeCode(raw) {
   if (!raw) return '';
   let code = String(raw).trim().replace(/[\x00-\x1F\x7F]/g, '');
 
-  // 1. Arabic-Indic digits to ASCII (٠-٩ -> 0-9)
+  // 1. Arabic-Indic & Eastern Arabic digits to standard ASCII (٠-٩ and ۰-۹ -> 0-9)
   const arabicDigits = ['٠','١','٢','٣','٤','٥','٦','٧','٨','٩'];
   arabicDigits.forEach((d, i) => { code = code.replaceAll(d, String(i)); });
+  const farsiDigits = ['۰','۱','۲','۳','۴','۵','۶','۷','۸','۹'];
+  farsiDigits.forEach((d, i) => { code = code.replaceAll(d, String(i)); });
 
-  // 2. Arabic keyboard scancodes for common prefixes (ثمث -> ELE, etc.)
+  // 2. Arabic keyboard scancodes for Latin characters (when Arabic layout is active during scan)
   const arKeys = {
-    'ث':'E', 'م':'L', 'ف':'T', 'ع':'U', 'ن':'N', 'س':'S',
-    'ح':'P', 'د':'N', 'ق':'A', 'غ':'Y', 'ص':'W'
+    'ض':'Q', 'ص':'W', 'ث':'E', 'ق':'R', 'ف':'T', 'غ':'Y', 'ع':'U', 'ه':'I', 'خ':'O', 'ح':'P',
+    'ش':'A', 'س':'S', 'ي':'D', 'ب':'F', 'ل':'G', 'ا':'H', 'ت':'J', 'ن':'K', 'م':'L',
+    'ئ':'Z', 'ء':'X', 'ؤ':'C', 'ر':'V', 'ى':'N', 'ة':'E'
   };
   if (/[\u0600-\u06FF]/.test(code)) {
     let conv = '';
@@ -3267,7 +3270,7 @@ function normalizeBarcodeCode(raw) {
   }
 
   // 3. French AZERTY number row without Shift:
-  // & -> 1, é -> 2, " -> 3, ' -> 4, ( -> 5, - -> 6, è -> 7, _ -> 8, ç -> 9, à -> 0
+  // & -> 1, é/É -> 2, " -> 3, ' -> 4, ( -> 5, - -> 6, è/È -> 7, _ -> 8, ç/Ç -> 9, à/À -> 0, § -> 6
   const azertyDigits = {
     '&': '1', 'é': '2', 'É': '2',
     '"': '3',
@@ -3276,21 +3279,23 @@ function normalizeBarcodeCode(raw) {
     'è': '7', 'È': '7',
     '_': '8',
     'ç': '9', 'Ç': '9',
-    'à': '0', 'À': '0'
+    'à': '0', 'À': '0',
+    '§': '6'
   };
 
-  if (/[éèçà&"'_]/.test(code) || /[\(\)]/.test(code)) {
+  if (/[éèçà&"'_§]/.test(code) || /[\(\)]/.test(code)) {
+    const hasLetterPrefix = /^[A-Za-z]{2,5}-/.test(code);
     let conv = '';
     for (let i = 0; i < code.length; i++) {
       const ch = code[i];
       if (azertyDigits[ch] !== undefined) {
         conv += azertyDigits[ch];
-      } else if (ch === '-' && (i === 3 || i === 8)) {
-        // Keep hyphens in format like ELE-2026-0001
-        conv += '-';
       } else if (ch === '-') {
-        // On AZERTY, key 6 outputs '-'
-        conv += '6';
+        if (hasLetterPrefix && (i === 3 || i === 4 || i === 8)) {
+          conv += '-';
+        } else {
+          conv += '6';
+        }
       } else {
         conv += ch;
       }
@@ -5143,31 +5148,40 @@ app.post('/api/cantine/scan', (req, res) => {
     if (!query || !query.trim()) {
       return res.status(400).json({ success: false, error: 'رمز التلميذ أو رقم التسجيل مطلوب' });
     }
-    const cleanQuery = query.trim();
+    const rawCode = String(query).trim();
+    const cleanCode = normalizeBarcodeCode(rawCode);
+    const cleanNoDash = cleanCode.replace(/[^A-Za-z0-9]/g, '');
     const today = new Date().toISOString().split('T')[0];
     const nowTime = new Date().toTimeString().split(' ')[0];
 
-    // Find student by matricule or qr_code or id
+    // Find student by matricule, qr_code, no-dash variants, or id (case-insensitive)
     const student = DB.queryOne(`
       SELECT s.*, l.name as level_name, g.name as group_name
       FROM students s
       LEFT JOIN levels l ON s.level_id = l.id
       LEFT JOIN enrollments e ON e.student_id = s.id AND e.status = 'active'
       LEFT JOIN groups g ON e.group_id = g.id
-      WHERE s.matricule = ? OR s.qr_code = ? OR s.id = ?
+      WHERE (
+        s.matricule = ? COLLATE NOCASE 
+        OR s.qr_code = ? COLLATE NOCASE 
+        OR REPLACE(s.matricule, '-', '') = ? COLLATE NOCASE
+        OR REPLACE(s.qr_code, '-', '') = ? COLLATE NOCASE
+        OR CAST(s.id AS TEXT) = ?
+        OR s.matricule = ? COLLATE NOCASE
+      ) AND s.active = 1
       LIMIT 1
-    `, [cleanQuery, cleanQuery, parseInt(cleanQuery, 10) || 0]);
+    `, [cleanCode, cleanCode, cleanNoDash, cleanNoDash, cleanCode, rawCode]);
 
     if (!student) {
       return res.status(404).json({
         success: false,
         notFound: true,
-        error: 'لم يتم العثور على أي تلميذ بهذا الرمز / الباركود'
+        error: `لم يتم العثور على أي تلميذ بهذا الرمز / الباركود (${cleanCode || rawCode})`
       });
     }
 
-    // Check regime
-    const isDemi = student.regime === 'demi_pensionnaire' && student.canteen_active === 1;
+    // Check regime: only external students are not allowed in canteen
+    const isDemi = (student.regime === 'demi_pensionnaire' || student.regime === 'interne' || !student.regime) && (student.canteen_active === 1 || student.canteen_active === null);
     if (!isDemi) {
       return res.status(400).json({
         success: false,

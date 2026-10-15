@@ -1,7 +1,7 @@
 {
-  "version": "1.0.6",
+  "version": "1.0.7",
   "releaseDate": "2026-10-15",
-  "zipUrl": "https://raw.githubusercontent.com/BELMAHDI6/EDUMIND-SCOLAIRE/main/updates/edumind_scolaire_patch_v1.0.6.zip",
-  "notes": "Suppression des alertes de cotisation pour le pointage des ecoles publiques (CEM/Lycee) et affichage du regime scolaire",
-  "notes_ar": "إلغاء تنبيهات الاشتراكات المدفوعة في تسجيل الحضور للمدارس العمومية وإظهار الصفة المدرسية (نصف داخلي/خارجي)"
+  "zipUrl": "https://raw.githubusercontent.com/BELMAHDI6/EDUMIND-SCOLAIRE/main/updates/edumind_scolaire_patch_v1.0.7.zip",
+  "notes": "Correction: Decodage automatique des codes-barres AZERTY et arabe pour la cantine scolaire",
+  "notes_ar": "إصلاح التعرف التلقائي على قارئ الباركود (AZERTY / عربي) في المطعم المدرسي"
 }
