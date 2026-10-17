@@ -18253,6 +18253,7 @@ class EdumindApp {
                   </div>
                 </div>
                 <div style="display: flex; gap: 6px;">
+                  <button class="btn-action-edit" style="color: #3b82f6; border-color: rgba(59, 130, 246, 0.3); background: rgba(59, 130, 246, 0.08);" title="جدول التوقيت واستعمال القاعة" onclick="app.openRoomTimetable(${r.id})"><i class="fa-regular fa-calendar-days"></i></button>
                   <button class="btn-action-edit" title="تعديل" onclick="app.editRoom(${r.id})"><i class="fa-solid fa-pen-to-square"></i></button>
                   <button class="btn-action-delete" title="حذف" onclick="app.deleteRoom(${r.id})"><i class="fa-solid fa-trash-can"></i></button>
                 </div>
@@ -18275,8 +18276,11 @@ class EdumindApp {
             <td><span style="color: var(--text-muted);">${this.escapeHtml(r.description || '-')}</span></td>
             <td style="text-align: right;">
               <div style="display: inline-flex; gap: 8px;">
-                <button class="btn-action-edit" onclick="app.editRoom(${r.id})"><i class="fa-solid fa-pen-to-square"></i></button>
-                <button class="btn-action-delete" onclick="app.deleteRoom(${r.id})"><i class="fa-solid fa-trash-can"></i></button>
+                <button class="btn-action-edit" style="color: #3b82f6; border-color: rgba(59, 130, 246, 0.3); background: rgba(59, 130, 246, 0.08);" title="${this.lang === 'ar' ? 'عرض جدول استعمال القاعة (المادة والأستاذ)' : 'Voir emploi du temps de la salle'}" onclick="app.openRoomTimetable(${r.id})">
+                  <i class="fa-regular fa-calendar-days"></i>
+                </button>
+                <button class="btn-action-edit" title="تعديل" onclick="app.editRoom(${r.id})"><i class="fa-solid fa-pen-to-square"></i></button>
+                <button class="btn-action-delete" title="حذف" onclick="app.deleteRoom(${r.id})"><i class="fa-solid fa-trash-can"></i></button>
               </div>
             </td>
           </tr>
