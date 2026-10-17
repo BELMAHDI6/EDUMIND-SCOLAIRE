@@ -9073,10 +9073,31 @@ class EdumindApp {
       const sLogoEl = document.getElementById('cardTeacherSchoolLogo');
       if (sLogoEl && schoolLogo) sLogoEl.src = schoolLogo;
 
+      const isEmployee = t.employee_type === 'employee';
       const fullName = `${t.first_name || ''} ${t.last_name || ''}`.trim();
-      const matricule = t.matricule || `ENS-${String(t.id).padStart(3, '0')}`;
-      const subject = t.subject_name || (this.lang === 'ar' ? 'أستاذ عام' : 'Enseignant');
+      const matricule = t.matricule || (isEmployee ? `EMP-${String(t.id).padStart(3, '0')}` : `ENS-${String(t.id).padStart(3, '0')}`);
+      const subject = isEmployee ? (t.job_title || (this.lang === 'ar' ? 'موظف / عامل' : 'Personnel')) : (t.subject_name || (this.lang === 'ar' ? 'أستاذ عام' : 'Enseignant'));
       const phone = t.phone || '-';
+
+      const tagEl = document.getElementById('cardTeacherOfficialTag');
+      if (tagEl) {
+        if (isEmployee) {
+          tagEl.textContent = this.lang === 'ar' ? 'طاقم إداري وعام' : 'PERSONNEL';
+          tagEl.style.background = 'rgba(99, 102, 241, 0.2)';
+          tagEl.style.color = '#6366f1';
+          tagEl.style.borderColor = 'rgba(99, 102, 241, 0.4)';
+        } else {
+          tagEl.textContent = this.lang === 'ar' ? 'أستاذ' : 'ENSEIGNANT';
+          tagEl.style.background = 'rgba(249, 115, 22, 0.2)';
+          tagEl.style.color = '#f97316';
+          tagEl.style.borderColor = 'rgba(249, 115, 22, 0.4)';
+        }
+      }
+
+      const subLbl = document.getElementById('cardTeacherSubjectLbl');
+      if (subLbl) {
+        subLbl.textContent = isEmployee ? (this.lang === 'ar' ? 'الوظيفة :' : 'Poste :') : (this.lang === 'ar' ? 'المادة :' : 'Matière :');
+      }
 
       const nameEl = document.getElementById('cardTeacherName');
       if (nameEl) nameEl.textContent = fullName;
@@ -12504,35 +12525,52 @@ class EdumindApp {
 
     try {
       tbody.innerHTML = list.map(t => {
+        const isEmployee = t.employee_type === 'employee';
         const fullName = `${this.escapeHtml(t.first_name || '')} ${this.escapeHtml(t.last_name || '')}`.trim();
         const gKey = t.grade || 'prof_titulaire';
         const gLabel = gradeLabels[gKey] || (isAr ? 'أستاذ تعليم' : 'Enseignant');
         const formattedAssigned = this.formatGroupName(t.assigned_groups);
-        const assignedClasses = t.assigned_groups
-          ? `<span class="badge-pill" style="background: rgba(16, 185, 129, 0.12); color: #047857; font-weight: 600; font-size: 11.5px;" title="${this.escapeHtml(formattedAssigned)}">
-              <i class="fa-solid fa-users-rectangle"></i> ${this.escapeHtml(formattedAssigned)}
+        const assignedClasses = isEmployee
+          ? `<span style="color: var(--text-muted); font-size: 11.5px;">-</span>`
+          : (t.assigned_groups
+              ? `<span class="badge-pill" style="background: rgba(16, 185, 129, 0.12); color: #047857; font-weight: 600; font-size: 11.5px;" title="${this.escapeHtml(formattedAssigned)}">
+                  <i class="fa-solid fa-users-rectangle"></i> ${this.escapeHtml(formattedAssigned)}
+                </span>`
+              : `<span style="color: var(--text-muted); font-size: 11.5px;">${isAr ? 'غير مسند' : 'Aucune classe'}</span>`);
+
+        const matriculeHtml = isEmployee
+          ? `<strong style="color: #6366f1; font-family: monospace;">${this.escapeHtml(t.matricule || '-')}</strong>`
+          : `<strong style="color: #f97316; font-family: monospace;">${this.escapeHtml(t.matricule || '-')}</strong>`;
+
+        const subjectHtml = isEmployee
+          ? `<span class="badge-pill" style="background: rgba(99, 102, 241, 0.12); color: #4f46e5; font-weight: 600; font-size: 11.5px;">
+              <i class="fa-solid fa-briefcase"></i> ${isAr ? 'موظف / عامل' : 'Personnel'}
             </span>`
-          : `<span style="color: var(--text-muted); font-size: 11.5px;">${isAr ? 'غير مسند' : 'Aucune classe'}</span>`;
+          : this.escapeHtml(t.subject_name || '-');
+
+        const statusHtml = isEmployee
+          ? `<span class="badge-pill" style="background: rgba(16, 185, 129, 0.12); color: #047857; font-weight: 700; font-size: 11.5px;">
+              <i class="fa-solid fa-id-badge"></i> ${this.escapeHtml(t.job_title || (isAr ? 'موظف' : 'Employé'))}
+            </span>`
+          : `<span class="badge-pill" style="background: rgba(59, 130, 246, 0.12); color: #2563eb; font-weight: 600; font-size: 11.5px;">
+              ${gLabel}
+            </span>`;
 
         return `
           <tr>
-            <td><strong style="color: #f97316; font-family: monospace;">${this.escapeHtml(t.matricule || '-')}</strong></td>
+            <td>${matriculeHtml}</td>
             <td><strong>${fullName || '-'}</strong></td>
-            <td>${this.escapeHtml(t.subject_name || '-')}</td>
-            <td>
-              <span class="badge-pill" style="background: rgba(59, 130, 246, 0.12); color: #2563eb; font-weight: 600; font-size: 11.5px;">
-                ${gLabel}
-              </span>
-            </td>
+            <td>${subjectHtml}</td>
+            <td>${statusHtml}</td>
             <td>${this.escapeHtml(t.phone || '-')}</td>
             <td>${t.email ? `<span style="font-size: 12px; color: var(--text-muted);">${this.escapeHtml(t.email)}</span>` : '<span style="color: var(--text-muted);">-</span>'}</td>
             <td>${assignedClasses}</td>
             <td>
               <div style="display: flex; gap: 8px; align-items: center;">
-                <button class="btn-action-badge" title="${isAr ? 'بطاقة الأستاذ' : 'Badge Enseignant'}" onclick="app.showTeacherCard(${t.id})">
+                <button class="btn-action-badge" title="${isEmployee ? (isAr ? 'بطاقة الموظف' : 'Badge Employé') : (isAr ? 'بطاقة الأستاذ' : 'Badge Enseignant')}" onclick="app.showTeacherCard(${t.id})">
                   <i class="fa-solid fa-id-badge"></i>
                 </button>
-                <button class="btn-icon" title="${isAr ? 'تعديل' : 'Modifier'}" onclick="app.editTeacher(${t.id})">
+                <button class="btn-icon" title="${isAr ? 'تعديل' : 'Modifier'}" onclick="${isEmployee ? `app.editEmployee(${t.id})` : `app.editTeacher(${t.id})`}">
                   <i class="fa-solid fa-pen-to-square"></i>
                 </button>
                 <button class="btn-icon" style="color: #ef4444;" title="${isAr ? 'حذف' : 'Supprimer'}" onclick="app.deleteTeacher(${t.id})">
@@ -14559,6 +14597,367 @@ class EdumindApp {
   }
 
   // -------------------------------------------------------------
+  // STAFF & TEACHERS CHOICE & EMPLOYEE ACTIONS
+  // -------------------------------------------------------------
+  openStaffTypeChoiceModal() {
+    const isAr = this.lang === 'ar';
+    const titleEl = document.getElementById('choiceModalTitle');
+    if (titleEl) {
+      titleEl.textContent = isAr ? 'إضافة فرد إلى الطاقم / عضو جديد' : 'Ajouter un Membre du Personnel / Nouveau Collaborateur';
+    }
+    const modal = document.getElementById('modalStaffTypeChoice');
+    if (modal) modal.classList.add('active');
+  }
+
+  chooseStaffType(type) {
+    const modal = document.getElementById('modalStaffTypeChoice');
+    if (modal) modal.classList.remove('active');
+
+    if (type === 'employee') {
+      this.openModalEmployee();
+    } else {
+      this.openModalTeacher();
+    }
+  }
+
+  async loadStaffJobs() {
+    const select = document.getElementById('employeeJobTitle');
+    if (!select) return;
+
+    try {
+      const res = await fetch('/api/staff-jobs');
+      const data = await res.json();
+      const isAr = this.lang === 'ar';
+      if (data.success && Array.isArray(data.jobs)) {
+        this.staffJobs = data.jobs;
+        const currentVal = select.value;
+        select.innerHTML = `<option value="">${isAr ? '-- اختر المهنة أو الوظيفة --' : '-- Choisir le métier / poste --'}</option>` +
+          data.jobs.map(j => `<option value="${this.escapeHtml(j)}">${this.escapeHtml(j)}</option>`).join('');
+        if (currentVal && data.jobs.includes(currentVal)) {
+          select.value = currentVal;
+        }
+        this.renderManageJobsBadges();
+        this.onEmployeeJobSelected();
+      }
+    } catch (e) {
+      console.error('Error loading staff jobs:', e);
+    }
+  }
+
+  onEmployeeJobSelected() {
+    const select = document.getElementById('employeeJobTitle');
+    const deleteBtn = document.getElementById('btnDeleteCurrentJob');
+    if (!select || !deleteBtn) return;
+    if (select.value) {
+      deleteBtn.style.display = 'inline-flex';
+      deleteBtn.title = `Supprimer "${select.value}" de la liste`;
+    } else {
+      deleteBtn.style.display = 'none';
+    }
+  }
+
+  toggleManageJobsContainer(force) {
+    const container = document.getElementById('manageJobsListContainer');
+    if (!container) return;
+    const shouldShow = force !== undefined ? force : (container.style.display === 'none' || !container.style.display);
+    container.style.display = shouldShow ? 'block' : 'none';
+    if (shouldShow) {
+      this.renderManageJobsBadges();
+    }
+  }
+
+  renderManageJobsBadges() {
+    const container = document.getElementById('manageJobsBadgesList');
+    if (!container) return;
+    const jobs = this.staffJobs || [];
+    const isAr = this.lang === 'ar';
+
+    if (jobs.length === 0) {
+      container.innerHTML = `<span style="font-size: 11.5px; color: var(--text-muted);">${isAr ? 'لا توجد مهن مسجلة' : 'Aucun métier enregistré'}</span>`;
+      return;
+    }
+
+    container.innerHTML = jobs.map(j => {
+      const safeJob = this.escapeHtml(j);
+      const jsonParam = JSON.stringify(j).replace(/"/g, '&quot;');
+      return `
+        <span class="badge-pill" style="background: white; border: 1px solid rgba(239, 68, 68, 0.25); color: var(--text-main); font-weight: 600; font-size: 12px; padding: 4px 10px; display: inline-flex; align-items: center; gap: 8px; border-radius: 8px;">
+          <span>${safeJob}</span>
+          <button type="button" onclick="app.deleteStaffJob(${jsonParam})"
+                  style="background: none; border: none; color: #ef4444; cursor: pointer; padding: 0 2px; font-size: 13px; display: flex; align-items: center;"
+                  title="${isAr ? 'حذف هذه المهنة' : 'Supprimer ce métier'}">
+            <i class="fa-solid fa-circle-xmark"></i>
+          </button>
+        </span>
+      `;
+    }).join('');
+  }
+
+  async deleteCurrentJobTitle() {
+    const select = document.getElementById('employeeJobTitle');
+    const title = select ? select.value : '';
+    if (!title) return;
+    await this.deleteStaffJob(title);
+  }
+
+  async deleteStaffJob(title) {
+    const isAr = this.lang === 'ar';
+    const confirmMsg = isAr
+      ? `هل أنت متأكد من حذف المهنة "${title}" من قائمة الاختيارات؟`
+      : `Voulez-vous vraiment supprimer le métier "${title}" de la liste des choix ?`;
+    if (!confirm(confirmMsg)) return;
+
+    try {
+      const res = await fetch('/api/staff-jobs', {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ title })
+      });
+      const data = await res.json();
+      if (data.success) {
+        this.showToast(isAr ? 'تم حذف المهنة بنجاح' : 'Métier supprimé de la liste avec succès !', 'info');
+        await this.loadStaffJobs();
+      } else {
+        this.showToast(data.error || 'Erreur lors de la suppression', 'error');
+      }
+    } catch (e) {
+      console.error(e);
+      this.showToast('Erreur de connexion', 'error');
+    }
+  }
+
+  toggleNewJobInput(force) {
+    const container = document.getElementById('newJobInputContainer');
+    if (!container) return;
+    const shouldShow = force !== undefined ? force : (container.style.display === 'none' || !container.style.display);
+    container.style.display = shouldShow ? 'block' : 'none';
+    if (shouldShow) {
+      const input = document.getElementById('newJobTitleInput');
+      if (input) {
+        input.value = '';
+        input.focus();
+      }
+    }
+  }
+
+  async saveNewJobTitle() {
+    const input = document.getElementById('newJobTitleInput');
+    const title = input ? input.value.trim() : '';
+    const isAr = this.lang === 'ar';
+
+    if (!title) {
+      this.showToast(isAr ? 'يرجى كتابة اسم المهنة أو الوظيفة' : 'Veuillez saisir le titre du métier', 'warning');
+      return;
+    }
+
+    try {
+      const res = await fetch('/api/staff-jobs', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ title })
+      });
+      const data = await res.json();
+      if (data.success) {
+        this.showToast(isAr ? 'تمت إضافة المهنة بنجاح' : 'Métier ajouté avec succès !', 'success');
+        await this.loadStaffJobs();
+        const select = document.getElementById('employeeJobTitle');
+        if (select) select.value = title;
+        this.onEmployeeJobSelected();
+        this.toggleNewJobInput(false);
+      } else {
+        this.showToast(data.error || 'Erreur lors de l\'ajout', 'error');
+      }
+    } catch (e) {
+      console.error(e);
+      this.showToast('Erreur de connexion', 'error');
+    }
+  }
+
+  async openModalEmployee() {
+    const isAr = this.lang === 'ar';
+    const form = document.getElementById('employeeForm');
+    if (form) form.reset();
+
+    const titleEl = document.getElementById('modalEmployeeTitle');
+    if (titleEl) {
+      titleEl.innerHTML = `<i class="fa-solid fa-user-tie" style="color: #6366f1;"></i> <span>${isAr ? 'إضافة موظف / عامل عادي' : 'Ajouter un Employé Normal'}</span>`;
+    }
+
+    const idEl = document.getElementById('employeeId');
+    if (idEl) idEl.value = '';
+    const matEl = document.getElementById('employeeMatricule');
+    if (matEl) matEl.value = '';
+    const fnEl = document.getElementById('employeeFirstName');
+    if (fnEl) fnEl.value = '';
+    const lnEl = document.getElementById('employeeLastName');
+    if (lnEl) lnEl.value = '';
+    const phoneEl = document.getElementById('employeePhone');
+    if (phoneEl) phoneEl.value = '';
+
+    const saveBtn = document.getElementById('btnSaveEmployee');
+    if (saveBtn) {
+      saveBtn.disabled = false;
+      saveBtn.innerHTML = `<i class="fa-solid fa-floppy-disk"></i> ${isAr ? 'حفظ الموظف' : "Enregistrer l'Employé"}`;
+    }
+
+    this.toggleNewJobInput(false);
+    await this.loadStaffJobs();
+
+    this.setupInputRestrictions();
+    const modal = document.getElementById('modalEmployee');
+    if (modal) modal.classList.add('active');
+  }
+
+  async editEmployee(id) {
+    const isAr = this.lang === 'ar';
+    const t = (this.teachers || []).find(item => item.id === id);
+    if (!t) return;
+
+    await this.loadStaffJobs();
+
+    const titleEl = document.getElementById('modalEmployeeTitle');
+    if (titleEl) {
+      titleEl.innerHTML = `<i class="fa-solid fa-user-pen" style="color: #6366f1;"></i> <span>${isAr ? 'تعديل بيانات الموظف' : "Modifier l'Employé"}</span>`;
+    }
+
+    const idEl = document.getElementById('employeeId');
+    if (idEl) idEl.value = t.id;
+    const matEl = document.getElementById('employeeMatricule');
+    if (matEl) matEl.value = t.matricule || '';
+    const fnEl = document.getElementById('employeeFirstName');
+    if (fnEl) fnEl.value = t.first_name || '';
+    const lnEl = document.getElementById('employeeLastName');
+    if (lnEl) lnEl.value = t.last_name || '';
+    const phoneEl = document.getElementById('employeePhone');
+    if (phoneEl) phoneEl.value = t.phone || '';
+
+    const jobSelect = document.getElementById('employeeJobTitle');
+    if (jobSelect) {
+      if (t.job_title && !Array.from(jobSelect.options).some(o => o.value === t.job_title)) {
+        const opt = document.createElement('option');
+        opt.value = t.job_title;
+        opt.textContent = t.job_title;
+        jobSelect.appendChild(opt);
+      }
+      jobSelect.value = t.job_title || '';
+    }
+
+    const saveBtn = document.getElementById('btnSaveEmployee');
+    if (saveBtn) {
+      saveBtn.disabled = false;
+      saveBtn.innerHTML = `<i class="fa-solid fa-floppy-disk"></i> ${isAr ? 'حفظ التعديلات' : 'Mettre à jour l’Employé'}`;
+    }
+
+    this.toggleNewJobInput(false);
+    this.setupInputRestrictions();
+    const modal = document.getElementById('modalEmployee');
+    if (modal) modal.classList.add('active');
+  }
+
+  async saveEmployee() {
+    if (this._savingEmployee) return;
+
+    const isAr = this.lang === 'ar';
+    const id = document.getElementById('employeeId')?.value || '';
+    const firstName = (document.getElementById('employeeFirstName')?.value || '').trim();
+    const lastName = (document.getElementById('employeeLastName')?.value || '').trim();
+    const phone = (document.getElementById('employeePhone')?.value || '').trim();
+    const jobTitle = (document.getElementById('employeeJobTitle')?.value || '').trim();
+    const matricule = (document.getElementById('employeeMatricule')?.value || '').trim();
+
+    if (!firstName || !lastName) {
+      this.showToast(isAr ? 'يرجى إدخال الاسم واللقب للموظف' : 'Veuillez saisir le nom et prénom de l’employé.', 'warning');
+      return;
+    }
+
+    const namePattern = /^[a-zA-Z\u00C0-\u024F\u0600-\u06FF\s'\-]+$/;
+    if (!namePattern.test(firstName)) {
+      this.showToast(isAr ? 'اسم الموظف يجب أن يحتوي على حروف فقط' : 'Le prénom de l’employé ne doit contenir que des lettres', 'warning');
+      document.getElementById('employeeFirstName')?.focus();
+      return;
+    }
+    if (!namePattern.test(lastName)) {
+      this.showToast(isAr ? 'لقب الموظف يجب أن يحتوي على حروف فقط' : 'Le nom de l’employé ne doit contenir que des lettres', 'warning');
+      document.getElementById('employeeLastName')?.focus();
+      return;
+    }
+
+    if (phone) {
+      if (!/^\d+$/.test(phone)) {
+        this.showToast(isAr ? 'رقم هاتف الموظف يجب أن يتكون من أرقام فقط' : 'Le numéro de téléphone doit contenir des chiffres uniquement', 'warning');
+        document.getElementById('employeePhone')?.focus();
+        return;
+      }
+      if (!phone.startsWith('0')) {
+        this.showToast(isAr ? 'رقم الهاتف يجب أن يبدأ بالرقم 0 (مثال: 0550000000)' : 'Le numéro de téléphone doit obligatoirement commencer par 0 (ex: 0550000000)', 'warning');
+        document.getElementById('employeePhone')?.focus();
+        return;
+      }
+      if (phone.length !== 10) {
+        this.showToast(isAr ? 'رقم الهاتف يجب أن يتكون من 10 أرقام بالضبط (مثال: 0550000000)' : 'Le numéro de téléphone doit comporter exactement 10 chiffres (ex: 0550000000)', 'warning');
+        document.getElementById('employeePhone')?.focus();
+        return;
+      }
+    }
+
+    if (!jobTitle) {
+      this.showToast(isAr ? 'يرجى تحديد أو إضافة نوع المهنة / الوظيفة' : 'Veuillez sélectionner ou ajouter un type de métier.', 'warning');
+      document.getElementById('employeeJobTitle')?.focus();
+      return;
+    }
+
+    const payload = {
+      matricule,
+      first_name: firstName,
+      last_name: lastName,
+      phone,
+      employee_type: 'employee',
+      job_title: jobTitle,
+      grade: 'employe'
+    };
+
+    const url = id ? `/api/teachers/${id}` : '/api/teachers';
+    const method = id ? 'PUT' : 'POST';
+
+    const saveBtn = document.getElementById('btnSaveEmployee');
+    const originalBtnText = saveBtn ? saveBtn.innerHTML : '';
+    this._savingEmployee = true;
+    if (saveBtn) {
+      saveBtn.disabled = true;
+      saveBtn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> ${isAr ? 'جاري الحفظ...' : 'Enregistrement...'}`;
+    }
+
+    try {
+      const res = await fetch(url, {
+        method,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+      const data = await res.json();
+      if (data.success) {
+        this.closeModals();
+        const form = document.getElementById('employeeForm');
+        if (form) form.reset();
+
+        this.playChime('success');
+        this.showToast(isAr ? 'تم حفظ بيانات الموظف بنجاح!' : 'Employé enregistré avec succès !', 'success');
+        await this.loadTeachers();
+      } else {
+        this.showToast(data.error || (isAr ? 'حدث خطأ أثناء الحفظ' : 'Erreur lors de l’enregistrement'), 'error');
+      }
+    } catch (e) {
+      console.error(e);
+      this.showToast(isAr ? 'خطأ في الاتصال بالخادم' : 'Erreur réseau ou serveur', 'error');
+    } finally {
+      this._savingEmployee = false;
+      if (saveBtn) {
+        saveBtn.disabled = false;
+        saveBtn.innerHTML = originalBtnText;
+      }
+    }
+  }
+
+  // -------------------------------------------------------------
   // ENSEIGNANTS (TEACHERS) MODAL & ACTIONS
   // -------------------------------------------------------------
   async openModalTeacher() {
@@ -14598,6 +14997,10 @@ class EdumindApp {
     await this.loadConfigurationData();
     const t = this.teachers.find(item => item.id === id);
     if (!t) return;
+
+    if (t.employee_type === 'employee') {
+      return this.editEmployee(id);
+    }
 
     const select = document.getElementById('teacherSubject');
     if (select) {
@@ -14662,8 +15065,13 @@ class EdumindApp {
         document.getElementById('teacherPhone')?.focus();
         return;
       }
-      if (teacherPhone.length > 10) {
-        this.showToast(isAr ? 'رقم هاتف الأستاذ لا يمكن أن يتجاوز 10 أرقام' : 'Le numéro de téléphone de l’enseignant ne peut pas dépasser 10 chiffres', 'warning');
+      if (!teacherPhone.startsWith('0')) {
+        this.showToast(isAr ? 'رقم هاتف الأستاذ يجب أن يبدأ بالرقم 0 (مثال: 0550000000)' : 'Le numéro de téléphone de l’enseignant doit obligatoirement commencer par 0 (ex: 0550000000)', 'warning');
+        document.getElementById('teacherPhone')?.focus();
+        return;
+      }
+      if (teacherPhone.length !== 10) {
+        this.showToast(isAr ? 'رقم الهاتف يجب أن يتكون من 10 أرقام بالضبط (مثال: 0550000000)' : 'Le numéro de téléphone doit comporter exactement 10 chiffres (ex: 0550000000)', 'warning');
         document.getElementById('teacherPhone')?.focus();
         return;
       }

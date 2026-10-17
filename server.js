@@ -4072,9 +4072,9 @@ app.get('/api/teachers', (req, res) => {
     `;
     const params = [];
     if (search && search.trim()) {
-      sql += ` AND (t.first_name LIKE ? OR t.last_name LIKE ? OR (t.first_name || ' ' || t.last_name) LIKE ? OR t.matricule LIKE ? OR t.phone LIKE ? OR t.grade LIKE ? OR sub.name LIKE ?)`;
+      sql += ` AND (t.first_name LIKE ? OR t.last_name LIKE ? OR (t.first_name || ' ' || t.last_name) LIKE ? OR t.matricule LIKE ? OR t.phone LIKE ? OR t.grade LIKE ? OR t.job_title LIKE ? OR sub.name LIKE ?)`;
       const term = `%${search.trim()}%`;
-      params.push(term, term, term, term, term, term, term);
+      params.push(term, term, term, term, term, term, term, term);
     }
     sql += ` ORDER BY t.id DESC`;
     const teachers = DB.queryAll(sql, params);
@@ -4101,11 +4101,34 @@ app.get('/api/teachers', (req, res) => {
 
 app.post('/api/teachers', (req, res) => {
   try {
-    const { matricule: customMatricule, first_name, last_name, phone, email, subject_id, grade, remuneration_type, remuneration_rate, tarif_heure, tarif_seance, salaire_fixe, tarif_par_eleve } = req.body;
+    const {
+      matricule: customMatricule,
+      first_name,
+      last_name,
+      phone,
+      email,
+      subject_id,
+      grade,
+      remuneration_type,
+      remuneration_rate,
+      tarif_heure,
+      tarif_seance,
+      salaire_fixe,
+      tarif_par_eleve,
+      employee_type,
+      job_title
+    } = req.body;
+
+    const isEmployee = employee_type === 'employee';
     const cleanFirstName = sanitizeLettersOnly(first_name);
     const cleanLastName = sanitizeLettersOnly(last_name);
     if (!cleanFirstName || !cleanLastName) {
-      return res.status(400).json({ success: false, error: 'Nom et Prénom de l’enseignant doivent contenir des lettres valides (حروف فقط)' });
+      return res.status(400).json({
+        success: false,
+        error: isEmployee
+          ? 'Nom et Prénom de l’employé doivent contenir des lettres valides (حروف فقط)'
+          : 'Nom et Prénom de l’enseignant doivent contenir des lettres valides (حروف فقط)'
+      });
     }
     const cleanPhone = sanitizePhone(phone);
 
@@ -4114,33 +4137,40 @@ app.post('/api/teachers', (req, res) => {
       if (matricule) {
         const existing = DB.queryOne("SELECT id FROM teachers WHERE matricule = ? COLLATE NOCASE", [matricule]);
         if (existing) {
-          throw new Error(`Le matricule enseignant "${matricule}" est déjà utilisé.`);
+          throw new Error(`Le matricule "${matricule}" est déjà utilisé.`);
         }
       } else {
+        const prefix = isEmployee ? 'EMP-' : 'ENS-';
         let candidateNum = (DB.queryOne("SELECT MAX(id) as max_id FROM teachers")?.max_id || 0) + 1;
-        matricule = `ENS-${String(candidateNum).padStart(3, '0')}`;
+        matricule = `${prefix}${String(candidateNum).padStart(3, '0')}`;
         while (DB.queryOne("SELECT id FROM teachers WHERE matricule = ? COLLATE NOCASE", [matricule])) {
           candidateNum++;
-          matricule = `ENS-${String(candidateNum).padStart(3, '0')}`;
+          matricule = `${prefix}${String(candidateNum).padStart(3, '0')}`;
         }
       }
 
-      // Validate subject_id exists to prevent foreign key errors
-      let validSubId = toNullableId(subject_id);
+      // Validate subject_id exists to prevent foreign key errors (null for normal employees)
+      let validSubId = isEmployee ? null : toNullableId(subject_id);
       if (validSubId) {
         const sCheck = DB.queryOne("SELECT id FROM subjects WHERE id = ?", [validSubId]);
         if (!sCheck) validSubId = null;
       }
 
       const result = DB.run(`
-        INSERT INTO teachers (matricule, first_name, last_name, phone, email, subject_id, grade, remuneration_type, remuneration_rate, tarif_heure, tarif_seance, salaire_fixe, tarif_par_eleve, active)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1)
+        INSERT INTO teachers (
+          matricule, first_name, last_name, phone, email, subject_id, grade,
+          remuneration_type, remuneration_rate, tarif_heure, tarif_seance, salaire_fixe, tarif_par_eleve,
+          employee_type, job_title, active
+        )
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1)
       `, [
         matricule, cleanFirstName, cleanLastName, cleanPhone, email || null, validSubId,
-        grade || 'prof_titulaire',
+        isEmployee ? 'employe' : (grade || 'prof_titulaire'),
         remuneration_type || 'percent', parseFloat(remuneration_rate) || 50.0,
         parseFloat(tarif_heure) || 0, parseFloat(tarif_seance) || 0,
-        parseFloat(salaire_fixe) || 0, parseFloat(tarif_par_eleve) || 0
+        parseFloat(salaire_fixe) || 0, parseFloat(tarif_par_eleve) || 0,
+        isEmployee ? 'employee' : 'teacher',
+        isEmployee ? (job_title ? job_title.trim() : 'Employé') : (job_title ? job_title.trim() : null)
       ]);
 
       return { teacherId: result.lastInsertRowid, matricule };
@@ -4155,17 +4185,34 @@ app.post('/api/teachers', (req, res) => {
 app.put('/api/teachers/:id', (req, res) => {
   try {
     const { id } = req.params;
-    const { matricule: customMatricule, first_name, last_name, phone, email, subject_id, grade, remuneration_type, remuneration_rate, tarif_heure, tarif_seance, salaire_fixe, tarif_par_eleve } = req.body;
+    const {
+      matricule: customMatricule,
+      first_name,
+      last_name,
+      phone,
+      email,
+      subject_id,
+      grade,
+      remuneration_type,
+      remuneration_rate,
+      tarif_heure,
+      tarif_seance,
+      salaire_fixe,
+      tarif_par_eleve,
+      employee_type,
+      job_title
+    } = req.body;
     
     const currentTeacher = DB.queryOne("SELECT * FROM teachers WHERE id = ?", [id]);
     if (!currentTeacher) {
-      return res.status(404).json({ success: false, error: 'Enseignant non trouvé' });
+      return res.status(404).json({ success: false, error: 'Membre du personnel / Enseignant non trouvé' });
     }
 
+    const isEmployee = employee_type !== undefined ? (employee_type === 'employee') : (currentTeacher.employee_type === 'employee');
     const cleanFirstName = first_name !== undefined ? sanitizeLettersOnly(first_name) : currentTeacher.first_name;
     const cleanLastName = last_name !== undefined ? sanitizeLettersOnly(last_name) : currentTeacher.last_name;
     if (!cleanFirstName || !cleanLastName) {
-      return res.status(400).json({ success: false, error: 'Nom et Prénom de l’enseignant doivent contenir des lettres valides (حروف فقط)' });
+      return res.status(400).json({ success: false, error: 'Nom et Prénom doivent contenir des lettres valides (حروف فقط)' });
     }
     const cleanPhone = phone !== undefined ? sanitizePhone(phone) : currentTeacher.phone;
 
@@ -4174,27 +4221,169 @@ app.put('/api/teachers/:id', (req, res) => {
       const cleanMatricule = customMatricule.trim();
       const existing = DB.queryOne("SELECT id FROM teachers WHERE matricule = ? COLLATE NOCASE AND id != ?", [cleanMatricule, id]);
       if (existing) {
-        return res.status(400).json({ success: false, error: `Le matricule enseignant "${cleanMatricule}" est déjà attribué à un autre enseignant.` });
+        return res.status(400).json({ success: false, error: `Le matricule "${cleanMatricule}" est déjà attribué.` });
       }
       matricule = cleanMatricule;
     }
+
+    const finalEmployeeType = isEmployee ? 'employee' : 'teacher';
+    const finalJobTitle = isEmployee
+      ? (job_title !== undefined ? (job_title ? job_title.trim() : 'Employé') : currentTeacher.job_title)
+      : (job_title !== undefined ? (job_title ? job_title.trim() : null) : currentTeacher.job_title);
+
+    let validSubId = isEmployee ? null : (subject_id !== undefined ? toNullableId(subject_id) : currentTeacher.subject_id);
 
     DB.run(`
       UPDATE teachers 
       SET matricule = ?, first_name = ?, last_name = ?, phone = ?, email = ?, subject_id = ?, 
           grade = ?,
           remuneration_type = ?, remuneration_rate = ?,
-          tarif_heure = ?, tarif_seance = ?, salaire_fixe = ?, tarif_par_eleve = ?
+          tarif_heure = ?, tarif_seance = ?, salaire_fixe = ?, tarif_par_eleve = ?,
+          employee_type = ?, job_title = ?
       WHERE id = ?
     `, [
-      matricule, cleanFirstName, cleanLastName, cleanPhone, email || null, toNullableId(subject_id),
-      grade || currentTeacher.grade || 'prof_titulaire',
+      matricule, cleanFirstName, cleanLastName, cleanPhone, email || null, validSubId,
+      isEmployee ? 'employe' : (grade || currentTeacher.grade || 'prof_titulaire'),
       remuneration_type || 'percent', parseFloat(remuneration_rate) || 50.0,
       parseFloat(tarif_heure) || 0, parseFloat(tarif_seance) || 0,
       parseFloat(salaire_fixe) || 0, parseFloat(tarif_par_eleve) || 0,
+      finalEmployeeType, finalJobTitle,
       id
     ]);
-    res.json({ success: true, message: 'Enseignant mis à jour avec succès', matricule });
+    res.json({ success: true, message: 'Données mises à jour avec succès', matricule });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+// Staff Job Titles List, Add & Delete Endpoints
+app.get('/api/staff-jobs', (req, res) => {
+  try {
+    const defaultJobs = [
+      'Secrétaire',
+      'Agent d\'accueil',
+      'Surveillant(e)',
+      'Agent de sécurité',
+      'Agent d\'entretien',
+      'Chauffeur',
+      'Comptable',
+      'Cuisinier(e)',
+      'Infirmier(e)',
+      'Bibliothécaire',
+      'Éducateur(rice)'
+    ];
+    const row = DB.queryOne("SELECT value FROM settings WHERE key = 'staff_job_titles'");
+    const delRow = DB.queryOne("SELECT value FROM settings WHERE key = 'deleted_staff_jobs'");
+    let customJobs = [];
+    let deletedJobs = [];
+    if (row && row.value) {
+      try { customJobs = JSON.parse(row.value); } catch (e) {}
+    }
+    if (delRow && delRow.value) {
+      try { deletedJobs = JSON.parse(delRow.value); } catch (e) {}
+    }
+    const combined = Array.from(new Set([...defaultJobs, ...customJobs]))
+      .filter(j => j && !deletedJobs.includes(j));
+    res.json({ success: true, jobs: combined, customJobs, deletedJobs });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+app.post('/api/staff-jobs', (req, res) => {
+  try {
+    const { title } = req.body;
+    const cleanTitle = (title || '').trim();
+    if (!cleanTitle) {
+      return res.status(400).json({ success: false, error: 'Le titre du métier est requis.' });
+    }
+    const defaultJobs = [
+      'Secrétaire',
+      'Agent d\'accueil',
+      'Surveillant(e)',
+      'Agent de sécurité',
+      'Agent d\'entretien',
+      'Chauffeur',
+      'Comptable',
+      'Cuisinier(e)',
+      'Infirmier(e)',
+      'Bibliothécaire',
+      'Éducateur(rice)'
+    ];
+    const row = DB.queryOne("SELECT value FROM settings WHERE key = 'staff_job_titles'");
+    const delRow = DB.queryOne("SELECT value FROM settings WHERE key = 'deleted_staff_jobs'");
+    let customJobs = [];
+    let deletedJobs = [];
+    if (row && row.value) {
+      try { customJobs = JSON.parse(row.value); } catch (e) {}
+    }
+    if (delRow && delRow.value) {
+      try { deletedJobs = JSON.parse(delRow.value); } catch (e) {}
+    }
+
+    // Remove from deleted if re-added
+    deletedJobs = deletedJobs.filter(d => d.toLowerCase() !== cleanTitle.toLowerCase());
+    DB.run("INSERT OR REPLACE INTO settings (key, value) VALUES ('deleted_staff_jobs', ?)", [JSON.stringify(deletedJobs)]);
+
+    if (!customJobs.includes(cleanTitle)) {
+      customJobs.push(cleanTitle);
+      DB.run("INSERT OR REPLACE INTO settings (key, value) VALUES ('staff_job_titles', ?)", [JSON.stringify(customJobs)]);
+    }
+
+    const allJobs = Array.from(new Set([...defaultJobs, ...customJobs]))
+      .filter(j => j && !deletedJobs.includes(j));
+    res.json({ success: true, message: 'Métier enregistré avec succès', jobs: allJobs, added: cleanTitle });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+app.delete('/api/staff-jobs', (req, res) => {
+  try {
+    const { title } = req.body;
+    const cleanTitle = (title || req.query.title || '').trim();
+    if (!cleanTitle) {
+      return res.status(400).json({ success: false, error: 'Le titre du métier à supprimer est requis.' });
+    }
+
+    const defaultJobs = [
+      'Secrétaire',
+      'Agent d\'accueil',
+      'Surveillant(e)',
+      'Agent de sécurité',
+      'Agent d\'entretien',
+      'Chauffeur',
+      'Comptable',
+      'Cuisinier(e)',
+      'Infirmier(e)',
+      'Bibliothécaire',
+      'Éducateur(rice)'
+    ];
+
+    const row = DB.queryOne("SELECT value FROM settings WHERE key = 'staff_job_titles'");
+    const delRow = DB.queryOne("SELECT value FROM settings WHERE key = 'deleted_staff_jobs'");
+    let customJobs = [];
+    let deletedJobs = [];
+    if (row && row.value) {
+      try { customJobs = JSON.parse(row.value); } catch (e) {}
+    }
+    if (delRow && delRow.value) {
+      try { deletedJobs = JSON.parse(delRow.value); } catch (e) {}
+    }
+
+    // Remove from customJobs
+    customJobs = customJobs.filter(j => j.toLowerCase() !== cleanTitle.toLowerCase());
+    DB.run("INSERT OR REPLACE INTO settings (key, value) VALUES ('staff_job_titles', ?)", [JSON.stringify(customJobs)]);
+
+    // Add to deletedJobs
+    if (!deletedJobs.includes(cleanTitle)) {
+      deletedJobs.push(cleanTitle);
+      DB.run("INSERT OR REPLACE INTO settings (key, value) VALUES ('deleted_staff_jobs', ?)", [JSON.stringify(deletedJobs)]);
+    }
+
+    const allJobs = Array.from(new Set([...defaultJobs, ...customJobs]))
+      .filter(j => j && !deletedJobs.includes(j));
+    res.json({ success: true, message: 'Métier supprimé avec succès', jobs: allJobs });
   } catch (err) {
     res.status(500).json({ success: false, error: err.message });
   }
