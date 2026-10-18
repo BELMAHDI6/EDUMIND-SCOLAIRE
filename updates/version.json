@@ -1,7 +1,7 @@
 {
-  "version": "1.0.8",
+  "version": "1.0.9",
   "releaseDate": "2026-10-18",
-  "zipUrl": "https://raw.githubusercontent.com/BELMAHDI6/EDUMIND-SCOLAIRE/main/updates/edumind_scolaire_patch_v1.0.8.zip",
-  "notes": "Mise a jour v1.0.8: Emploi du temps des salles, mode kiosque et optimisations generales",
-  "notes_ar": "تحديث v1.0.8: جدول توقيت القاعات، وضع كشك الدخول بالباركود، وتحسينات عامة"
+  "zipUrl": "https://raw.githubusercontent.com/BELMAHDI6/EDUMIND-SCOLAIRE/main/updates/edumind_scolaire_patch_v1.0.9.zip",
+  "notes": "Mise a jour v1.0.9: Emploi du temps des divisions (matin / soir), impression officielle et mode kiosque",
+  "notes_ar": "تحديث v1.0.9: جدول استعمال الزمن الأسبوعي للأقسام (صباحاً ومساءً)، الطباعة الرسمية، ونظام كشك الدخول بالباركود"
 }

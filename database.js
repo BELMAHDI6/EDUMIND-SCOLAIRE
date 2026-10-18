@@ -1082,6 +1082,23 @@ function initDatabase() {
         created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
         FOREIGN KEY (student_id) REFERENCES students(id) ON DELETE CASCADE
       );
+
+      CREATE TABLE IF NOT EXISTS class_timetable (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        group_id INTEGER NOT NULL,
+        day_of_week TEXT NOT NULL,
+        start_time TEXT NOT NULL,
+        end_time TEXT NOT NULL,
+        subject_id INTEGER,
+        teacher_id INTEGER,
+        room_id INTEGER,
+        notes TEXT,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY (group_id) REFERENCES groups(id) ON DELETE CASCADE,
+        FOREIGN KEY (subject_id) REFERENCES subjects(id) ON DELETE SET NULL,
+        FOREIGN KEY (teacher_id) REFERENCES teachers(id) ON DELETE SET NULL,
+        FOREIGN KEY (room_id) REFERENCES rooms(id) ON DELETE SET NULL
+      );
     `);
   } catch (pubErr) {
     console.warn('Public school extensions migration:', pubErr.message);

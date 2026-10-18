@@ -13428,6 +13428,10 @@ class EdumindApp {
           </td>
           <td style="text-align: right;">
             <div style="display: inline-flex; gap: 8px; align-items: center; justify-content: flex-end;">
+              <button class="btn-group-timetable-action" style="display: inline-flex; align-items: center; gap: 6px; padding: 6px 13px; border-radius: 8px; background: rgba(139, 92, 246, 0.12); color: #8b5cf6; border: 1px solid rgba(139, 92, 246, 0.32); font-weight: 700; font-size: 12px; cursor: pointer; white-space: nowrap; transition: all 0.2s;" title="${this.lang === 'ar' ? 'عرض وإدارة جدول توقيت هذا القسم' : 'Emploi du temps de la classe'}" onclick="app.openGroupTimetable(${g.id})">
+                <i class="fa-regular fa-calendar-days" style="font-size: 12px;"></i>
+                <span>${this.lang === 'ar' ? 'جدول التوقيت' : 'Emploi du temps'}</span>
+              </button>
               <button class="btn-group-students-action" style="display: inline-flex; align-items: center; gap: 6px; padding: 6px 13px; border-radius: 8px; background: rgba(59, 130, 246, 0.12); color: #2563eb; border: 1px solid rgba(59, 130, 246, 0.32); font-weight: 700; font-size: 12px; cursor: pointer; white-space: nowrap; transition: all 0.2s;" title="${this.lang === 'ar' ? 'عرض وإدارة تلاميذ هذا القسم' : 'Voir et gérer les élèves du groupe'}" onclick="app.viewGroupStudents(${g.id})">
                 <i class="fa-solid fa-users" style="font-size: 12px;"></i>
                 <span>${this.lang === 'ar' ? 'تلاميذ القسم' : 'Élèves du groupe'}</span>
@@ -13443,6 +13447,706 @@ class EdumindApp {
         </tr>
       `;
     }).join('');
+  }
+
+  // -------------------------------------------------------------
+  // Group Timetable Management (جدول التوقيت واستعمال الزمن للأقسام التربوية)
+  // -------------------------------------------------------------
+  async openGroupTimetable(groupId) {
+    this.currentTimetableGroupId = groupId;
+    const g = (this.allGroupes || []).find(item => item.id === groupId);
+    if (!g) return;
+
+    this.currentTimetableGroup = g;
+    const titleEl = document.getElementById('groupTimetableTitle');
+    const subEl = document.getElementById('groupTimetableSubtitle');
+    const hiddenIdEl = document.getElementById('slotGroupId');
+    if (hiddenIdEl) hiddenIdEl.value = groupId;
+
+    if (titleEl) {
+      titleEl.innerHTML = `<i class="fa-solid fa-calendar-days" style="color: #8b5cf6;"></i> ${this.lang === 'ar' ? 'جدول توقيت واستعمال الزمن — قسم' : 'Emploi du Temps — Division'} <strong>${this.escapeHtml(g.name)}</strong>`;
+    }
+    if (subEl) {
+      subEl.innerHTML = `${this.lang === 'ar' ? 'المستوى الدراسي:' : 'Niveau :'} <strong>${this.escapeHtml(g.level_name || '-')}</strong> ${g.specialite ? ` | ${this.escapeHtml(g.specialite)}` : ''}`;
+    }
+
+    this.populateTimetableSelects();
+    this.toggleAddSlotForm(false);
+    document.getElementById('modalGroupTimetable')?.classList.add('active');
+    await this.loadGroupTimetableSlots(groupId);
+  }
+
+  populateTimetableSelects() {
+    const subSelect = document.getElementById('slotSubjectId');
+    if (subSelect) {
+      subSelect.innerHTML = `<option value="">${this.lang === 'ar' ? '-- اختر المادة الدراسية --' : '-- Choisir une matière --'}</option>` +
+        (this.subjects || []).map(s => `<option value="${s.id}">${this.escapeHtml(s.name)}</option>`).join('');
+    }
+
+    const teachSelect = document.getElementById('slotTeacherId');
+    if (teachSelect) {
+      teachSelect.innerHTML = `<option value="">${this.lang === 'ar' ? '-- اختياري (بدون أستاذ) --' : '-- Optionnel (Sans enseignant) --'}</option>` +
+        (this.teachers || []).map(t => `<option value="${t.id}">${this.escapeHtml(t.first_name + ' ' + t.last_name)}</option>`).join('');
+    }
+
+    const roomSelect = document.getElementById('slotRoomId');
+    if (roomSelect) {
+      roomSelect.innerHTML = `<option value="">${this.lang === 'ar' ? '-- اختياري (بدون قاعة) --' : '-- Optionnel (Sans salle) --'}</option>` +
+        (this.rooms || []).map(r => `<option value="${r.id}">${this.escapeHtml(r.name)} (${r.capacity} pl)</option>`).join('');
+    }
+  }
+
+  toggleAddSlotForm(forceState) {
+    const box = document.getElementById('groupTimetableAddSlotBox');
+    if (!box) return;
+    if (forceState !== undefined) {
+      box.style.display = forceState ? 'block' : 'none';
+    } else {
+      box.style.display = box.style.display === 'none' ? 'block' : 'none';
+    }
+  }
+
+  setTimetableDisplayMode(mode) {
+    const btnMatrix = document.getElementById('btnTblViewMatrix');
+    const btnCards = document.getElementById('btnTblViewCards');
+    const matrixBox = document.getElementById('groupTimetableMatrixContainer');
+    const cardsBox = document.getElementById('groupTimetableDaysContainer');
+
+    if (mode === 'matrix') {
+      btnMatrix?.classList.add('active');
+      btnMatrix?.style.setProperty('background', 'rgba(139, 92, 246, 0.15)');
+      btnMatrix?.style.setProperty('color', '#8b5cf6');
+      btnMatrix?.style.setProperty('border-color', '#8b5cf6');
+
+      btnCards?.classList.remove('active');
+      btnCards?.style.setProperty('background', '');
+      btnCards?.style.setProperty('color', '');
+      btnCards?.style.setProperty('border-color', '');
+
+      if (matrixBox) matrixBox.style.display = 'block';
+      if (cardsBox) cardsBox.style.display = 'none';
+    } else {
+      btnCards?.classList.add('active');
+      btnCards?.style.setProperty('background', 'rgba(139, 92, 246, 0.15)');
+      btnCards?.style.setProperty('color', '#8b5cf6');
+      btnCards?.style.setProperty('border-color', '#8b5cf6');
+
+      btnMatrix?.classList.remove('active');
+      btnMatrix?.style.setProperty('background', '');
+      btnMatrix?.style.setProperty('color', '');
+      btnMatrix?.style.setProperty('border-color', '');
+
+      if (matrixBox) matrixBox.style.display = 'none';
+      if (cardsBox) cardsBox.style.display = 'grid';
+    }
+  }
+
+  quickAddSlot(dayKey, start, end) {
+    this.toggleAddSlotForm(true);
+    const dayEl = document.getElementById('slotDay');
+    const startEl = document.getElementById('slotStartTime');
+    const endEl = document.getElementById('slotEndTime');
+    if (dayEl) dayEl.value = dayKey;
+    if (startEl) startEl.value = start;
+    if (endEl) endEl.value = end;
+
+    const subSelect = document.getElementById('slotSubjectId');
+    if (subSelect) {
+      setTimeout(() => subSelect.focus(), 80);
+    }
+    const box = document.getElementById('groupTimetableAddSlotBox');
+    if (box) {
+      box.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }
+  }
+
+  async loadGroupTimetableSlots(groupId) {
+    const matrixContainer = document.getElementById('groupTimetableMatrixContainer');
+    const cardsContainer = document.getElementById('groupTimetableDaysContainer');
+    const loadMsg = `<div style="text-align: center; padding: 30px;"><i class="fa-solid fa-spinner fa-spin"></i> ${this.lang === 'ar' ? 'جاري تحميل جدول التوقيت...' : 'Chargement du planning...'}</div>`;
+    if (matrixContainer) matrixContainer.innerHTML = loadMsg;
+    if (cardsContainer) cardsContainer.innerHTML = loadMsg;
+
+    try {
+      const res = await fetch(`/api/groups/${groupId}/timetable`);
+      const data = await res.json();
+      if (!data.success) {
+        const errMsg = `<div style="text-align: center; color: #ef4444; padding: 20px;">${data.error || 'Erreur'}</div>`;
+        if (matrixContainer) matrixContainer.innerHTML = errMsg;
+        if (cardsContainer) cardsContainer.innerHTML = errMsg;
+        return;
+      }
+      this.currentGroupSlots = data.slots || [];
+      this.renderGroupTimetableMatrix(this.currentGroupSlots);
+      this.renderGroupTimetableGrid(this.currentGroupSlots);
+    } catch (err) {
+      const errMsg = `<div style="text-align: center; color: #ef4444; padding: 20px;">${err.message}</div>`;
+      if (matrixContainer) matrixContainer.innerHTML = errMsg;
+      if (cardsContainer) cardsContainer.innerHTML = errMsg;
+    }
+  }
+
+  setTimetableSlotPreset(start, end) {
+    const sEl = document.getElementById('slotStartTime');
+    const eEl = document.getElementById('slotEndTime');
+    if (sEl) sEl.value = start;
+    if (eEl) eEl.value = end;
+  }
+
+  renderGroupTimetableMatrix(slots) {
+    const container = document.getElementById('groupTimetableMatrixContainer');
+    if (!container) return;
+
+    const days = [
+      { key: 'Dimanche', ar: 'الأحد' },
+      { key: 'Lundi', ar: 'الإثنين' },
+      { key: 'Mardi', ar: 'الثلاثاء' },
+      { key: 'Mercredi', ar: 'الأربعاء' },
+      { key: 'Jeudi', ar: 'الخميس' },
+      { key: 'Samedi', ar: 'السبت' }
+    ];
+
+    const morningHours = [
+      { start: '08:00', end: '09:00', label: '08:00 — 09:00' },
+      { start: '09:00', end: '10:00', label: '09:00 — 10:00' },
+      { start: '10:00', end: '11:00', label: '10:00 — 11:00' },
+      { start: '11:00', end: '12:00', label: '11:00 — 12:00' }
+    ];
+
+    const afternoonHours = [
+      { start: '13:00', end: '14:00', label: '13:00 — 14:00' },
+      { start: '14:00', end: '15:00', label: '14:00 — 15:00' },
+      { start: '15:00', end: '16:00', label: '15:00 — 16:00' },
+      { start: '16:00', end: '17:00', label: '16:00 — 17:00' }
+    ];
+
+    const findSlotsInHour = (dayKey, hStart, hEnd) => {
+      return slots.filter(s => {
+        if (s.day_of_week !== dayKey) return false;
+        const sStart = s.start_time || '00:00';
+        const sEnd = s.end_time || '23:59';
+        return sStart < hEnd && sEnd > hStart;
+      });
+    };
+
+    const renderCell = (dayKey, h) => {
+      const cellSlots = findSlotsInHour(dayKey, h.start, h.end);
+      if (cellSlots.length === 0) {
+        return `
+          <td style="padding: 4px; border: 1px solid var(--border-color); vertical-align: middle; height: 68px;">
+            <button type="button" onclick="app.quickAddSlot('${dayKey}', '${h.start}', '${h.end}')" title="إضافة حصة (${h.start} - ${h.end})" style="width: 100%; height: 100%; min-height: 58px; background: transparent; border: 1px dashed var(--border-color); border-radius: 6px; color: var(--text-muted); cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 13px; transition: all 0.2s;" onmouseover="this.style.borderColor='#8b5cf6'; this.style.color='#8b5cf6'; this.style.background='rgba(139,92,246,0.06)'" onmouseout="this.style.borderColor='var(--border-color)'; this.style.color='var(--text-muted)'; this.style.background='transparent'">
+              <i class="fa-solid fa-plus"></i>
+            </button>
+          </td>
+        `;
+      }
+
+      return `
+        <td style="padding: 4px; border: 1px solid var(--border-color); vertical-align: top; height: 68px;">
+          <div style="display: flex; flex-direction: column; gap: 4px;">
+            ${cellSlots.map(s => `
+              <div style="background: ${s.subject_color || '#8b5cf6'}18; border: 1px solid ${s.subject_color || '#8b5cf6'}50; border-inline-start: 4px solid ${s.subject_color || '#8b5cf6'}; border-radius: 6px; padding: 4px 6px; position: relative; text-align: center;">
+                <button type="button" onclick="app.deleteGroupTimetableSlot(${s.id})" title="حذف الحصة" style="position: absolute; top: 2px; left: 2px; background: rgba(239, 68, 68, 0.15); border: none; border-radius: 50%; width: 18px; height: 18px; color: #ef4444; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 9px;">
+                  <i class="fa-solid fa-xmark"></i>
+                </button>
+                <div style="font-weight: 800; font-size: 12px; color: ${s.subject_color || '#7c3aed'}; line-height: 1.2; margin-bottom: 2px; padding-left: 14px;">
+                  ${this.escapeHtml(s.subject_name)}
+                </div>
+                ${s.teacher_name && s.teacher_name !== 'Non assigné' ? `
+                  <div style="font-size: 10px; color: var(--text-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
+                    <i class="fa-solid fa-graduation-cap"></i> ${this.escapeHtml(s.teacher_name)}
+                  </div>
+                ` : ''}
+                ${s.room_name && s.room_name !== '-' ? `
+                  <div style="font-size: 9.5px; color: #10b981; font-weight: 700;">
+                    <i class="fa-solid fa-door-open"></i> ${this.escapeHtml(s.room_name)}
+                  </div>
+                ` : ''}
+                ${(s.start_time !== h.start || s.end_time !== h.end) ? `
+                  <div style="font-size: 9px; font-weight: 800; color: #8b5cf6; margin-top: 1px;">
+                    ${s.start_time} - ${s.end_time}
+                  </div>
+                ` : ''}
+              </div>
+            `).join('')}
+          </div>
+        </td>
+      `;
+    };
+
+    container.innerHTML = `
+      <div class="table-responsive" style="border: 2px solid var(--border-color); border-radius: 12px; overflow-x: auto; background: var(--bg-card); box-shadow: 0 4px 14px rgba(0,0,0,0.05);">
+        <table style="width: 100%; border-collapse: collapse; min-width: 980px; text-align: center; font-size: 12px;">
+          <thead>
+            <!-- Level 1 Super Header -->
+            <tr style="background: var(--bg-main, #f8fafc); border-bottom: 2px solid var(--border-color);">
+              <th rowspan="2" style="width: 110px; border-inline-end: 2px solid var(--border-color); padding: 12px 8px; font-weight: 800; font-size: 13px; background: rgba(0,0,0,0.02);">
+                اليوم
+              </th>
+              <th colspan="4" style="background: rgba(245, 158, 11, 0.12); color: #d97706; padding: 10px; font-size: 13.5px; font-weight: 800; border-inline-end: 3px solid #f59e0b;">
+                ☀️ الفترة الصباحية (08:00 — 12:00)
+              </th>
+              <th rowspan="2" style="width: 55px; background: rgba(100, 116, 139, 0.15); color: #334155; font-weight: 800; font-size: 11px; padding: 6px 2px; border-inline-end: 3px solid #8b5cf6; writing-mode: vertical-rl; transform: rotate(180deg); letter-spacing: 2px;">
+                استراحة الزوال (12-13)
+              </th>
+              <th colspan="4" style="background: rgba(139, 92, 246, 0.12); color: #7c3aed; padding: 10px; font-size: 13.5px; font-weight: 800;">
+                🌙 الفترة المسائية (13:00 — 17:00)
+              </th>
+            </tr>
+            <!-- Level 2 Hours Header -->
+            <tr style="background: var(--bg-card); border-bottom: 2px solid var(--border-color); font-size: 11px; font-weight: 700;">
+              ${morningHours.map((h, i) => `
+                <th style="padding: 8px 4px; width: 10.5%; background: rgba(245, 158, 11, 0.05); ${i === morningHours.length - 1 ? 'border-inline-end: 3px solid #f59e0b;' : 'border-inline-end: 1px solid var(--border-color);'}">
+                  ${h.label}
+                </th>
+              `).join('')}
+              ${afternoonHours.map((h, i) => `
+                <th style="padding: 8px 4px; width: 10.5%; background: rgba(139, 92, 246, 0.05); ${i < afternoonHours.length - 1 ? 'border-inline-end: 1px solid var(--border-color);' : ''}">
+                  ${h.label}
+                </th>
+              `).join('')}
+            </tr>
+          </thead>
+          <tbody>
+            ${days.map(d => `
+              <tr style="border-bottom: 1px solid var(--border-color);">
+                <td style="padding: 10px 8px; font-weight: 800; font-size: 13px; color: var(--text-heading); background: rgba(0,0,0,0.015); border-inline-end: 2px solid var(--border-color);">
+                  ${d.ar}
+                </td>
+                ${morningHours.map(h => renderCell(d.key, h)).join('')}
+                <td style="background: rgba(100, 116, 139, 0.08); border-inline-start: 1px solid var(--border-color); border-inline-end: 3px solid #8b5cf6; padding: 2px; vertical-align: middle;">
+                  <span style="display: block; width: 2px; height: 100%; margin: 0 auto; background: rgba(100, 116, 139, 0.2);"></span>
+                </td>
+                ${afternoonHours.map(h => renderCell(d.key, h)).join('')}
+              </tr>
+            `).join('')}
+          </tbody>
+        </table>
+      </div>
+    `;
+  }
+
+  renderGroupTimetableGrid(slots) {
+    const container = document.getElementById('groupTimetableDaysContainer');
+    if (!container) return;
+
+    const days = [
+      { key: 'Dimanche', ar: 'الأحد (Dimanche)', icon: '1' },
+      { key: 'Lundi', ar: 'الإثنين (Lundi)', icon: '2' },
+      { key: 'Mardi', ar: 'الثلاثاء (Mardi)', icon: '3' },
+      { key: 'Mercredi', ar: 'الأربعاء (Mercredi)', icon: '4' },
+      { key: 'Jeudi', ar: 'الخميس (Jeudi)', icon: '5' },
+      { key: 'Samedi', ar: 'السبت (Samedi)', icon: '6' }
+    ];
+
+    const renderSlotCard = (s) => `
+      <div style="background: var(--bg-main, #f8fafc); border: 1px solid var(--border-color); border-inline-start: 4px solid ${s.subject_color || '#8b5cf6'}; border-radius: 8px; padding: 8px 10px; display: flex; justify-content: space-between; align-items: flex-start; gap: 8px; margin-bottom: 6px;">
+        <div style="flex: 1; min-width: 0;">
+          <div style="display: flex; align-items: center; gap: 6px; font-size: 11px; font-weight: 800; color: #8b5cf6; margin-bottom: 2px;">
+            <i class="fa-regular fa-clock"></i>
+            <span>${s.start_time} — ${s.end_time}</span>
+          </div>
+          <div style="font-weight: 800; font-size: 13px; color: var(--text-heading); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
+            ${this.escapeHtml(s.subject_name)}
+          </div>
+          <div style="display: flex; flex-wrap: wrap; gap: 8px; font-size: 11px; color: var(--text-muted); margin-top: 3px;">
+            ${s.teacher_name && s.teacher_name !== 'Non assigné' ? `
+              <span style="display: inline-flex; align-items: center; gap: 4px;">
+                <i class="fa-solid fa-graduation-cap"></i> ${this.escapeHtml(s.teacher_name)}
+              </span>
+            ` : ''}
+            ${s.room_name && s.room_name !== '-' ? `
+              <span style="display: inline-flex; align-items: center; gap: 4px; color: #10b981;">
+                <i class="fa-solid fa-door-open"></i> ${this.escapeHtml(s.room_name)}
+              </span>
+            ` : ''}
+          </div>
+        </div>
+        <button type="button" class="btn-icon" style="color: #ef4444; width: 26px; height: 26px; font-size: 11.5px; cursor: pointer;" title="${this.lang === 'ar' ? 'حذف هذه الحصة' : 'Supprimer cette séance'}" onclick="app.deleteGroupTimetableSlot(${s.id})">
+          <i class="fa-solid fa-trash-can"></i>
+        </button>
+      </div>
+    `;
+
+    container.innerHTML = days.map(d => {
+      const daySlots = slots.filter(s => s.day_of_week === d.key);
+      const morningSlots = daySlots.filter(s => (s.start_time || '00:00') < '12:30');
+      const afternoonSlots = daySlots.filter(s => (s.start_time || '00:00') >= '12:30');
+
+      return `
+        <div style="background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 12px; padding: 14px; display: flex; flex-direction: column;">
+          <div style="display: flex; align-items: center; justify-content: space-between; border-bottom: 2px solid rgba(139, 92, 246, 0.2); padding-bottom: 8px; margin-bottom: 10px;">
+            <div style="font-weight: 800; font-size: 14px; color: var(--text-heading); display: flex; align-items: center; gap: 6px;">
+              <span style="width: 22px; height: 22px; border-radius: 50%; background: rgba(139, 92, 246, 0.15); color: #8b5cf6; display: inline-flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 800;">${d.icon}</span>
+              <span>${d.ar}</span>
+            </div>
+            <span style="font-size: 11px; font-weight: 700; color: #8b5cf6; background: rgba(139, 92, 246, 0.1); padding: 2px 8px; border-radius: 12px;">
+              ${daySlots.length} ${this.lang === 'ar' ? 'حصص' : 'séances'}
+            </span>
+          </div>
+
+          <div style="display: flex; flex-direction: column; gap: 10px; flex: 1;">
+            <!-- Period 1: Matinée (الفترة الصباحية) -->
+            <div style="background: rgba(245, 158, 11, 0.04); border: 1px solid rgba(245, 158, 11, 0.2); border-radius: 8px; padding: 8px 10px;">
+              <div style="font-size: 11px; font-weight: 800; color: #d97706; display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px;">
+                <span>☀️ الفترة الصباحية (08:00 - 12:00)</span>
+                <span style="font-size: 10px; background: rgba(245, 158, 11, 0.15); padding: 1px 6px; border-radius: 8px;">${morningSlots.length}</span>
+              </div>
+              ${morningSlots.length === 0 ? `
+                <div style="text-align: center; color: var(--text-muted); font-size: 11px; padding: 10px 0;">لا توجد حصص صباحية</div>
+              ` : morningSlots.map(s => renderSlotCard(s)).join('')}
+            </div>
+
+            <!-- Period 2: Après-midi (الفترة المسائية) -->
+            <div style="background: rgba(139, 92, 246, 0.04); border: 1px solid rgba(139, 92, 246, 0.2); border-radius: 8px; padding: 8px 10px;">
+              <div style="font-size: 11px; font-weight: 800; color: #7c3aed; display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px;">
+                <span>🌙 الفترة المسائية (13:00 - 17:00)</span>
+                <span style="font-size: 10px; background: rgba(139, 92, 246, 0.15); padding: 1px 6px; border-radius: 8px;">${afternoonSlots.length}</span>
+              </div>
+              ${afternoonSlots.length === 0 ? `
+                <div style="text-align: center; color: var(--text-muted); font-size: 11px; padding: 10px 0;">لا توجد حصص مسائية</div>
+              ` : afternoonSlots.map(s => renderSlotCard(s)).join('')}
+            </div>
+          </div>
+        </div>
+      `;
+    }).join('');
+  }
+
+  async saveGroupTimetableSlot() {
+    const groupId = this.currentTimetableGroupId;
+    if (!groupId) return;
+
+    const payload = {
+      day_of_week: document.getElementById('slotDay')?.value,
+      start_time: document.getElementById('slotStartTime')?.value,
+      end_time: document.getElementById('slotEndTime')?.value,
+      subject_id: document.getElementById('slotSubjectId')?.value,
+      teacher_id: document.getElementById('slotTeacherId')?.value || null,
+      room_id: document.getElementById('slotRoomId')?.value || null
+    };
+
+    if (!payload.day_of_week || !payload.start_time || !payload.end_time || !payload.subject_id) {
+      alert(this.lang === 'ar' ? 'يرجى ملء جميع الحقول الإجبارية (اليوم، التوقيت، والمادة)' : 'Veuillez remplir tous les champs obligatoires.');
+      return;
+    }
+
+    try {
+      const res = await fetch(`/api/groups/${groupId}/timetable`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+      const data = await res.json();
+      if (data.success) {
+        this.playChime('success');
+        this.toggleAddSlotForm(false);
+        await this.loadGroupTimetableSlots(groupId);
+      } else {
+        alert(data.error || 'Erreur');
+      }
+    } catch (err) {
+      alert(err.message);
+    }
+  }
+
+  async deleteGroupTimetableSlot(slotId) {
+    const confirmMsg = this.lang === 'ar' ? 'هل أنت متأكد من حذف هذه الحصة من جدول التوقيت؟' : 'Voulez-vous supprimer cette séance du planning ?';
+    if (!confirm(confirmMsg)) return;
+
+    try {
+      const res = await fetch(`/api/groups/${this.currentTimetableGroupId}/timetable/${slotId}`, {
+        method: 'DELETE'
+      });
+      const data = await res.json();
+      if (data.success) {
+        this.playChime('success');
+        await this.loadGroupTimetableSlots(this.currentTimetableGroupId);
+      }
+    } catch (err) {
+      console.error(err);
+    }
+  }
+
+  printGroupTimetable() {
+    const g = this.currentTimetableGroup;
+    if (!g) return;
+
+    const slots = this.currentGroupSlots || [];
+    const schoolName = this.settings?.school_name || 'المؤسسة التربوية';
+    const schoolYear = this.settings?.active_year || this.settings?.school_year || '2026-2027';
+    const wilaya = this.settings?.school_wilaya || this.settings?.school_city || '';
+
+    const days = [
+      { key: 'Dimanche', ar: 'الأحد' },
+      { key: 'Lundi', ar: 'الإثنين' },
+      { key: 'Mardi', ar: 'الثلاثاء' },
+      { key: 'Mercredi', ar: 'الأربعاء' },
+      { key: 'Jeudi', ar: 'الخميس' },
+      { key: 'Samedi', ar: 'السبت' }
+    ];
+
+    const morningHours = [
+      { start: '08:00', end: '09:00', label: '08:00 — 09:00' },
+      { start: '09:00', end: '10:00', label: '09:00 — 10:00' },
+      { start: '10:00', end: '11:00', label: '10:00 — 11:00' },
+      { start: '11:00', end: '12:00', label: '11:00 — 12:00' }
+    ];
+
+    const afternoonHours = [
+      { start: '13:00', end: '14:00', label: '13:00 — 14:00' },
+      { start: '14:00', end: '15:00', label: '14:00 — 15:00' },
+      { start: '15:00', end: '16:00', label: '15:00 — 16:00' },
+      { start: '16:00', end: '17:00', label: '16:00 — 17:00' }
+    ];
+
+    const findSlotsInHour = (dayKey, hStart, hEnd) => {
+      return slots.filter(s => {
+        if (s.day_of_week !== dayKey) return false;
+        const sStart = s.start_time || '00:00';
+        const sEnd = s.end_time || '23:59';
+        return sStart < hEnd && sEnd > hStart;
+      });
+    };
+
+    const printWin = window.open('', '_blank');
+    printWin.document.write(`
+      <!DOCTYPE html>
+      <html dir="rtl" lang="ar">
+      <head>
+        <meta charset="utf-8">
+        <title>جدول استعمال الزمن — ${this.escapeHtml(g.name)}</title>
+        <style>
+          @page { size: landscape; margin: 8mm 10mm; }
+          * { box-sizing: border-box; }
+          body {
+            font-family: 'Segoe UI', Tahoma, Arial, sans-serif;
+            margin: 0;
+            padding: 10px;
+            color: #0f172a;
+            direction: rtl;
+            background: #fff;
+          }
+          .official-header {
+            width: 100%;
+            border-bottom: 2px solid #0f172a;
+            padding-bottom: 8px;
+            margin-bottom: 12px;
+          }
+          .title-main {
+            text-align: center;
+          }
+          .title-main h1 {
+            margin: 0;
+            font-size: 21px;
+            font-weight: 900;
+            letter-spacing: 0.5px;
+          }
+          .title-main h2 {
+            margin: 4px 0 0 0;
+            font-size: 15px;
+            color: #1e293b;
+            font-weight: 800;
+          }
+          .grid-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 10px;
+            font-size: 11px;
+          }
+          .grid-table th, .grid-table td {
+            border: 1.5px solid #334155;
+            text-align: center;
+            vertical-align: middle;
+            padding: 4px 3px;
+          }
+          .grid-table thead th {
+            font-weight: 800;
+          }
+          .th-morning {
+            background: #fef3c7 !important;
+            color: #92400e;
+            font-size: 13px;
+            border-inline-end: 2.5px solid #d97706 !important;
+          }
+          .th-break {
+            background: #e2e8f0 !important;
+            color: #1e293b;
+            font-size: 11px;
+            font-weight: 900;
+            border-inline-end: 2.5px solid #64748b !important;
+            writing-mode: vertical-rl;
+            transform: rotate(180deg);
+            padding: 6px 2px;
+            letter-spacing: 2px;
+          }
+          .th-afternoon {
+            background: #f3e8ff !important;
+            color: #6b21a8;
+            font-size: 13px;
+          }
+          .th-hour {
+            background: #f8fafc;
+            font-size: 10.5px;
+            padding: 4px;
+            font-weight: 800;
+          }
+          .day-col {
+            background: #f1f5f9;
+            font-weight: 900;
+            font-size: 13px;
+            width: 85px;
+          }
+          .slot-cell {
+            min-height: 54px;
+            height: 56px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            padding: 2px;
+          }
+          .slot-subject {
+            font-weight: 900;
+            font-size: 12px;
+            color: #0f172a;
+            margin-bottom: 2px;
+          }
+          .slot-teacher {
+            font-size: 10px;
+            color: #334155;
+            font-weight: 600;
+          }
+          .slot-room {
+            font-size: 9.5px;
+            color: #059669;
+            font-weight: 800;
+            margin-top: 1px;
+          }
+          .slot-empty {
+            color: #94a3b8;
+            font-size: 11px;
+          }
+          .signatures-table {
+            width: 100%;
+            margin-top: 25px;
+            page-break-inside: avoid;
+          }
+          .signatures-table td {
+            text-align: center;
+            font-size: 13px;
+            font-weight: 800;
+            width: 33%;
+            vertical-align: top;
+            padding-top: 5px;
+          }
+          @media print {
+            body { padding: 0; }
+            button { display: none; }
+          }
+        </style>
+      </head>
+      <body>
+        <table class="official-header">
+          <tr>
+            <td style="width: 33%; text-align: right; font-size: 12px; line-height: 1.5; font-weight: 700;">
+              الجمهورية الجزائرية الديمقراطية الشعبية<br>
+              وزارة التربية الوطنية<br>
+              ${wilaya ? `مديرية التربية لولاية : ${this.escapeHtml(wilaya)}<br>` : ''}
+              المؤسسة : <strong>${this.escapeHtml(schoolName)}</strong>
+            </td>
+            <td class="title-main" style="width: 34%;">
+              <h1>جدول استعمال الزمن الأسبوعي</h1>
+              <h2>القسم : <span style="color: #2563eb;">${this.escapeHtml(g.name)}</span> ${g.level_name ? `(${this.escapeHtml(g.level_name)})` : ''}</h2>
+            </td>
+            <td style="width: 33%; text-align: left; font-size: 12px; line-height: 1.5;">
+              السنة الدراسية : <strong>${this.escapeHtml(schoolYear)}</strong><br>
+              ${g.specialite ? `الشعبة / التخصص : <strong>${this.escapeHtml(g.specialite)}</strong><br>` : ''}
+              تاريخ السريان : ${new Date().toLocaleDateString('ar-DZ')}
+            </td>
+          </tr>
+        </table>
+
+        <table class="grid-table">
+          <thead>
+            <!-- Super Header -->
+            <tr>
+              <th rowspan="2" class="day-col" style="border-inline-end: 2px solid #0f172a;">الأيام</th>
+              <th colspan="4" class="th-morning">☀️ الفترة الصباحية (Matinée)</th>
+              <th rowspan="2" class="th-break">استراحة الزوال</th>
+              <th colspan="4" class="th-afternoon">🌙 الفترة المسائية (Après-midi)</th>
+            </tr>
+            <!-- Hours Header -->
+            <tr>
+              ${morningHours.map(h => `<th class="th-hour" style="width: 10.5%;">${h.label}</th>`).join('')}
+              ${afternoonHours.map(h => `<th class="th-hour" style="width: 10.5%;">${h.label}</th>`).join('')}
+            </tr>
+          </thead>
+          <tbody>
+            ${days.map(d => `
+              <tr>
+                <td class="day-col">${d.ar}</td>
+                ${morningHours.map(h => {
+                  const daySlots = findSlotsInHour(d.key, h.start, h.end);
+                  if (daySlots.length === 0) {
+                    return `<td><div class="slot-cell slot-empty">-</div></td>`;
+                  }
+                  const s = daySlots[0];
+                  return `
+                    <td>
+                      <div class="slot-cell">
+                        <div class="slot-subject">${this.escapeHtml(s.subject_name)}</div>
+                        ${s.teacher_name && s.teacher_name !== 'Non assigné' ? `<div class="slot-teacher">أ. ${this.escapeHtml(s.teacher_name)}</div>` : ''}
+                        ${s.room_name && s.room_name !== '-' ? `<div class="slot-room">قاعة: ${this.escapeHtml(s.room_name)}</div>` : ''}
+                      </div>
+                    </td>
+                  `;
+                }).join('')}
+                <td style="background: #f1f5f9; border-inline-end: 2px solid #64748b;"></td>
+                ${afternoonHours.map(h => {
+                  const daySlots = findSlotsInHour(d.key, h.start, h.end);
+                  if (daySlots.length === 0) {
+                    return `<td><div class="slot-cell slot-empty">-</div></td>`;
+                  }
+                  const s = daySlots[0];
+                  return `
+                    <td>
+                      <div class="slot-cell">
+                        <div class="slot-subject">${this.escapeHtml(s.subject_name)}</div>
+                        ${s.teacher_name && s.teacher_name !== 'Non assigné' ? `<div class="slot-teacher">أ. ${this.escapeHtml(s.teacher_name)}</div>` : ''}
+                        ${s.room_name && s.room_name !== '-' ? `<div class="slot-room">قاعة: ${this.escapeHtml(s.room_name)}</div>` : ''}
+                      </div>
+                    </td>
+                  `;
+                }).join('')}
+              </tr>
+            `).join('')}
+          </tbody>
+        </table>
+
+        <table class="signatures-table">
+          <tr>
+            <td>
+              تأشيرة مستشار التربية / الناظر<br><br><br>
+              .............................................
+            </td>
+            <td>
+              ختم الإدارة المدرسية
+            </td>
+            <td>
+              مدير المؤسسة<br><br><br>
+              .............................................
+            </td>
+          </tr>
+        </table>
+
+        <script>
+          window.onload = function() { window.print(); }
+        </script>
+      </body>
+      </html>
+    `);
+    printWin.document.close();
   }
 
   async toggleGroupStatus(id) {

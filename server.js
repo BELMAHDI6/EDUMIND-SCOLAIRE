@@ -1909,6 +1909,131 @@ app.get('/api/groups/:id/students', (req, res) => {
   }
 });
 
+// -------------------------------------------------------------
+// Group Timetable Endpoints (جدول توقيت واستعمال الزمن للأقسام التربوية)
+// -------------------------------------------------------------
+app.get('/api/groups/:id/timetable', (req, res) => {
+  try {
+    const { id } = req.params;
+    const group = DB.queryOne(`
+      SELECT g.*, l.name as level_name
+      FROM groups g
+      LEFT JOIN levels l ON g.level_id = l.id
+      WHERE g.id = ?
+    `, [id]);
+    if (!group) return res.status(404).json({ success: false, error: 'Groupe introuvable' });
+
+    const slots = DB.queryAll(`
+      SELECT ct.*,
+             COALESCE(sub.name, 'Sans matière') as subject_name,
+             COALESCE(sub.color, '#3b82f6') as subject_color,
+             COALESCE(t.first_name || ' ' || t.last_name, 'Non assigné') as teacher_name,
+             COALESCE(r.name, '-') as room_name
+      FROM class_timetable ct
+      LEFT JOIN subjects sub ON ct.subject_id = sub.id
+      LEFT JOIN teachers t ON ct.teacher_id = t.id
+      LEFT JOIN rooms r ON ct.room_id = r.id
+      WHERE ct.group_id = ?
+      ORDER BY 
+        CASE ct.day_of_week
+          WHEN 'Dimanche' THEN 1
+          WHEN 'Lundi' THEN 2
+          WHEN 'Mardi' THEN 3
+          WHEN 'Mercredi' THEN 4
+          WHEN 'Jeudi' THEN 5
+          WHEN 'Samedi' THEN 6
+          WHEN 'Vendredi' THEN 7
+          ELSE 8
+        END,
+        ct.start_time ASC
+    `, [id]);
+
+    res.json({ success: true, group, slots });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+app.post('/api/groups/:id/timetable', (req, res) => {
+  try {
+    const { id } = req.params;
+    const { day_of_week, start_time, end_time, subject_id, teacher_id, room_id, notes } = req.body;
+
+    if (!day_of_week || !start_time || !end_time || !subject_id) {
+      return res.status(400).json({ success: false, error: 'Le jour, les horaires et la matière sont obligatoires' });
+    }
+
+    const group = DB.queryOne("SELECT id FROM groups WHERE id = ?", [id]);
+    if (!group) return res.status(404).json({ success: false, error: 'Groupe introuvable' });
+
+    const result = DB.run(`
+      INSERT INTO class_timetable (group_id, day_of_week, start_time, end_time, subject_id, teacher_id, room_id, notes)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+    `, [
+      id,
+      day_of_week,
+      start_time,
+      end_time,
+      subject_id ? parseInt(subject_id) : null,
+      teacher_id ? parseInt(teacher_id) : null,
+      room_id ? parseInt(room_id) : null,
+      notes || null
+    ]);
+
+    res.json({ success: true, id: result.lastInsertRowid, message: 'Séance ajoutée avec succès au planning' });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+app.delete('/api/groups/:id/timetable/:slotId', (req, res) => {
+  try {
+    const { id, slotId } = req.params;
+    DB.run("DELETE FROM class_timetable WHERE id = ? AND group_id = ?", [slotId, id]);
+    res.json({ success: true, message: 'Séance supprimée' });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+// Room Schedule Endpoint (الربط التلقائي لجدول القاعات)
+app.get('/api/rooms/:id/schedule', (req, res) => {
+  try {
+    const { id } = req.params;
+    const room = DB.queryOne("SELECT * FROM rooms WHERE id = ?", [id]);
+    if (!room) return res.status(404).json({ success: false, error: 'Salle introuvable' });
+
+    const schedule = DB.queryAll(`
+      SELECT ct.*,
+             g.name as group_name,
+             COALESCE(sub.name, 'Sans matière') as subject_name,
+             COALESCE(sub.color, '#3b82f6') as subject_color,
+             COALESCE(t.first_name || ' ' || t.last_name, 'Non assigné') as teacher_name
+      FROM class_timetable ct
+      JOIN groups g ON ct.group_id = g.id
+      LEFT JOIN subjects sub ON ct.subject_id = sub.id
+      LEFT JOIN teachers t ON ct.teacher_id = t.id
+      WHERE ct.room_id = ?
+      ORDER BY 
+        CASE ct.day_of_week
+          WHEN 'Dimanche' THEN 1
+          WHEN 'Lundi' THEN 2
+          WHEN 'Mardi' THEN 3
+          WHEN 'Mercredi' THEN 4
+          WHEN 'Jeudi' THEN 5
+          WHEN 'Samedi' THEN 6
+          WHEN 'Vendredi' THEN 7
+          ELSE 8
+        END,
+        ct.start_time ASC
+    `, [id]);
+
+    res.json({ success: true, room, schedule });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
 app.post('/api/groups/:id/students', (req, res) => {
   try {
     const { id } = req.params;
