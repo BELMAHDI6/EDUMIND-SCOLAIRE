@@ -1087,6 +1087,70 @@ function initDatabase() {
     console.warn('Public school extensions migration:', pubErr.message);
   }
 
+  // Room Schedules & Classrooms Timetable System (نظام استعمال القاعات وجداول التوقيت)
+  try {
+    addColumnIfNotExists('rooms', 'description', 'TEXT');
+
+    db.exec(`
+      CREATE TABLE IF NOT EXISTS room_schedules (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        room_id INTEGER NOT NULL,
+        group_id INTEGER,
+        subject_id INTEGER,
+        teacher_id INTEGER,
+        day_of_week TEXT NOT NULL,
+        start_time TEXT NOT NULL,
+        end_time TEXT NOT NULL,
+        notes TEXT,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY (room_id) REFERENCES rooms(id) ON DELETE CASCADE,
+        FOREIGN KEY (group_id) REFERENCES groups(id) ON DELETE SET NULL,
+        FOREIGN KEY (subject_id) REFERENCES subjects(id) ON DELETE SET NULL,
+        FOREIGN KEY (teacher_id) REFERENCES teachers(id) ON DELETE SET NULL
+      );
+      CREATE INDEX IF NOT EXISTS idx_room_sched_room_day ON room_schedules(room_id, day_of_week);
+      CREATE INDEX IF NOT EXISTS idx_room_sched_teacher_day ON room_schedules(teacher_id, day_of_week);
+      CREATE INDEX IF NOT EXISTS idx_room_sched_group ON room_schedules(group_id);
+    `);
+
+    // room_schedules table is now managed cleanly via class schedule interface
+
+    // Class Teachers Assignment Table (إسناد أساتذة المواد للأقسام)
+    db.exec(`
+      CREATE TABLE IF NOT EXISTS class_subject_teachers (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        group_id INTEGER NOT NULL,
+        subject_id INTEGER NOT NULL,
+        teacher_id INTEGER NOT NULL,
+        school_year TEXT DEFAULT '2026-2027',
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY (group_id) REFERENCES groups(id) ON DELETE CASCADE,
+        FOREIGN KEY (subject_id) REFERENCES subjects(id) ON DELETE CASCADE,
+        FOREIGN KEY (teacher_id) REFERENCES teachers(id) ON DELETE CASCADE,
+        UNIQUE(group_id, subject_id)
+      );
+      CREATE INDEX IF NOT EXISTS idx_cst_group ON class_subject_teachers(group_id);
+      CREATE INDEX IF NOT EXISTS idx_cst_subject ON class_subject_teachers(subject_id);
+      CREATE INDEX IF NOT EXISTS idx_cst_teacher ON class_subject_teachers(teacher_id);
+    `);
+
+    // Auto-populate class subject teachers from existing groups and schedules
+    try {
+      db.exec(`
+        INSERT OR IGNORE INTO class_subject_teachers (group_id, subject_id, teacher_id)
+        SELECT id, subject_id, teacher_id FROM groups 
+        WHERE subject_id IS NOT NULL AND teacher_id IS NOT NULL AND active = 1;
+
+        INSERT OR IGNORE INTO class_subject_teachers (group_id, subject_id, teacher_id)
+        SELECT group_id, subject_id, teacher_id FROM room_schedules 
+        WHERE group_id IS NOT NULL AND subject_id IS NOT NULL AND teacher_id IS NOT NULL;
+      `);
+    } catch (cstErr) {}
+
+  } catch (rsErr) {
+    console.warn('Room schedules migration error:', rsErr.message);
+  }
+
   console.log('✅ EDUMIND Scolaire Database tables verified successfully!');
 }
 

@@ -167,7 +167,7 @@ const i18n = {
     th_montant_du: 'MONTANT DÛ',
     title_caisse: 'Trésorerie & Journal de Caisse',
     title_enseignants: 'Gestion du Corps Enseignant',
-    btn_add_teacher: 'Ajouter un Enseignant',
+    btn_add_teacher: 'Nouvel Enseignant / Employé',
     title_planning: 'Emploi du Temps & Groupes',
     title_attendance: "Gestion des Présences & Feuilles d'Appel",
     subtitle_attendance: "Vérification manuelle des présences par groupe, suivi des dates et nombre de séances.",
@@ -13328,6 +13328,9 @@ class EdumindApp {
                 <i class="fa-solid fa-users" style="font-size: 12px;"></i>
                 <span>${this.lang === 'ar' ? 'تلاميذ القسم' : 'Élèves du groupe'}</span>
               </button>
+              <button class="btn-action-edit" style="color: #8b5cf6; border-color: rgba(139, 92, 246, 0.35); background: rgba(139, 92, 246, 0.1);" title="${this.lang === 'ar' ? 'عرض جدول التوقيت والحصص لهذا القسم' : 'Consulter l\'emploi du temps de la classe'}" onclick="app.openClassTimetable(${g.id})">
+                <i class="fa-regular fa-calendar-days"></i>
+              </button>
               <button class="btn-action-edit" title="${this.lang === 'ar' ? 'تعديل' : 'Modifier'}" onclick="app.editGroup(${g.id})">
                 <i class="fa-solid fa-pen-to-square"></i>
               </button>
@@ -14139,47 +14142,177 @@ class EdumindApp {
     }
   }
 
-  async openRoomTimetable(roomId) {
-    const r = this.rooms?.find(item => item.id === roomId);
-    if (!r) return;
+  // =========================================================================
+  // ROOM TIMETABLE & SCHEDULE MANAGEMENT (نظام جدول استعمال القاعات الأسبوعي)
+  // =========================================================================
 
-    this.currentTimetableRoom = r;
-    const titleEl = document.getElementById('roomTimetableTitle');
-    const capEl = document.getElementById('roomTimetableCapBadge');
-    const projEl = document.getElementById('roomTimetableProjBadge');
-    const equipEl = document.getElementById('roomTimetableEquipNotes');
-    const daysGrid = document.getElementById('roomTimetableDaysGrid');
+  async viewClassRoomTimetable(groupId) {
+    await this.openClassTimetable(groupId);
+  }
 
-    if (titleEl) titleEl.textContent = `${this.lang === 'ar' ? 'جدول استعمال' : 'Emploi du Temps —'} ${r.name}`;
-    if (capEl) capEl.textContent = `${this.lang === 'ar' ? 'السعة:' : 'Capacité:'} ${r.capacity} ${this.lang === 'ar' ? 'مقعد' : 'places'}`;
-    if (projEl) {
-      const hasP = r.has_projector == 1 || r.has_projector === true;
-      projEl.textContent = `${this.lang === 'ar' ? 'عارض داتاشو:' : 'Vidéoprojecteur:'} ${hasP ? (this.lang === 'ar' ? 'متوفر' : 'Oui') : (this.lang === 'ar' ? 'غير متوفر' : 'Non')}`;
+  async openRoomTimetable(roomId, highlightGroupId = null) {
+    await this.openClassTimetable(highlightGroupId || roomId);
+  }
+
+  async openClassTimetable(groupId) {
+    if (!this.allGroupes || this.allGroupes.length === 0) {
+      try {
+        const res = await fetch('/api/groups?status=all');
+        const data = await res.json();
+        if (data.success) this.allGroupes = data.groups || [];
+      } catch (e) {}
     }
-    if (equipEl) equipEl.textContent = r.notes || '';
 
-    if (daysGrid) {
-      daysGrid.innerHTML = `<div style="grid-column: 1 / -1; text-align: center; padding: 30px;"><i class="fa-solid fa-spinner fa-spin"></i> ${this.lang === 'ar' ? 'جاري تحميل جدول التوقيت...' : 'Chargement du planning...'}</div>`;
+    const groupsList = (this.allGroupes && this.allGroupes.length > 0) ? this.allGroupes : (this.groups || []);
+    let g = groupsList.find(item => Number(item.id) === Number(groupId));
+    if (!g && groupsList.length > 0) {
+      g = groupsList[0];
+      groupId = g.id;
+    }
+    if (!g) return;
+
+    this.currentTimetableGroupId = Number(groupId);
+    this.currentTimetableGroup = g;
+    this.highlightTimetableGroupId = Number(groupId);
+    this.currentTimetableViewMode = this.currentTimetableViewMode || 'daily';
+
+    // Update Class Switcher in Modal Header
+    const groupSelect = document.getElementById('roomTimetableSelectGroup');
+    if (groupSelect) {
+      groupSelect.innerHTML = groupsList.map(item => `
+        <option value="${item.id}" ${Number(item.id) === Number(groupId) ? 'selected' : ''}>
+          ${this.escapeHtml(item.name)} ${item.level_name ? `(${this.escapeHtml(item.level_name)})` : ''}
+        </option>
+      `).join('');
+      groupSelect.value = groupId;
+    }
+
+    const titleEl = document.getElementById('roomTimetableTitle');
+    const subtitleEl = document.getElementById('roomTimetableSubtitle');
+    const nameBadge = document.getElementById('classTimetableNameBadge');
+    const levelBadge = document.getElementById('classTimetableLevelBadge');
+    const studentsBadge = document.getElementById('classTimetableStudentsBadge');
+    const dailyContainer = document.getElementById('roomTimetableDailyContainer');
+    const searchInput = document.getElementById('roomTimetableSearchInput');
+    if (searchInput) searchInput.value = '';
+
+    if (titleEl) titleEl.textContent = `جدول توقيت واستعمال قسم: ${g.name}`;
+    if (subtitleEl) subtitleEl.textContent = `المستوى: ${g.level_name || '-'} • الفوج التربوي الرسمي`;
+    if (nameBadge) nameBadge.textContent = `القسم: ${g.name}`;
+    if (levelBadge) levelBadge.textContent = `المستوى: ${g.level_name || '-'}`;
+    if (studentsBadge) studentsBadge.textContent = `${g.student_count || g.students_count || 0} تلميذ`;
+
+    if (dailyContainer) {
+      dailyContainer.innerHTML = `<div style="text-align: center; padding: 40px; color: var(--text-muted);"><i class="fa-solid fa-spinner fa-spin fa-2x" style="color: #3b82f6; margin-bottom: 12px; display: block;"></i> جاري تحميل جدول توقيت وحصص القسم...</div>`;
     }
 
     document.getElementById('modalRoomTimetable')?.classList.add('active');
 
     let sessions = [];
     try {
-      const res = await fetch(`/api/rooms/${roomId}/schedule`);
+      const res = await fetch(`/api/groups/${groupId}/schedule`);
       const data = await res.json();
       if (data.success && data.schedule) {
         sessions = data.schedule;
-      } else {
-        sessions = (this.groups || []).filter(g => g.room_id == roomId && (g.active === 1 || g.active === undefined));
+        if (data.group) {
+          this.currentTimetableGroup = { ...g, ...data.group };
+          if (studentsBadge && data.group.enrolled_count !== undefined) {
+            studentsBadge.textContent = `${data.group.enrolled_count} تلميذ`;
+          }
+        }
       }
     } catch (e) {
-      sessions = (this.groups || []).filter(g => g.room_id == roomId && (g.active === 1 || g.active === undefined));
+      console.error(e);
     }
 
+    this.currentRoomSessions = sessions;
+
+    // Pick appropriate default day:
+    if (!this.currentTimetableDay || (sessions.length > 0 && !sessions.some(s => s.day_of_week && s.day_of_week.toLowerCase() === this.currentTimetableDay.toLowerCase()))) {
+      const counts = {};
+      sessions.forEach(s => {
+        if (s.day_of_week) counts[s.day_of_week] = (counts[s.day_of_week] || 0) + 1;
+      });
+      let bestDay = 'Dimanche';
+      let bestCount = -1;
+      Object.keys(counts).forEach(dk => {
+        if (counts[dk] > bestCount) {
+          bestCount = counts[dk];
+          bestDay = dk;
+        }
+      });
+      this.currentTimetableDay = bestDay;
+    }
+
+    this.renderRoomTimetableGrid(sessions);
+  }
+
+  async loadSlotSubjects(groupId, selectedSubjectId = null) {
+    const subjectSelect = document.getElementById('slotSubjectId');
+    if (!subjectSelect) return;
+
+    try {
+      const url = groupId ? `/api/subjects?group_id=${groupId}&deduplicate=true` : `/api/subjects?deduplicate=true`;
+      const res = await fetch(url);
+      const data = await res.json();
+      if (data.success && data.subjects) {
+        this.slotSubjects = data.subjects;
+      }
+    } catch (e) {
+      console.error(e);
+    }
+
+    const subs = this.slotSubjects || this.subjects || [];
+    subjectSelect.innerHTML = `<option value="">-- اختر المادة الدراسية (${subs.length} مادة) --</option>` +
+      subs.map(s => `
+        <option value="${s.id}" ${selectedSubjectId && Number(selectedSubjectId) === Number(s.id) ? 'selected' : ''}>
+          ${this.escapeHtml(s.name)}
+        </option>
+      `).join('');
+
+    if (selectedSubjectId) {
+      subjectSelect.value = selectedSubjectId;
+    }
+  }
+
+  setRoomTimetableViewMode(mode) {
+    this.currentTimetableViewMode = mode;
+    document.getElementById('btnModeDaily')?.classList.toggle('active', mode === 'daily');
+    document.getElementById('btnModeWeekly')?.classList.toggle('active', mode === 'weekly');
+    this.renderRoomTimetableGrid(this.currentRoomSessions || []);
+  }
+
+  selectRoomTimetableDay(dayKey) {
+    this.currentTimetableDay = dayKey;
+    this.currentTimetableViewMode = 'daily';
+    document.getElementById('btnModeDaily')?.classList.add('active');
+    document.getElementById('btnModeWeekly')?.classList.remove('active');
+    this.renderRoomTimetableGrid(this.currentRoomSessions || []);
+  }
+
+  renderRoomTimetableGrid(sessions) {
+    const dailyContainer = document.getElementById('roomTimetableDailyContainer');
+    const daysGrid = document.getElementById('roomTimetableDaysGrid');
+    const dayTabsBar = document.getElementById('roomTimetableDayTabs');
     const groupsBadge = document.getElementById('roomTimetableGroupsBadge');
+    const hoursBadge = document.getElementById('roomTimetableHoursBadge');
+
+    let totalMinutes = 0;
+    (sessions || []).forEach(s => {
+      if (s.start_time && s.end_time) {
+        const [sh, sm] = s.start_time.split(':').map(Number);
+        const [eh, em] = s.end_time.split(':').map(Number);
+        const mins = (eh * 60 + em) - (sh * 60 + sm);
+        if (mins > 0) totalMinutes += mins;
+      }
+    });
+    const totalHours = (totalMinutes / 60).toFixed(totalMinutes % 60 === 0 ? 0 : 1);
+
     if (groupsBadge) {
-      groupsBadge.textContent = `${sessions.length} ${this.lang === 'ar' ? 'حصص مبرمجة' : (sessions.length > 1 ? 'séances programmées' : 'séance programmée')}`;
+      groupsBadge.textContent = `${sessions.length} ${this.lang === 'ar' ? 'حصة مبرمجة' : (sessions.length > 1 ? 'séances' : 'séance')}`;
+    }
+    if (hoursBadge) {
+      hoursBadge.textContent = `${totalHours} ${this.lang === 'ar' ? 'ساعة أسبوعياً' : 'h / semaine'}`;
     }
 
     const days = [
@@ -14192,41 +14325,798 @@ class EdumindApp {
       { key: 'Vendredi', fr: 'Vendredi', ar: 'الجمعة' }
     ];
 
-    if (daysGrid) {
-      daysGrid.innerHTML = days.map(d => {
-        const daySessions = sessions.filter(s => s.day_of_week && s.day_of_week.toLowerCase() === d.key.toLowerCase());
+    // Render Day Navigation Tabs
+    if (dayTabsBar) {
+      dayTabsBar.innerHTML = days.map(d => {
+        const count = (sessions || []).filter(s => s.day_of_week && s.day_of_week.toLowerCase() === d.key.toLowerCase()).length;
+        const isActive = (this.currentTimetableViewMode === 'daily') && this.currentTimetableDay && this.currentTimetableDay.toLowerCase() === d.key.toLowerCase();
         const dayLabel = this.lang === 'ar' ? d.ar : d.fr;
 
         return `
-          <div class="room-day-column">
-            <div class="room-day-header">
-              <span>${dayLabel}</span>
-              <span class="room-day-badge">${daySessions.length} ${this.lang === 'ar' ? 'حصص' : 'cours'}</span>
-            </div>
-            <div class="room-day-sessions-list">
-              ${daySessions.length === 0 ? `
-                <div class="room-session-empty">${this.lang === 'ar' ? 'لا توجد حصص في هذا اليوم' : 'Aucun cours programmé'}</div>
-              ` : daySessions.map(s => `
-                <div class="room-session-item" style="border-inline-start-color: ${s.subject_color || '#3b82f6'};">
-                  <div class="room-session-time">
-                    <i class="fa-regular fa-clock"></i>
-                    <span>${s.start_time || '--:--'} — ${s.end_time || '--:--'}</span>
-                  </div>
-                  <div class="room-session-name">${this.escapeHtml(s.name)}</div>
-                  <div class="room-session-details">
-                    <span style="font-weight: 600; color: ${s.subject_color || 'var(--text-main)'};">
-                      <i class="fa-solid fa-book"></i> ${this.escapeHtml(s.subject_name || '')}
-                    </span>
-                    ${s.teacher_name ? `<span><i class="fa-solid fa-user-tie"></i> ${this.escapeHtml(s.teacher_name)}</span>` : ''}
-                    ${s.enrolled_count !== undefined ? `<span><i class="fa-solid fa-users"></i> ${s.enrolled_count}/${s.max_students || r.capacity}</span>` : ''}
-                  </div>
-                </div>
-              `).join('')}
-            </div>
-          </div>
+          <button type="button" class="room-day-tab-btn ${isActive ? 'active' : ''}" onclick="app.selectRoomTimetableDay('${d.key}')">
+            <span>${dayLabel}</span>
+            <span class="room-day-tab-badge">${count}</span>
+          </button>
         `;
       }).join('');
     }
+
+    // Toggle Containers based on current mode
+    if (this.currentTimetableViewMode === 'daily') {
+      if (dailyContainer) dailyContainer.style.display = 'flex';
+      if (daysGrid) daysGrid.style.display = 'none';
+      this.renderRoomDailyView(sessions, days);
+    } else {
+      if (dailyContainer) dailyContainer.style.display = 'none';
+      if (daysGrid) daysGrid.style.display = 'grid';
+      this.renderRoomWeeklyGrid(sessions, days);
+    }
+  }
+
+  renderRoomDailyView(sessions, days) {
+    const dailyContainer = document.getElementById('roomTimetableDailyContainer');
+    if (!dailyContainer) return;
+
+    const currentKey = this.currentTimetableDay || 'Dimanche';
+    const dayObj = (days || []).find(d => d.key.toLowerCase() === currentKey.toLowerCase()) || { key: currentKey, ar: currentKey, fr: currentKey };
+    const dayLabel = this.lang === 'ar' ? dayObj.ar : dayObj.fr;
+
+    // Filter sessions for this day
+    const daySessions = (sessions || []).filter(s => s.day_of_week && s.day_of_week.toLowerCase() === currentKey.toLowerCase());
+    
+    // Sort chronologically by start_time
+    daySessions.sort((a, b) => (a.start_time || '').localeCompare(b.start_time || ''));
+
+    let dayMinutes = 0;
+    daySessions.forEach(s => {
+      if (s.start_time && s.end_time) {
+        const [sh, sm] = s.start_time.split(':').map(Number);
+        const [eh, em] = s.end_time.split(':').map(Number);
+        const mins = (eh * 60 + em) - (sh * 60 + sm);
+        if (mins > 0) dayMinutes += mins;
+      }
+    });
+    const dayHours = (dayMinutes / 60).toFixed(dayMinutes % 60 === 0 ? 0 : 1);
+
+    dailyContainer.innerHTML = `
+      <!-- Daily Header Card -->
+      <div class="room-daily-header-card">
+        <div class="room-daily-header-title">
+          <div style="width: 36px; height: 36px; border-radius: 10px; background: rgba(59, 130, 246, 0.2); color: #38bdf8; display: flex; align-items: center; justify-content: center; font-size: 17px;">
+            <i class="fa-regular fa-calendar-check"></i>
+          </div>
+          <div>
+            <div style="display: flex; align-items: center; gap: 8px;">
+              <span>${this.lang === 'ar' ? 'جدول وتوقيت حصص يوم:' : 'Planning détaillé du :'}</span>
+              <strong style="color: #38bdf8; font-size: 18px;">${dayLabel}</strong>
+            </div>
+            <div style="font-size: 12px; color: var(--text-muted); font-weight: normal; margin-top: 2px;">
+              ${daySessions.length} ${this.lang === 'ar' ? 'حصص مبرمجة' : 'séance(s)'} • إجمالي ${dayHours} ${this.lang === 'ar' ? 'ساعة تدريس' : 'heures'}
+            </div>
+          </div>
+        </div>
+        <div style="display: flex; align-items: center; gap: 10px;">
+          <button type="button" class="btn-primary" onclick="app.openModalAddSlot('${dayObj.key}')"
+            style="padding: 8px 16px; font-size: 13px; background: #10b981; border-color: #10b981; display: inline-flex; align-items: center; gap: 7px; box-shadow: 0 4px 12px rgba(16, 185, 129, 0.25);">
+            <i class="fa-solid fa-plus"></i>
+            <span>+ ${this.lang === 'ar' ? 'إضافة حصة في يوم ' + dayLabel : 'Ajouter une séance le ' + dayLabel}</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- High-Visibility Slots List -->
+      <div class="room-daily-slots-list">
+        ${daySessions.length === 0 ? `
+          <div style="text-align: center; padding: 45px 20px; background: var(--bg-hover); border: 2px dashed var(--border-color); border-radius: 14px;">
+            <i class="fa-regular fa-calendar-xmark" style="font-size: 38px; color: var(--text-muted); opacity: 0.5; margin-bottom: 12px; display: block;"></i>
+            <h4 style="margin-bottom: 6px; font-size: 15px; color: var(--text-heading);">${this.lang === 'ar' ? 'لا توجد حصص مبرمجة في يوم ' + dayLabel : 'Aucun cours ce jour-là'}</h4>
+            <p style="font-size: 13px; color: var(--text-muted); max-width: 420px; margin: 0 auto 16px auto;">
+              ${this.lang === 'ar' ? 'لا توجد حصص مبرمجة لهذا القسم في هذا اليوم. يمكنك إضافة حصص دراسية جديدة وتحديد المواد والأساتذة.' : 'Aucun cours programmé pour cette classe ce jour-là.'}
+            </p>
+            <button type="button" class="btn-primary" style="padding: 8px 18px; font-size: 13px; background: #10b981; border-color: #10b981;" onclick="app.openModalAddSlot('${dayObj.key}')">
+              <i class="fa-solid fa-plus"></i> ${this.lang === 'ar' ? '+ إضافة أول حصة في هذا اليوم' : '+ Ajouter un cours'}
+            </button>
+          </div>
+        ` : daySessions.map(s => {
+          const isHighlighted = this.highlightTimetableGroupId && String(s.group_id) === String(this.highlightTimetableGroupId);
+
+          // Calculate duration text
+          let durText = '';
+          if (s.start_time && s.end_time) {
+            const [sh, sm] = s.start_time.split(':').map(Number);
+            const [eh, em] = s.end_time.split(':').map(Number);
+            const diffMin = (eh * 60 + em) - (sh * 60 + sm);
+            if (diffMin > 0) {
+              const h = Math.floor(diffMin / 60);
+              const m = diffMin % 60;
+              durText = m > 0 ? `${h}h${m}` : `${h}h00`;
+            }
+          }
+
+          const isAssigned = s.is_assigned_to_class == 1 || s.is_assigned_to_class === true;
+
+          return `
+            <div class="room-daily-slot-card ${isHighlighted ? 'highlighted' : ''}" style="border-inline-start-color: ${s.subject_color || '#3b82f6'};">
+              <!-- Prominent Time Badge -->
+              <div class="room-daily-time-badge">
+                <div class="room-daily-time-range">
+                  <i class="fa-regular fa-clock"></i>
+                  <span>${s.start_time || '--:--'} ➔ ${s.end_time || '--:--'}</span>
+                </div>
+                ${durText ? `<div class="room-daily-time-duration">المدة: ${durText}</div>` : ''}
+              </div>
+
+              <!-- Main Slot Info -->
+              <div class="room-daily-slot-main">
+                <div class="room-daily-subject-row">
+                  <span class="room-daily-subject-name" style="color: ${s.subject_color || '#3b82f6'};">
+                    <i class="fa-solid fa-${s.subject_icon || 'book'}"></i>
+                    ${this.escapeHtml(s.subject_name || 'مادة تعليمية')}
+                  </span>
+                  ${isAssigned ? `
+                    <span class="slot-assigned-badge" title="هذا الأستاذ مسند رسمياً لتدريس هذه المادة لهذا القسم">
+                      <i class="fa-solid fa-circle-check"></i>
+                      <span>أستاذ المادة للقسم</span>
+                    </span>
+                  ` : ''}
+                  ${isHighlighted ? `
+                    <span style="font-size: 11px; background: #8b5cf6; color: #fff; padding: 2px 8px; border-radius: 6px; font-weight: 700;">
+                      القسم الحالي
+                    </span>
+                  ` : ''}
+                </div>
+
+                <div class="room-daily-details-row">
+                  <!-- Class Badge -->
+                  <span class="slot-class-badge" title="القسم أو الفوج التربوي">
+                    <i class="fa-solid fa-chalkboard-user"></i>
+                    <span>${this.escapeHtml(s.group_name || s.name || 'فوج دراسي')}</span>
+                    ${s.level_name && s.level_name !== '-' ? `<span style="font-size: 11.5px; opacity: 0.8; font-weight: normal;">(${this.escapeHtml(s.level_name)})</span>` : ''}
+                  </span>
+
+                  <!-- Teacher -->
+                  <span class="slot-teacher-badge">
+                    <i class="fa-solid fa-user-tie" style="color: #10b981;"></i>
+                    <span>الأستاذ: <strong>${this.escapeHtml(s.teacher_name || 'غير محدد')}</strong></span>
+                    ${s.teacher_phone ? `<span style="font-size: 11.5px; color: var(--text-muted);"><i class="fa-solid fa-phone" style="font-size: 10px;"></i> ${this.escapeHtml(s.teacher_phone)}</span>` : ''}
+                  </span>
+
+                  <!-- Enrolled count -->
+                  ${s.enrolled_count !== undefined ? `
+                    <span style="font-size: 12px; color: var(--text-muted); display: inline-flex; align-items: center; gap: 5px;">
+                      <i class="fa-solid fa-users" style="color: #64748b;"></i>
+                      <span>${s.enrolled_count} تلميذ</span>
+                    </span>
+                  ` : ''}
+                </div>
+
+                ${s.notes && s.notes.trim() && s.notes !== 'Séance de cours' && s.notes !== 'Séance régulière' ? `
+                  <div style="font-size: 12px; color: var(--text-muted); margin-top: 3px; display: inline-flex; align-items: center; gap: 6px;">
+                    <i class="fa-regular fa-note-sticky" style="color: #f59e0b;"></i>
+                    <span>${this.escapeHtml(s.notes)}</span>
+                  </div>
+                ` : ''}
+              </div>
+
+              <!-- Actions -->
+              <div class="room-daily-actions">
+                <button type="button" class="btn-daily-action edit" onclick="app.openModalEditSlot(${s.id})" title="${this.lang === 'ar' ? 'تعديل الحصة' : 'Modifier'}">
+                  <i class="fa-solid fa-pen-to-square"></i>
+                  <span>${this.lang === 'ar' ? 'تعديل' : 'Modifier'}</span>
+                </button>
+                <button type="button" class="btn-daily-action delete" onclick="app.deleteSlot(${s.id})" title="${this.lang === 'ar' ? 'حذف الحصة' : 'Supprimer'}">
+                  <i class="fa-solid fa-trash-can"></i>
+                  <span>${this.lang === 'ar' ? 'حذف' : 'Supprimer'}</span>
+                </button>
+              </div>
+            </div>
+          `;
+        }).join('')}
+      </div>
+    `;
+  }
+
+  renderRoomWeeklyGrid(sessions, days) {
+    const daysGrid = document.getElementById('roomTimetableDaysGrid');
+    if (!daysGrid) return;
+
+    daysGrid.innerHTML = (days || []).map(d => {
+      const daySessions = (sessions || []).filter(s => s.day_of_week && s.day_of_week.toLowerCase() === d.key.toLowerCase());
+      daySessions.sort((a, b) => (a.start_time || '').localeCompare(b.start_time || ''));
+      const dayLabel = this.lang === 'ar' ? d.ar : d.fr;
+
+      return `
+        <div class="room-day-column">
+          <div class="room-day-header" style="cursor: pointer;" onclick="app.selectRoomTimetableDay('${d.key}')" title="${this.lang === 'ar' ? 'انقر لتكبير وعرض تفاصيل هذا اليوم' : 'Cliquer pour voir le détail'}">
+            <div style="display: flex; align-items: center; gap: 8px;">
+              <span>${dayLabel}</span>
+              <span class="room-day-badge">${daySessions.length} ${this.lang === 'ar' ? 'حصص' : 'cours'}</span>
+            </div>
+            <button type="button" class="room-day-add-btn" title="${this.lang === 'ar' ? 'إضافة حصة في يوم ' + dayLabel : 'Ajouter une séance le ' + dayLabel}" onclick="event.stopPropagation(); app.openModalAddSlot('${d.key}')">
+              <i class="fa-solid fa-plus"></i>
+            </button>
+          </div>
+          <div class="room-day-sessions-list">
+            ${daySessions.length === 0 ? `
+              <div class="room-session-empty">
+                <div>${this.lang === 'ar' ? 'لا توجد حصص مبرمجة' : 'Aucun cours'}</div>
+                <button type="button" class="btn-link" style="margin-top: 8px; font-size: 11.5px; color: #3b82f6; background: none; border: none; cursor: pointer; text-decoration: underline;" onclick="app.openModalAddSlot('${d.key}')">
+                  <i class="fa-solid fa-plus"></i> ${this.lang === 'ar' ? '+ إضافة حصة' : '+ Ajouter'}
+                </button>
+              </div>
+            ` : daySessions.map(s => {
+              const isHighlighted = this.highlightTimetableGroupId && String(s.group_id) === String(this.highlightTimetableGroupId);
+              const isAssigned = s.is_assigned_to_class == 1 || s.is_assigned_to_class === true;
+
+              let durText = '';
+              if (s.start_time && s.end_time) {
+                const [sh, sm] = s.start_time.split(':').map(Number);
+                const [eh, em] = s.end_time.split(':').map(Number);
+                const diffMin = (eh * 60 + em) - (sh * 60 + sm);
+                if (diffMin > 0) {
+                  const h = Math.floor(diffMin / 60);
+                  const m = diffMin % 60;
+                  durText = m > 0 ? `${h}h${m}` : `${h}h00`;
+                }
+              }
+
+              return `
+                <div class="room-session-item ${isHighlighted ? 'highlighted' : ''}" style="border-inline-start-color: ${s.subject_color || '#3b82f6'};">
+                  <div style="display: flex; justify-content: space-between; align-items: center;">
+                    <div class="room-session-time">
+                      <i class="fa-regular fa-clock"></i>
+                      <span>${s.start_time || '--:--'} — ${s.end_time || '--:--'}</span>
+                      ${durText ? `<span style="font-size: 10.5px; opacity: 0.8; font-weight: normal;">(${durText})</span>` : ''}
+                    </div>
+                    <div class="room-session-actions">
+                      <button type="button" class="btn-slot-edit" title="${this.lang === 'ar' ? 'تعديل' : 'Modifier'}" onclick="app.openModalEditSlot(${s.id})">
+                        <i class="fa-solid fa-pen-to-square"></i>
+                      </button>
+                      <button type="button" class="btn-slot-delete" title="${this.lang === 'ar' ? 'حذف' : 'Supprimer'}" onclick="app.deleteSlot(${s.id})">
+                        <i class="fa-solid fa-trash-can"></i>
+                      </button>
+                    </div>
+                  </div>
+
+                  <!-- Subject Badge -->
+                  <div style="display: flex; align-items: center; justify-content: space-between; gap: 6px; margin-top: 2px;">
+                    <span style="font-weight: 700; font-size: 13px; color: ${s.subject_color || '#3b82f6'}; display: inline-flex; align-items: center; gap: 6px;">
+                      <i class="fa-solid fa-${s.subject_icon || 'book'}"></i>
+                      ${this.escapeHtml(s.subject_name || 'مادة تعليمية')}
+                    </span>
+                    ${isAssigned ? `<span class="slot-assigned-badge" style="font-size: 10px; padding: 1px 6px;"><i class="fa-solid fa-circle-check"></i> أستاذ القسم</span>` : ''}
+                    ${isHighlighted ? `<span style="font-size: 10px; background: #8b5cf6; color: #fff; padding: 1px 6px; border-radius: 8px; font-weight: 700;">القسم الحالي</span>` : ''}
+                  </div>
+
+                  <!-- Class / Division -->
+                  <div style="font-size: 12.5px; font-weight: 700; color: var(--text-heading); display: flex; align-items: center; gap: 6px;">
+                    <i class="fa-solid fa-chalkboard-user" style="color: #8b5cf6; font-size: 12px;"></i>
+                    <span>${this.escapeHtml(s.group_name || s.name || 'فوج دراسي')}</span>
+                    ${s.level_name && s.level_name !== '-' ? `<span style="font-size: 11px; color: var(--text-muted); font-weight: normal;">(${this.escapeHtml(s.level_name)})</span>` : ''}
+                  </div>
+
+                  <!-- Teacher -->
+                  <div class="room-session-details">
+                    <span style="display: inline-flex; align-items: center; gap: 5px; color: var(--text-main); font-weight: 600;">
+                      <i class="fa-solid fa-user-tie" style="color: #10b981;"></i>
+                      ${this.escapeHtml(s.teacher_name || 'غير محدد')}
+                    </span>
+                    ${s.enrolled_count !== undefined ? `
+                      <span style="font-size: 11px; color: var(--text-muted);">
+                        <i class="fa-solid fa-users"></i> ${s.enrolled_count}
+                      </span>
+                    ` : ''}
+                  </div>
+                </div>
+              `;
+            }).join('')}
+          </div>
+        </div>
+      `;
+    }).join('');
+  }
+
+  filterRoomTimetable() {
+    const query = (document.getElementById('roomTimetableSearchInput')?.value || '').trim().toLowerCase();
+    if (!query) {
+      this.renderRoomTimetableGrid(this.currentRoomSessions || []);
+      return;
+    }
+
+    const filtered = (this.currentRoomSessions || []).filter(s => {
+      const matchSubject = (s.subject_name || '').toLowerCase().includes(query);
+      const matchTeacher = (s.teacher_name || '').toLowerCase().includes(query);
+      const matchGroup = (s.group_name || s.name || '').toLowerCase().includes(query);
+      const matchLevel = (s.level_name || '').toLowerCase().includes(query);
+      const matchNotes = (s.notes || '').toLowerCase().includes(query);
+      const matchDay = (s.day_of_week || '').toLowerCase().includes(query);
+      return matchSubject || matchTeacher || matchGroup || matchLevel || matchNotes || matchDay;
+    });
+
+    this.renderRoomTimetableGrid(filtered);
+  }
+
+  async openModalAddSlot(presetDay = null) {
+    if (!this.allGroupes || this.allGroupes.length === 0) {
+      try {
+        const resG = await fetch('/api/groups?status=all');
+        const dataG = await resG.json();
+        if (dataG.success) this.allGroupes = dataG.groups || [];
+      } catch (e) {}
+    }
+
+    // Modal Titles
+    const titleEl = document.getElementById('slotModalTitle');
+    const subtitleEl = document.getElementById('slotModalSubtitle');
+    const btnText = document.getElementById('btnSaveSlotText');
+    const icon = document.getElementById('slotModalIcon');
+    if (titleEl) titleEl.textContent = this.lang === 'ar' ? 'إضافة حصة دراسية للقسم' : 'Ajouter une Séance à la Classe';
+    if (subtitleEl) subtitleEl.textContent = this.lang === 'ar' ? 'تحديد المادة، الأستاذ المتاح، والتوقيت للقسم' : 'Choisir la matière, l\'enseignant disponible et l\'horaire';
+    if (btnText) btnText.textContent = this.lang === 'ar' ? 'حفظ الحصة في جدول القسم' : 'Enregistrer la séance';
+    if (icon) icon.className = 'fa-solid fa-calendar-plus';
+
+    document.getElementById('slotId').value = '';
+    const hiddenRoom = document.getElementById('slotRoomId');
+    if (hiddenRoom) hiddenRoom.value = '1';
+
+    // Populate Groups / Classes
+    const groupSelect = document.getElementById('slotGroupId');
+    const targetGroupId = this.currentTimetableGroupId || (this.currentTimetableGroup ? this.currentTimetableGroup.id : null);
+    if (groupSelect) {
+      const groupsList = (this.allGroupes && this.allGroupes.length > 0) ? this.allGroupes : (this.groups || []);
+      groupSelect.innerHTML = `<option value="">-- اختر القسم أو الفوج التربوي --</option>` +
+        groupsList.map(g => `
+          <option value="${g.id}" ${targetGroupId && Number(g.id) === Number(targetGroupId) ? 'selected' : ''}>
+            ${this.escapeHtml(g.name)} ${g.level_name ? `(${this.escapeHtml(g.level_name)})` : ''}
+          </option>
+        `).join('');
+      if (targetGroupId) groupSelect.value = targetGroupId;
+    }
+
+    // Load deduplicated, cycle-specific subjects for this class
+    await this.loadSlotSubjects(targetGroupId);
+    const subjectSelect = document.getElementById('slotSubjectId');
+    if (subjectSelect) subjectSelect.value = '';
+
+    // Preset Day & Hours
+    if (presetDay) {
+      document.getElementById('slotDayOfWeek').value = presetDay;
+    } else if (this.currentTimetableDay) {
+      document.getElementById('slotDayOfWeek').value = this.currentTimetableDay;
+    }
+    document.getElementById('slotStartTime').value = '08:00';
+    document.getElementById('slotEndTime').value = '10:00';
+    document.getElementById('slotNotes').value = '';
+
+    const conflictBanner = document.getElementById('slotConflictBanner');
+    if (conflictBanner) conflictBanner.style.display = 'none';
+
+    // Check teacher availability (will prompt to select subject first)
+    await this.checkSlotTeacherAvailability(null, null, true);
+
+    document.getElementById('modalRoomScheduleSlot')?.classList.add('active');
+  }
+
+  async openModalEditSlot(slotId) {
+    if (!this.allGroupes || this.allGroupes.length === 0) {
+      try {
+        const resG = await fetch('/api/groups?status=all');
+        const dataG = await resG.json();
+        if (dataG.success) this.allGroupes = dataG.groups || [];
+      } catch (e) {}
+    }
+
+    const slot = (this.currentRoomSessions || []).find(item => item.id === Number(slotId));
+    if (!slot) return;
+
+    // Modal Titles
+    const titleEl = document.getElementById('slotModalTitle');
+    const subtitleEl = document.getElementById('slotModalSubtitle');
+    const btnText = document.getElementById('btnSaveSlotText');
+    const icon = document.getElementById('slotModalIcon');
+    if (titleEl) titleEl.textContent = this.lang === 'ar' ? 'تعديل الحصة الدراسية' : 'Modifier la Séance';
+    if (subtitleEl) subtitleEl.textContent = this.lang === 'ar' ? 'تعديل المادة، الأستاذ، أو التوقيت للقسم' : 'Modifier les horaires ou l\'enseignant';
+    if (btnText) btnText.textContent = this.lang === 'ar' ? 'تحديث وتأكيد التغييرات' : 'Mettre à jour la séance';
+    if (icon) icon.className = 'fa-solid fa-pen-to-square';
+
+    document.getElementById('slotId').value = slot.id;
+    const hiddenRoom = document.getElementById('slotRoomId');
+    if (hiddenRoom) hiddenRoom.value = slot.room_id || '1';
+
+    // Day & Times
+    document.getElementById('slotDayOfWeek').value = slot.day_of_week || 'Samedi';
+    document.getElementById('slotStartTime').value = slot.start_time || '08:00';
+    document.getElementById('slotEndTime').value = slot.end_time || '10:00';
+    document.getElementById('slotNotes').value = slot.notes || '';
+
+    // Groupes
+    const groupSelect = document.getElementById('slotGroupId');
+    if (groupSelect) {
+      const groupsList = (this.allGroupes && this.allGroupes.length > 0) ? this.allGroupes : (this.groups || []);
+      groupSelect.innerHTML = `<option value="">-- اختر القسم أو الفوج التربوي --</option>` +
+        groupsList.map(g => `
+          <option value="${g.id}" ${Number(slot.group_id) === Number(g.id) ? 'selected' : ''}>
+            ${this.escapeHtml(g.name)} ${g.level_name ? `(${this.escapeHtml(g.level_name)})` : ''}
+          </option>
+        `).join('');
+      groupSelect.value = slot.group_id || '';
+    }
+
+    // Load deduplicated subjects for this class
+    await this.loadSlotSubjects(slot.group_id, slot.subject_id);
+
+    const conflictBanner = document.getElementById('slotConflictBanner');
+    if (conflictBanner) conflictBanner.style.display = 'none';
+
+    // Check teacher availability with this slot excluded
+    await this.checkSlotTeacherAvailability(slot.id, slot.teacher_id, false);
+
+    document.getElementById('modalRoomScheduleSlot')?.classList.add('active');
+  }
+
+  async onSlotGroupChange() {
+    const groupId = document.getElementById('slotGroupId')?.value;
+    await this.loadSlotSubjects(groupId);
+    await this.checkSlotTeacherAvailability(null, null, true);
+  }
+
+  async onSlotSubjectChange() {
+    await this.checkSlotTeacherAvailability(null, null, true);
+  }
+
+  async onSlotGroupOrSubjectChange() {
+    const groupId = document.getElementById('slotGroupId')?.value;
+    await this.loadSlotSubjects(groupId);
+    await this.checkSlotTeacherAvailability(null, null, true);
+  }
+
+  onSlotRoomChange() {
+    this.checkSlotTeacherAvailability();
+  }
+
+  async checkSlotTeacherAvailability(excludeSlotId = null, preselectedTeacherId = null, autoSelectAssigned = false) {
+    const day = document.getElementById('slotDayOfWeek')?.value;
+    const start = document.getElementById('slotStartTime')?.value;
+    const end = document.getElementById('slotEndTime')?.value;
+    const groupId = document.getElementById('slotGroupId')?.value;
+    const subjectId = document.getElementById('slotSubjectId')?.value;
+    const slotId = excludeSlotId || document.getElementById('slotId')?.value || '';
+    const teacherSelect = document.getElementById('slotTeacherId');
+    const badge = document.getElementById('slotTeacherAvailCountBadge');
+    const assignedNotice = document.getElementById('slotAssignedTeacherNotice');
+    const statusDetail = document.getElementById('slotTeacherStatusDetail');
+
+    if (!day || !start || !end) return;
+
+    if (start >= end) {
+      if (badge) {
+        badge.textContent = this.lang === 'ar' ? 'توقيت غير صحيح' : 'Horaires invalides';
+        badge.style.background = 'rgba(239, 68, 68, 0.15)';
+        badge.style.color = '#ef4444';
+      }
+      return;
+    }
+
+    // If no subject selected yet, prompt user to select subject first
+    if (!subjectId) {
+      if (teacherSelect) {
+        teacherSelect.innerHTML = `<option value="">-- يرجى اختيار المادة الدراسية أولاً --</option>`;
+        teacherSelect.disabled = true;
+      }
+      if (badge) {
+        badge.textContent = this.lang === 'ar' ? 'اختر المادة أولاً' : 'Choisir la matière d\'abord';
+        badge.style.background = 'rgba(100, 116, 139, 0.15)';
+        badge.style.color = '#64748b';
+      }
+      if (assignedNotice) assignedNotice.style.display = 'none';
+      if (statusDetail) statusDetail.style.display = 'none';
+      return;
+    }
+
+    if (teacherSelect) {
+      teacherSelect.disabled = false;
+    }
+
+    if (badge) {
+      badge.textContent = this.lang === 'ar' ? 'جاري الفحص...' : 'Vérification...';
+      badge.style.background = 'rgba(59, 130, 246, 0.15)';
+      badge.style.color = '#3b82f6';
+    }
+
+    try {
+      const url = `/api/teachers/availability?day_of_week=${encodeURIComponent(day)}&start_time=${encodeURIComponent(start)}&end_time=${encodeURIComponent(end)}&exclude_schedule_id=${slotId}&group_id=${encodeURIComponent(groupId || '')}&subject_id=${encodeURIComponent(subjectId || '')}`;
+      const res = await fetch(url);
+      const data = await res.json();
+      if (!data.success) return;
+
+      const teachers = data.teachers || [];
+      const assignedTeacherId = data.assigned_teacher_id;
+      this.currentTeacherAvailability = teachers;
+
+      // Filter teachers: strictly matching specialists / assigned
+      const matchingTeachers = teachers.filter(t => t.is_assigned_to_class || t.is_subject_specialist);
+      const otherTeachers = teachers.filter(t => !t.is_assigned_to_class && !t.is_subject_specialist);
+
+      if (badge) {
+        const availCount = (matchingTeachers.length > 0 ? matchingTeachers : teachers).filter(t => t.is_available).length;
+        if (matchingTeachers.length > 0) {
+          badge.textContent = `${availCount} ${this.lang === 'ar' ? 'أستاذ متاح للمادة' : 'disponible(s)'}`;
+          badge.style.background = availCount > 0 ? 'rgba(16, 185, 129, 0.15)' : 'rgba(239, 68, 68, 0.15)';
+          badge.style.color = availCount > 0 ? '#10b981' : '#ef4444';
+        } else {
+          badge.textContent = this.lang === 'ar' ? 'لا يوجد أستاذ مسجل للمادة' : 'Aucun prof spécialisé';
+          badge.style.background = 'rgba(245, 158, 11, 0.15)';
+          badge.style.color = '#f59e0b';
+        }
+      }
+
+      // Display assigned teacher banner notice if applicable
+      if (assignedTeacherId && assignedNotice) {
+        const assignedT = teachers.find(t => t.id === assignedTeacherId);
+        if (assignedT) {
+          const availText = assignedT.is_available 
+            ? `<span style="color: #10b981; font-weight: 700;">✓ متاح للحصة</span>` 
+            : `<span style="color: #ef4444; font-weight: 700;">⚠️ مشغول (${assignedT.conflict?.group_name ? 'مع ' + this.escapeHtml(assignedT.conflict.group_name) : 'في قسم آخر'})</span>`;
+
+          assignedNotice.innerHTML = `
+            <div style="display: flex; align-items: center; justify-content: space-between; gap: 8px;">
+              <div style="display: flex; align-items: center; gap: 8px;">
+                <i class="fa-solid fa-star" style="color: #f59e0b; font-size: 15px;"></i>
+                <div>
+                  أستاذ المادة المسند رسمياً لهذا القسم: <strong>أ. ${this.escapeHtml(assignedT.first_name)} ${this.escapeHtml(assignedT.last_name)}</strong>
+                </div>
+              </div>
+              <div>${availText}</div>
+            </div>
+          `;
+          assignedNotice.style.display = 'block';
+        } else {
+          assignedNotice.style.display = 'none';
+        }
+      } else if (assignedNotice) {
+        assignedNotice.style.display = 'none';
+      }
+
+      if (teacherSelect) {
+        let optionsHtml = '';
+        if (matchingTeachers.length > 0) {
+          optionsHtml = `<option value="">-- اختر أستاذ المادة (${matchingTeachers.length} أستاذ) --</option>` +
+            matchingTeachers.map(t => {
+              const conflictWith = t.conflict?.group_name ? `مع ${this.escapeHtml(t.conflict.group_name)}` : 'قسم آخر';
+              if (t.is_assigned_to_class) {
+                const status = t.is_available ? '✓ متاح' : `⚠️ مشغول (${conflictWith})`;
+                return `<option value="${t.id}" style="color: #10b981; font-weight: 700; background: rgba(16, 185, 129, 0.08);">⭐ [أستاذ المادة للقسم] أ. ${this.escapeHtml(t.first_name)} ${this.escapeHtml(t.last_name)} — [${status}]</option>`;
+              } else {
+                const status = t.is_available ? '✓ متاح' : `⚠️ مشغول (${conflictWith})`;
+                return `<option value="${t.id}" style="color: #3b82f6; font-weight: 600;">✓ [أستاذ المادة] أ. ${this.escapeHtml(t.first_name)} ${this.escapeHtml(t.last_name)} — [${status}]</option>`;
+              }
+            }).join('');
+
+          if (otherTeachers.length > 0) {
+            optionsHtml += `
+              <optgroup label="${this.lang === 'ar' ? '── أساتذة آخرين (غير مختصين بهذه المادة) ──' : '── Autres enseignants ──'}">
+                ${otherTeachers.map(t => {
+                  const conflictWith = t.conflict?.group_name ? `مع ${this.escapeHtml(t.conflict.group_name)}` : 'قسم آخر';
+                  const status = t.is_available ? '✓ متاح' : `⚠️ مشغول (${conflictWith})`;
+                  return `<option value="${t.id}" style="color: var(--text-muted);">أ. ${this.escapeHtml(t.first_name)} ${this.escapeHtml(t.last_name)} (${this.escapeHtml(t.subject_name || 'عام')}) — [${status}]</option>`;
+                }).join('')}
+              </optgroup>
+            `;
+          }
+        } else {
+          optionsHtml = `<option value="">-- لم يتم العثور على أستاذ مسجل لهذه المادة --</option>` +
+            teachers.map(t => {
+              const conflictWith = t.conflict?.group_name ? `مع ${this.escapeHtml(t.conflict.group_name)}` : 'قسم آخر';
+              const status = t.is_available ? '✓ متاح' : `⚠️ مشغول (${conflictWith})`;
+              return `<option value="${t.id}">أ. ${this.escapeHtml(t.first_name)} ${this.escapeHtml(t.last_name)} (${this.escapeHtml(t.subject_name || 'عام')}) — [${status}]</option>`;
+            }).join('');
+        }
+
+        teacherSelect.innerHTML = optionsHtml;
+
+        // Auto selection:
+        let currentVal = preselectedTeacherId;
+        if (!currentVal && autoSelectAssigned && assignedTeacherId) {
+          currentVal = assignedTeacherId;
+        } else if (!currentVal && matchingTeachers.length > 0) {
+          const availSpec = matchingTeachers.find(t => t.is_available);
+          if (availSpec) currentVal = availSpec.id;
+          else currentVal = matchingTeachers[0].id;
+        }
+
+        if (currentVal) {
+          teacherSelect.value = currentVal;
+        }
+      }
+
+      this.onSlotTeacherSelect();
+
+      // Check class collision for this time
+      const conflictBanner = document.getElementById('slotConflictBanner');
+      if (groupId && this.currentRoomSessions) {
+        const classOverlap = this.currentRoomSessions.find(s => {
+          if (slotId && Number(s.id) === Number(slotId)) return false;
+          if (String(s.group_id) !== String(groupId)) return false;
+          if (s.day_of_week !== day) return false;
+          return s.start_time < end && s.end_time > start;
+        });
+
+        if (classOverlap && conflictBanner) {
+          conflictBanner.innerHTML = `
+            <div style="display: flex; align-items: center; gap: 8px;">
+              <i class="fa-solid fa-triangle-exclamation" style="font-size: 16px;"></i>
+              <div>
+                <strong>تنبيه تعارض في توقيت القسم:</strong> القسم لديه حصة أخرى مبرمجة يوم ${day} من ${classOverlap.start_time} إلى ${classOverlap.end_time} لحصة <strong>${this.escapeHtml(classOverlap.subject_name || '')}</strong>.
+              </div>
+            </div>
+          `;
+          conflictBanner.style.display = 'block';
+        } else if (conflictBanner && (!teacherSelect?.value || !this.currentTeacherAvailability.find(t => t.id == teacherSelect.value && !t.is_available))) {
+          conflictBanner.style.display = 'none';
+        }
+      }
+    } catch (err) {
+      console.error(err);
+    }
+  }
+
+  onSlotTeacherSelect() {
+    const teacherId = document.getElementById('slotTeacherId')?.value;
+    const statusDetail = document.getElementById('slotTeacherStatusDetail');
+    if (!teacherId || !this.currentTeacherAvailability || !statusDetail) {
+      if (statusDetail) statusDetail.style.display = 'none';
+      return;
+    }
+
+    const t = this.currentTeacherAvailability.find(item => String(item.id) === String(teacherId));
+    if (!t) return;
+
+    if (!t.is_available && t.conflict) {
+      statusDetail.innerHTML = `
+        <span style="color: #ef4444; font-weight: 700; display: inline-flex; align-items: center; gap: 6px;">
+          <i class="fa-solid fa-circle-exclamation"></i>
+          <span>تحذير: ${this.escapeHtml(t.conflict.message)}</span>
+        </span>
+      `;
+      statusDetail.style.display = 'block';
+    } else {
+      statusDetail.innerHTML = `
+        <span style="color: #10b981; font-weight: 600; display: inline-flex; align-items: center; gap: 6px;">
+          <i class="fa-solid fa-circle-check"></i>
+          <span>الأستاذ متاح تماماً في هذا التوقيت</span>
+        </span>
+      `;
+      statusDetail.style.display = 'block';
+    }
+  }
+
+  async saveSlot() {
+    const slotId = document.getElementById('slotId')?.value;
+    const roomId = document.getElementById('slotRoomId')?.value || 1;
+    const day = document.getElementById('slotDayOfWeek')?.value;
+    const start = document.getElementById('slotStartTime')?.value;
+    const end = document.getElementById('slotEndTime')?.value;
+    const groupId = document.getElementById('slotGroupId')?.value;
+    const subjectId = document.getElementById('slotSubjectId')?.value;
+    const teacherId = document.getElementById('slotTeacherId')?.value;
+    const notes = document.getElementById('slotNotes')?.value?.trim();
+
+    if (!groupId) {
+      alert(this.lang === 'ar' ? 'يرجى اختيار القسم أو الفوج التربوي' : 'Veuillez choisir la classe');
+      return;
+    }
+    if (!subjectId) {
+      alert(this.lang === 'ar' ? 'يرجى اختيار المادة' : 'Veuillez choisir la matière');
+      return;
+    }
+    if (!teacherId) {
+      alert(this.lang === 'ar' ? 'يرجى اختيار الأستاذ المشرف' : 'Veuillez choisir l\'enseignant');
+      return;
+    }
+    if (!day) {
+      alert(this.lang === 'ar' ? 'يرجى اختيار اليوم' : 'Veuillez choisir le jour');
+      return;
+    }
+    if (!start || !end || start >= end) {
+      alert(this.lang === 'ar' ? 'يرجى التأكد من صحة توقيت البداية والنهاية' : 'Horaires invalides');
+      return;
+    }
+
+    // Check if teacher has conflict
+    const teacher = (this.currentTeacherAvailability || []).find(t => String(t.id) === String(teacherId));
+    let force = false;
+    if (teacher && !teacher.is_available) {
+      const confirmForce = confirm(
+        this.lang === 'ar'
+          ? `⚠️ تنبيه تعارض: الأستاذ (${teacher.first_name} ${teacher.last_name}) لديه حصة أخرى مبرمجة في هذا التوقيت!\n\nهل تريد تأكيد وحفظ الحصة بالقوة رغم التعارض؟`
+          : `L'enseignant est déjà occupé à ce créneau. Voulez-vous quand même enregistrer ?`
+      );
+      if (!confirmForce) return;
+      force = true;
+    }
+
+    const payload = {
+      room_id: Number(roomId || 1),
+      group_id: Number(groupId),
+      subject_id: Number(subjectId),
+      teacher_id: Number(teacherId),
+      day_of_week: day,
+      start_time: start,
+      end_time: end,
+      notes: notes || null,
+      force: force
+    };
+
+    const url = slotId ? `/api/room-schedules/${slotId}` : `/api/groups/${groupId}/schedule`;
+    const method = slotId ? 'PUT' : 'POST';
+
+    try {
+      const res = await fetch(url, {
+        method: method,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+      const data = await res.json();
+
+      if (data.success) {
+        this.closeSlotModal();
+        this.playChime('success');
+        this.showToast(this.lang === 'ar' ? 'تم حفظ الحصة في جدول القسم بنجاح' : 'Séance enregistrée avec succès', 'success');
+        await this.openClassTimetable(groupId);
+      } else if (res.status === 409) {
+        const proceed = confirm(`⚠️ ${data.error}\n\nهل تريد حفظ الحصة وتجاوز هذا التعارض؟`);
+        if (proceed) {
+          payload.force = true;
+          const retryRes = await fetch(url, {
+            method: method,
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+          });
+          const retryData = await retryRes.json();
+          if (retryData.success) {
+            this.closeSlotModal();
+            this.playChime('success');
+            this.showToast(this.lang === 'ar' ? 'تم حفظ الحصة بنجاح' : 'Séance enregistrée', 'success');
+            await this.openClassTimetable(groupId);
+          } else {
+            alert(retryData.error || 'Erreur');
+          }
+        }
+      } else {
+        alert(data.error || 'Erreur lors de l\'enregistrement');
+      }
+    } catch (e) {
+      console.error(e);
+      alert('Erreur réseau');
+    }
+  }
+
+  async deleteSlot(slotId) {
+    if (!confirm(this.lang === 'ar' ? 'هل تريد حقاً حذف هذه الحصة من جدول توقيت القسم؟' : 'Voulez-vous vraiment supprimer cette séance ?')) {
+      return;
+    }
+
+    try {
+      const res = await fetch(`/api/room-schedules/${slotId}`, { method: 'DELETE' });
+      const data = await res.json();
+      if (data.success) {
+        this.playChime('success');
+        this.showToast(this.lang === 'ar' ? 'تم حذف الحصة بنجاح' : 'Séance supprimée avec succès', 'success');
+        const gid = this.currentTimetableGroupId || (this.currentTimetableGroup ? this.currentTimetableGroup.id : null);
+        if (gid) {
+          await this.openClassTimetable(gid);
+        }
+      } else {
+        alert(data.error || 'Erreur lors de la suppression');
+      }
+    } catch (e) {
+      console.error(e);
+      alert('Erreur réseau');
+    }
+  }
+
+  closeSlotModal() {
+    document.getElementById('modalRoomScheduleSlot')?.classList.remove('active');
   }
 
   printRoomTimetable() {
@@ -15544,6 +16434,21 @@ class EdumindApp {
       lvlSelect.innerHTML = (this.levels || []).map(l => `<option value="${l.id}">${this.escapeHtml(l.name)}</option>`).join('');
     }
 
+    if (!this.rooms || this.rooms.length === 0) {
+      try {
+        const resR = await fetch('/api/rooms');
+        const dataR = await resR.json();
+        if (dataR.success) this.rooms = dataR.rooms || [];
+      } catch (e) {}
+    }
+
+    const roomSelect = document.getElementById('groupRoomId');
+    if (roomSelect) {
+      roomSelect.innerHTML = `<option value="">-- بدون قاعة محددة (تعيين لاحقاً) --</option>` +
+        (this.rooms || []).map(r => `<option value="${r.id}">${this.escapeHtml(r.name)} (${r.capacity} مقعد)</option>`).join('');
+      roomSelect.value = '';
+    }
+
     const titleEl = document.getElementById('modalGroupTitle');
     if (titleEl) titleEl.textContent = this.lang === 'ar' ? 'إضافة قسم تربوي جديد' : 'Créer une Nouvelle Classe';
 
@@ -15567,6 +16472,13 @@ class EdumindApp {
     if (!this.levels || this.levels.length === 0) {
       await this.loadLevels();
     }
+    if (!this.rooms || this.rooms.length === 0) {
+      try {
+        const resR = await fetch('/api/rooms');
+        const dataR = await resR.json();
+        if (dataR.success) this.rooms = dataR.rooms || [];
+      } catch (e) {}
+    }
 
     const g = (this.allGroupes || this.groups || []).find(item => item.id === id);
     if (!g) return;
@@ -15574,6 +16486,13 @@ class EdumindApp {
     const lvlSelect = document.getElementById('groupLevel');
     if (lvlSelect) {
       lvlSelect.innerHTML = (this.levels || []).map(l => `<option value="${l.id}" ${l.id == g.level_id ? 'selected' : ''}>${this.escapeHtml(l.name)}</option>`).join('');
+    }
+
+    const roomSelect = document.getElementById('groupRoomId');
+    if (roomSelect) {
+      roomSelect.innerHTML = `<option value="">-- بدون قاعة محددة (تعيين لاحقاً) --</option>` +
+        (this.rooms || []).map(r => `<option value="${r.id}" ${r.id == g.room_id ? 'selected' : ''}>${this.escapeHtml(r.name)} (${r.capacity} مقعد)</option>`).join('');
+      roomSelect.value = g.room_id || '';
     }
 
     const titleEl = document.getElementById('modalGroupTitle');
@@ -15601,6 +16520,7 @@ class EdumindApp {
     const levelId = document.getElementById('groupLevel')?.value;
     const specialite = document.getElementById('groupSpecialite')?.value?.trim() || null;
     const schoolYear = document.getElementById('groupSchoolYear')?.value?.trim() || '2026-2027';
+    const roomId = document.getElementById('groupRoomId')?.value;
 
     if (!name) {
       alert(this.lang === 'ar' ? 'يرجى إدخال اسم القسم' : 'Veuillez saisir un nom pour la classe.');
@@ -15615,7 +16535,8 @@ class EdumindApp {
       name,
       level_id: levelId,
       specialite,
-      school_year: schoolYear
+      school_year: schoolYear,
+      room_id: roomId ? Number(roomId) : null
     };
 
     const url = id ? `/api/groups/${id}` : '/api/groups';

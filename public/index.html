@@ -3446,78 +3446,81 @@
         </div>
       </div>
 
-      <!-- Top 3 Stat Cards Row -->
-      <div class="schoolaris-stats-grid">
-        <!-- 1. Groupes Actifs -->
-        <div class="schoolaris-stat-card">
-          <div class="schoolaris-stat-label">الأقسام التربوية النشطة</div>
-          <div class="schoolaris-stat-val-groupes" id="groupesKpiActive">0</div>
-        </div>
+      <!-- الأقسام التربوية -->
+        <!-- Top 3 Stat Cards Row -->
+        <div class="schoolaris-stats-grid">
+          <!-- 1. Groupes Actifs -->
+          <div class="schoolaris-stat-card">
+            <div class="schoolaris-stat-label">الأقسام التربوية النشطة</div>
+            <div class="schoolaris-stat-val-groupes" id="groupesKpiActive">0</div>
+          </div>
 
-        <!-- 2. Élèves Inscrits -->
-        <div class="schoolaris-stat-card">
-          <div class="schoolaris-stat-label">إجمالي التلاميذ في الأقسام</div>
-          <div>
-            <div class="schoolaris-stat-val-eleves" id="groupesKpiStudents">0</div>
+          <!-- 2. Élèves Inscrits -->
+          <div class="schoolaris-stat-card">
+            <div class="schoolaris-stat-label">إجمالي التلاميذ في الأقسام</div>
+            <div>
+              <div class="schoolaris-stat-val-eleves" id="groupesKpiStudents">0</div>
+            </div>
+          </div>
+
+          <!-- 3. Moyenne par classe -->
+          <div class="schoolaris-stat-card">
+            <div class="schoolaris-stat-label">متوسط التلاميذ لكل قسم</div>
+            <div>
+              <div class="schoolaris-stat-val-taux" id="groupesKpiAverage" style="color: #3b82f6;">0</div>
+            </div>
           </div>
         </div>
 
-        <!-- 3. Moyenne par classe -->
-        <div class="schoolaris-stat-card">
-          <div class="schoolaris-stat-label">متوسط التلاميذ لكل قسم</div>
-          <div>
-            <div class="schoolaris-stat-val-taux" id="groupesKpiAverage" style="color: #3b82f6;">0</div>
+        <!-- Main Card: Liste des groupes -->
+        <div class="schoolaris-card">
+          <!-- Card Header: Title, Count, Excel Export -->
+          <div class="schoolaris-card-header">
+            <span class="schoolaris-card-title" data-i18n="groupes_list_title">قائمة الأقسام الدراسية (Divisions Pédagogiques)</span>
+            <div class="schoolaris-card-actions">
+              <span class="schoolaris-counter-badge" id="groupesCounterDisplay">0 قسم</span>
+              <button class="btn-excel" onclick="app.exportGroupesToExcel()" title="Exporter en Excel">
+                <i class="fa-solid fa-download"></i>
+                <span>Excel</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- Filter Toolbar -->
+          <div class="schoolaris-filter-bar">
+            <div class="schoolaris-search-box">
+              <i class="fa-solid fa-magnifying-glass"></i>
+              <input type="text" id="groupesFilterSearch" class="schoolaris-search-input"
+                placeholder="بحث باسم القسم، المستوى، الشعبة..." oninput="app.filterGroupes()">
+            </div>
+            <select id="groupesFilterLevel" class="schoolaris-select" onchange="app.filterGroupes()">
+              <option value="">كل المستويات الدراسية</option>
+            </select>
+            <select id="groupesFilterSpecialite" class="schoolaris-select" onchange="app.filterGroupes()">
+              <option value="">كل الشعب والتخصصات</option>
+            </select>
+          </div>
+
+          <!-- Table -->
+          <div class="table-responsive">
+            <table class="schoolaris-table">
+              <thead>
+                <tr>
+                  <th data-i18n="th_groupe_name">DIVISION / CLASSE / القسم</th>
+                  <th data-i18n="th_niveau">NIVEAU / المستوى</th>
+                  <th data-i18n="th_filiere">SPÉCIALITÉ / التخصص</th>
+                  <th data-i18n="th_effectif_eleves">ÉLÈVES / عدد التلاميذ</th>
+                  <th style="text-align: right; width: 220px;" data-i18n="th_actions">الإجراءات</th>
+                </tr>
+              </thead>
+              <tbody id="schoolarisGroupesTableBody">
+                <!-- Injected via JS -->
+              </tbody>
+            </table>
           </div>
         </div>
-      </div>
 
-      <!-- Main Card: Liste des groupes -->
-      <div class="schoolaris-card">
-        <!-- Card Header: Title, Count, Excel Export -->
-        <div class="schoolaris-card-header">
-          <span class="schoolaris-card-title" data-i18n="groupes_list_title">قائمة الأقسام الدراسية (Divisions Pédagogiques)</span>
-          <div class="schoolaris-card-actions">
-            <span class="schoolaris-counter-badge" id="groupesCounterDisplay">0 قسم</span>
-            <button class="btn-excel" onclick="app.exportGroupesToExcel()" title="Exporter en Excel">
-              <i class="fa-solid fa-download"></i>
-              <span>Excel</span>
-            </button>
-          </div>
-        </div>
 
-        <!-- Filter Toolbar -->
-        <div class="schoolaris-filter-bar">
-          <div class="schoolaris-search-box">
-            <i class="fa-solid fa-magnifying-glass"></i>
-            <input type="text" id="groupesFilterSearch" class="schoolaris-search-input"
-              placeholder="بحث باسم القسم، المستوى، الشعبة..." oninput="app.filterGroupes()">
-          </div>
-          <select id="groupesFilterLevel" class="schoolaris-select" onchange="app.filterGroupes()">
-            <option value="">كل المستويات الدراسية</option>
-          </select>
-          <select id="groupesFilterSpecialite" class="schoolaris-select" onchange="app.filterGroupes()">
-            <option value="">كل الشعب والتخصصات</option>
-          </select>
-        </div>
-
-        <!-- Table -->
-        <div class="table-responsive">
-          <table class="schoolaris-table">
-            <thead>
-              <tr>
-                <th data-i18n="th_groupe_name">DIVISION / CLASSE / القسم</th>
-                <th data-i18n="th_niveau">NIVEAU / المستوى</th>
-                <th data-i18n="th_filiere">SPÉCIALITÉ / التخصص</th>
-                <th data-i18n="th_effectif_eleves">ÉLÈVES / عدد التلاميذ</th>
-                <th style="text-align: right; width: 220px;" data-i18n="th_actions">الإجراءات</th>
-              </tr>
-            </thead>
-            <tbody id="schoolarisGroupesTableBody">
-              <!-- Injected via JS -->
-            </tbody>
-          </table>
-        </div>
-      </div>
     </section>
 
   </main>
@@ -5397,6 +5400,13 @@
           <input type="text" id="groupSchoolYear" class="form-control" value="2026-2027">
         </div>
 
+        <div class="form-group">
+          <label class="form-label"><i class="fa-solid fa-door-open" style="color: #10b981;"></i> القاعة المخصصة للقسم (Salle de classe)</label>
+          <select id="groupRoomId" class="form-control">
+            <option value="">-- بدون قاعة محددة (تعيين لاحقاً) --</option>
+          </select>
+        </div>
+
         <div style="display: flex; justify-content: flex-end; gap: 12px; margin-top: 24px;">
           <button type="button" class="btn-secondary" onclick="app.closeModals()"><span data-i18n="btn_cancel">إلغاء</span></button>
           <button type="submit" class="btn-primary" id="btnSubmitGroup">حفظ وتأكيد القسم</button>
@@ -5767,58 +5777,221 @@
     </div>
   </div>
 
-  <!-- Modal: Emploi du Temps de la Salle (Room Weekly Timetable) -->
+  <!-- Modal: Emploi du Temps de la Classe (Class Weekly Timetable) -->
   <div class="modal-overlay" id="modalRoomTimetable">
-    <div class="modal-content" style="max-width: 950px; width: 95%;">
-      <div class="modal-header">
-        <div style="display: flex; align-items: center; gap: 12px;">
-          <div class="room-icon-box" style="width: 38px; height: 38px; font-size: 18px;">
-            <i class="fa-solid fa-door-open"></i>
+    <div class="modal-content" style="max-width: 1420px; width: 98%; max-height: 94vh; display: flex; flex-direction: column;">
+      <div class="modal-header" style="border-bottom: 1px solid var(--border-color); padding-bottom: 14px;">
+        <div style="display: flex; align-items: center; gap: 12px; flex-wrap: wrap;">
+          <div class="room-icon-box" style="width: 44px; height: 44px; border-radius: 12px; background: rgba(139, 92, 246, 0.15); color: #8b5cf6; display: flex; align-items: center; justify-content: center; font-size: 21px;">
+            <i class="fa-solid fa-chalkboard-user"></i>
           </div>
           <div>
-            <h3 class="modal-title" id="roomTimetableTitle" data-i18n="modal_timetable_title">Emploi du Temps — Salle</h3>
-            <span style="font-size: 12.5px; color: var(--text-muted);" id="roomTimetableSubtitle">Planning hebdomadaire
-              d'occupation de la salle</span>
+            <h3 class="modal-title" id="roomTimetableTitle" style="margin-bottom: 2px;">جدول توقيت واستعمال القسم</h3>
+            <span style="font-size: 12px; color: var(--text-muted);" id="roomTimetableSubtitle">التوقيت الأسبوعي، الحصص المبرمجة، المواد، والأساتذة</span>
+          </div>
+          <div style="display: flex; align-items: center; gap: 8px; margin-inline-start: 16px;">
+            <label for="roomTimetableSelectGroup" style="font-size: 13px; font-weight: 700; color: var(--text-muted); white-space: nowrap;">
+              <i class="fa-solid fa-arrow-right-arrow-left"></i> تغيير القسم:
+            </label>
+            <select id="roomTimetableSelectGroup" class="schoolaris-select" style="min-width: 220px; padding: 6px 12px; font-weight: 700; height: 36px;" onchange="app.openClassTimetable(Number(this.value))">
+              <!-- Dynamically populated with all classes -->
+            </select>
           </div>
         </div>
-        <div style="display: flex; align-items: center; gap: 8px;">
-          <button type="button" class="btn-primary" onclick="app.printRoomTimetable()"
-            style="padding: 6px 14px; font-size: 12.5px;">
-            <i class="fa-solid fa-print"></i> <span data-i18n="btn_print_schedule">Imprimer</span>
+        <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+          <button type="button" class="btn-primary" onclick="app.openModalAddSlot()"
+            style="padding: 7px 15px; font-size: 12.5px; background: #10b981; border-color: #10b981; display: inline-flex; align-items: center; gap: 6px; box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);">
+            <i class="fa-solid fa-plus"></i> <span>+ إضافة حصة للقسم</span>
+          </button>
+          <button type="button" class="btn-secondary" onclick="app.printRoomTimetable()"
+            style="padding: 7px 14px; font-size: 12.5px; display: inline-flex; align-items: center; gap: 6px;">
+            <i class="fa-solid fa-print"></i> <span>طباعة الجدول</span>
           </button>
           <button class="btn-icon" onclick="app.closeModals()"><i class="fa-solid fa-xmark"></i></button>
         </div>
       </div>
 
-      <!-- Room Timetable Meta Info Box -->
-      <div class="room-timetable-header-box">
-        <div class="room-timetable-meta">
-          <div class="room-timetable-meta-item">
-            <i class="fa-solid fa-users" style="color: #10b981;"></i>
-            <span id="roomTimetableCapBadge">Capacité: 25 places</span>
+      <div class="modal-body" style="overflow-y: auto; padding: 16px 20px; flex: 1;">
+        <!-- Class Timetable Meta Info Box -->
+        <div class="room-timetable-header-box" style="margin-bottom: 14px;">
+          <div class="room-timetable-meta">
+            <div class="room-timetable-meta-item">
+              <i class="fa-solid fa-chalkboard-user" style="color: #8b5cf6;"></i>
+              <span id="classTimetableNameBadge">القسم: --</span>
+            </div>
+            <div class="room-timetable-meta-item">
+              <i class="fa-solid fa-layer-group" style="color: #06b6d4;"></i>
+              <span id="classTimetableLevelBadge">المستوى: --</span>
+            </div>
+            <div class="room-timetable-meta-item">
+              <i class="fa-solid fa-users" style="color: #10b981;"></i>
+              <span id="classTimetableStudentsBadge">0 تلميذ</span>
+            </div>
+            <div class="room-timetable-meta-item">
+              <i class="fa-solid fa-calendar-check" style="color: #a855f7;"></i>
+              <span id="roomTimetableGroupsBadge">0 حصة مبرمجة</span>
+            </div>
+            <div class="room-timetable-meta-item">
+              <i class="fa-solid fa-clock" style="color: #3b82f6;"></i>
+              <span id="roomTimetableHoursBadge">0 ساعة أسبوعياً</span>
+            </div>
           </div>
-          <div class="room-timetable-meta-item">
-            <i class="fa-solid fa-video" style="color: #f59e0b;"></i>
-            <span id="roomTimetableProjBadge">Projecteur: Oui</span>
-          </div>
-          <div class="room-timetable-meta-item">
-            <i class="fa-solid fa-layer-group" style="color: #a855f7;"></i>
-            <span id="roomTimetableGroupsBadge">0 groupe programmé</span>
+          <div id="roomTimetableEquipNotes" style="font-size: 12px; color: var(--text-muted);">
+            <!-- Notes -->
           </div>
         </div>
-        <div id="roomTimetableEquipNotes" style="font-size: 12px; color: var(--text-muted);">
-          <!-- Notes -->
+
+        <!-- Navigation Bar: Search, View Mode Toggle, and Day Filter Tabs -->
+        <div class="room-timetable-top-bar" style="display: flex; flex-direction: column; gap: 12px; margin-bottom: 16px;">
+          <div style="display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap;">
+            <!-- View Mode Switcher: Daily (Clear List) vs Full Weekly (7 Columns) -->
+            <div class="room-view-toggle-group">
+              <button type="button" class="btn-room-view-toggle active" id="btnModeDaily" onclick="app.setRoomTimetableViewMode('daily')">
+                <i class="fa-solid fa-list-check"></i>
+                <span>عرض اليوم المفصل (قائمة واضحة)</span>
+              </button>
+              <button type="button" class="btn-room-view-toggle" id="btnModeWeekly" onclick="app.setRoomTimetableViewMode('weekly')">
+                <i class="fa-solid fa-table-columns"></i>
+                <span>عرض الأسبوع كاملاً (7 أيام)</span>
+              </button>
+            </div>
+
+            <!-- Quick Search Bar -->
+            <div class="schoolaris-search-box" style="flex: 1; min-width: 220px; max-width: 380px;">
+              <i class="fa-solid fa-magnifying-glass"></i>
+              <input type="text" id="roomTimetableSearchInput" class="schoolaris-search-input" placeholder="بحث بحصة، مادة، أو أستاذ..." oninput="app.filterRoomTimetable()">
+            </div>
+          </div>
+
+          <!-- Day Filter Tabs Bar -->
+          <div class="room-timetable-day-tabs-bar" id="roomTimetableDayTabs">
+            <!-- Dynamically populated: [السبت (0)] [الأحد (8)] [الإثنين (0)] etc. -->
+          </div>
+        </div>
+
+        <!-- VIEW 1: Daily High-Visibility List Container -->
+        <div class="room-timetable-daily-view" id="roomTimetableDailyContainer">
+          <!-- Dynamically populated when viewMode === 'daily' -->
+        </div>
+
+        <!-- VIEW 2: Weekly 7-Day Grid Container -->
+        <div class="room-timetable-days-container" id="roomTimetableDaysGrid" style="display: none; max-height: calc(90vh - 280px); overflow-y: auto;">
+          <!-- Injected via JS for each day (Samedi -> Vendredi) -->
         </div>
       </div>
 
-      <!-- Weekly 7-Day Grid Container -->
-      <div class="room-timetable-days-container" id="roomTimetableDaysGrid">
-        <!-- Injected via JS for each day (Samedi -> Vendredi) -->
+      <div class="modal-footer" style="border-top: 1px solid var(--border-color); padding: 12px 20px; display: flex; justify-content: space-between; align-items: center;">
+        <div style="font-size: 12px; color: var(--text-muted); display: flex; align-items: center; gap: 14px;">
+          <span><i class="fa-solid fa-circle-check" style="color: #10b981;"></i> ⭐ = أستاذ المادة المسند للقسم</span>
+          <span><i class="fa-solid fa-circle-info" style="color: #3b82f6;"></i> انقر على أي حصة لتعديلها أو حذفها مباشرة</span>
+        </div>
+        <button type="button" class="btn-secondary" onclick="app.closeModals()">إغلاق</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal: Ajouter / Modifier Séance dans l'Emploi du Temps d'une Classe -->
+  <div class="modal-overlay" id="modalRoomScheduleSlot">
+    <div class="modal-content" style="max-width: 580px; width: 95%;">
+      <div class="modal-header" style="border-bottom: 1px solid var(--border-color); padding-bottom: 12px;">
+        <div style="display: flex; align-items: center; gap: 10px;">
+          <div style="width: 38px; height: 38px; border-radius: 10px; background: rgba(16, 185, 129, 0.15); color: #10b981; display: flex; align-items: center; justify-content: center; font-size: 18px;">
+            <i class="fa-solid fa-calendar-plus" id="slotModalIcon"></i>
+          </div>
+          <div>
+            <h3 class="modal-title" id="slotModalTitle" style="margin-bottom: 2px;">إضافة حصة دراسية للقسم</h3>
+            <span style="font-size: 12px; color: var(--text-muted);" id="slotModalSubtitle">تحديد اليوم، التوقيت، المادة، والأستاذ</span>
+          </div>
+        </div>
+        <button class="btn-icon" onclick="app.closeSlotModal()"><i class="fa-solid fa-xmark"></i></button>
       </div>
 
-      <div style="display: flex; justify-content: flex-end; margin-top: 20px;">
-        <button type="button" class="btn-secondary" onclick="app.closeModals()" data-i18n="btn_close">Fermer</button>
-      </div>
+      <form id="slotForm" onsubmit="event.preventDefault(); app.saveSlot();" style="padding-top: 14px;">
+        <input type="hidden" id="slotId">
+        <!-- Room ID hidden to operate strictly with classes -->
+        <input type="hidden" id="slotRoomId" value="1">
+
+        <!-- Jour & Horaires -->
+        <div class="form-row">
+          <div class="form-group" style="flex: 1.2;">
+            <label class="form-label"><i class="fa-solid fa-calendar-day" style="color: #3b82f6;"></i> اليوم (Jour) *</label>
+            <select id="slotDayOfWeek" class="form-control" required onchange="app.checkSlotTeacherAvailability()">
+              <option value="Samedi">السبت (Samedi)</option>
+              <option value="Dimanche">الأحد (Dimanche)</option>
+              <option value="Lundi">الإثنين (Lundi)</option>
+              <option value="Mardi">الثلاثاء (Mardi)</option>
+              <option value="Mercredi">الأربعاء (Mercredi)</option>
+              <option value="Jeudi">الخميس (Jeudi)</option>
+              <option value="Vendredi">الجمعة (Vendredi)</option>
+            </select>
+          </div>
+          <div class="form-group" style="flex: 1;">
+            <label class="form-label"><i class="fa-regular fa-clock" style="color: #06b6d4;"></i> من (Début) *</label>
+            <input type="time" id="slotStartTime" class="form-control" value="08:00" required onchange="app.checkSlotTeacherAvailability()">
+          </div>
+          <div class="form-group" style="flex: 1;">
+            <label class="form-label"><i class="fa-regular fa-clock" style="color: #06b6d4;"></i> إلى (Fin) *</label>
+            <input type="time" id="slotEndTime" class="form-control" value="10:00" required onchange="app.checkSlotTeacherAvailability()">
+          </div>
+        </div>
+
+        <!-- Conflict Banner Notice -->
+        <div id="slotConflictBanner" style="display: none; padding: 10px 14px; border-radius: 8px; margin-bottom: 14px; font-size: 13px; line-height: 1.4; border: 1px solid rgba(239, 68, 68, 0.3); background: rgba(239, 68, 68, 0.1); color: #ef4444;">
+          <!-- Dynamically populated warning / alert -->
+        </div>
+
+        <!-- Classe / Division -->
+        <div class="form-group">
+          <label class="form-label"><i class="fa-solid fa-chalkboard-user" style="color: #8b5cf6;"></i> القسم / الفوج الدراسي (Classe / Division) *</label>
+          <select id="slotGroupId" class="form-control" required onchange="app.onSlotGroupChange()">
+            <!-- Injected dynamically -->
+          </select>
+        </div>
+
+        <!-- Matière -->
+        <div class="form-group">
+          <label class="form-label"><i class="fa-solid fa-book" style="color: #f59e0b;"></i> المادة الدراسية (Matière) *</label>
+          <select id="slotSubjectId" class="form-control" required onchange="app.onSlotSubjectChange()">
+            <!-- Injected dynamically -->
+          </select>
+        </div>
+
+        <!-- Notification: Professeur assigné à la classe -->
+        <div id="slotAssignedTeacherNotice" style="display: none; padding: 10px 14px; border-radius: 8px; margin-bottom: 14px; font-size: 12.5px; background: rgba(16, 185, 129, 0.12); border: 1px solid rgba(16, 185, 129, 0.35); color: #10b981;">
+          <!-- Dynamically populated with assigned teacher name -->
+        </div>
+
+        <!-- Professeur avec Disponibilité en direct -->
+        <div class="form-group">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+            <label class="form-label" style="margin-bottom: 0;">
+              <i class="fa-solid fa-user-tie" style="color: #10b981;"></i> الأستاذ المشرف (Enseignant disponible) *
+            </label>
+            <span id="slotTeacherAvailCountBadge" style="font-size: 11px; padding: 2px 8px; border-radius: 12px; background: rgba(16, 185, 129, 0.15); color: #10b981; font-weight: 700;">
+              جاري فحص المتاحين...
+            </span>
+          </div>
+          <select id="slotTeacherId" class="form-control" required onchange="app.onSlotTeacherSelect()">
+            <!-- Injected dynamically with [متاح] and [مشغول] -->
+          </select>
+          <div id="slotTeacherStatusDetail" style="margin-top: 6px; font-size: 12px; display: none;">
+            <!-- Message detail if busy -->
+          </div>
+        </div>
+
+        <!-- Notes / Remarques -->
+        <div class="form-group">
+          <label class="form-label">ملاحظات إضافية (Remarques)</label>
+          <input type="text" id="slotNotes" class="form-control" placeholder="مثال: أعمال تطبيقية، دعم مكثف، مخبر...">
+        </div>
+
+        <div style="display: flex; justify-content: flex-end; gap: 10px; margin-top: 20px;">
+          <button type="button" class="btn-secondary" onclick="app.closeSlotModal()">إلغاء</button>
+          <button type="submit" class="btn-primary" id="btnSaveSlot" style="background: #10b981; border-color: #10b981;">
+            <i class="fa-solid fa-check"></i> <span id="btnSaveSlotText">حفظ الحصة في جدول القاعة</span>
+          </button>
+        </div>
+      </form>
     </div>
   </div>
 
