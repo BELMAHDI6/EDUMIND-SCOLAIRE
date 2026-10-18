@@ -332,6 +332,7 @@ const i18n = {
     card_tag_student: "ÉLÈVE • OFFICIEL",
     card_verified: "OFFICIEL",
     lbl_card_level: "Niveau :",
+    lbl_card_gender: "Sexe :",
     lbl_card_phone: "Tél :",
     card_barcode_sublabel: "Pointage Automatique & Présence",
     btn_copy_code: "Copier le code",
@@ -1079,6 +1080,7 @@ const i18n = {
     card_tag_student: "بطاقة مدرسية • رسمي",
     card_verified: "رسمي",
     lbl_card_level: "المستوى :",
+    lbl_card_gender: "الجنس :",
     lbl_card_phone: "الهاتف :",
     card_barcode_sublabel: "بطاقة الدخول وتسجيل الحضور الذكي",
     btn_copy_code: "نسخ الكود",
@@ -1743,6 +1745,102 @@ class EdumindApp {
     }
 
     return str;
+  }
+
+  formatLevelShort(rawLevelName, rawGroupName) {
+    const gStr = rawGroupName ? String(rawGroupName).trim() : '';
+    const lStr = rawLevelName ? String(rawLevelName).trim() : '';
+
+    // 1. Check if group name has standard Algerian code with section/group number:
+    // e.g. inside parentheses "(1AM-1)", "(3AM-2)", "(2AS-1)", "(1AP-3)"
+    if (gStr) {
+      const parenCodeMatch = gStr.match(/\((([1-5]AP|[1-4]AM|[1-3]AS)[-\s]?([0-9]+))\)/i);
+      if (parenCodeMatch) {
+        const lvl = parenCodeMatch[2].toUpperCase();
+        const grpNum = parenCodeMatch[3];
+        return `${lvl}-${grpNum}`;
+      }
+
+      // Direct code pattern in group name like "1AM-1", "1AM 1", "2AM-3"
+      const directCodeMatch = gStr.match(/\b([1-5]AP|[1-4]AM|[1-3]AS)[-\s_]?([0-9]+)\b/i);
+      if (directCodeMatch) {
+        const lvl = directCodeMatch[1].toUpperCase();
+        const grpNum = directCodeMatch[2];
+        return `${lvl}-${grpNum}`;
+      }
+    }
+
+    let baseLevelCode = '';
+    const searchStr = `${lStr} ${gStr}`;
+
+    // Direct match for standard codes: 1AM..4AM, 1AS..3AS, 1AP..5AP
+    const matchCode = searchStr.match(/\b([1-5]AP|[1-4]AM|[1-3]AS)\b/i);
+    if (matchCode) {
+      baseLevelCode = matchCode[1].toUpperCase();
+    } else {
+      const arMap = [
+        { regex: /أولى\s*(متوسط|م)/i, code: '1AM' },
+        { regex: /ثاني[ةه]\s*(متوسط|م)/i, code: '2AM' },
+        { regex: /ثالث[ةه]\s*(متوسط|م)/i, code: '3AM' },
+        { regex: /رابع[ةه]\s*(متوسط|م)/i, code: '4AM' },
+        { regex: /1\s*(متوسط|م)/i, code: '1AM' },
+        { regex: /2\s*(متوسط|م)/i, code: '2AM' },
+        { regex: /3\s*(متوسط|م)/i, code: '3AM' },
+        { regex: /4\s*(متوسط|م)/i, code: '4AM' },
+
+        { regex: /أولى\s*(ثانوي|ث)/i, code: '1AS' },
+        { regex: /ثاني[ةه]\s*(ثانوي|ث)/i, code: '2AS' },
+        { regex: /ثالث[ةه]\s*(ثانوي|ث)/i, code: '3AS' },
+        { regex: /1\s*(ثانوي|ث)/i, code: '1AS' },
+        { regex: /2\s*(ثانوي|ث)/i, code: '2AS' },
+        { regex: /3\s*(ثانوي|ث)/i, code: '3AS' },
+
+        { regex: /أولى\s*(ابتدائي|اب)/i, code: '1AP' },
+        { regex: /ثاني[ةه]\s*(ابتدائي|اب)/i, code: '2AP' },
+        { regex: /ثالث[ةه]\s*(ابتدائي|اب)/i, code: '3AP' },
+        { regex: /رابع[ةه]\s*(ابتدائي|اب)/i, code: '4AP' },
+        { regex: /خامس[ةه]\s*(ابتدائي|اب)/i, code: '5AP' },
+        { regex: /1\s*(ابتدائي|اب)/i, code: '1AP' },
+        { regex: /2\s*(ابتدائي|اب)/i, code: '2AP' },
+        { regex: /3\s*(ابتدائي|اب)/i, code: '3AP' },
+        { regex: /4\s*(ابتدائي|اب)/i, code: '4AP' },
+        { regex: /5\s*(ابتدائي|اب)/i, code: '5AP' },
+
+        { regex: /تحضيري|préparatoire/i, code: 'Prépa' }
+      ];
+
+      for (const item of arMap) {
+        if (item.regex.test(searchStr)) {
+          baseLevelCode = item.code;
+          break;
+        }
+      }
+    }
+
+    if (!baseLevelCode) {
+      const parenMatch = searchStr.match(/\(([^)]+)\)/);
+      if (parenMatch && parenMatch[1].trim().length <= 6) {
+        baseLevelCode = parenMatch[1].trim().toUpperCase();
+      }
+    }
+
+    if (!baseLevelCode) baseLevelCode = lStr || '-';
+    if (baseLevelCode === '—') baseLevelCode = '-';
+
+    // If we have a base level code, look for division / class number in group name
+    if (gStr && baseLevelCode && baseLevelCode !== '-') {
+      const divMatch = gStr.match(/(?:قسم|فوج|ف|ق|groupe|classe|division)\s*([0-9]+)/i) ||
+                       gStr.match(/متوسط\s*([0-9]+)/i) ||
+                       gStr.match(/ثانوي\s*([0-9]+)/i) ||
+                       gStr.match(/ابتدائي\s*([0-9]+)/i) ||
+                       gStr.match(/\b([0-9]+)\b$/);
+
+      if (divMatch && divMatch[1]) {
+        return `${baseLevelCode}-${divMatch[1]}`;
+      }
+    }
+
+    return baseLevelCode;
   }
 
   async init() {
@@ -4451,7 +4549,7 @@ class EdumindApp {
   executeBatchBadgePrint(students, theme = 'emerald') {
     const isAr = this.lang === 'ar';
     const schoolName = this.settings?.school_name || 'EDUMIND ACADEMY';
-    const schoolYear = this.settings?.school_year || '2025/2026';
+    const schoolYear = this.settings?.active_year || this.settings?.school_year || '2026-2027';
 
     // Helper to generate vector SVG barcode using JsBarcode
     const generateBarcodeSvg = (matricule) => {
@@ -4490,10 +4588,11 @@ class EdumindApp {
     const renderCard = (s) => {
       const fullName = `${s.first_name || ''} ${s.last_name || ''}`.trim();
       const matricule = s.matricule || `ETU-${String(s.id).padStart(4, '0')}`;
-      const levelName = s.level_name || 'Niveau non défini';
+      const levelName = this.formatLevelShort(s.level_name, s.group_name);
       const phone = s.phone || s.parent_phone || '-';
       const barcodeSvg = generateBarcodeSvg(matricule);
       const isFemale = (s.gender || '').toUpperCase() === 'F';
+      const genderText = isFemale ? (isAr ? 'أنثى' : 'Féminin') : (isAr ? 'ذكر' : 'Masculin');
 
       return `
         <div class="badge-wrapper">
@@ -4525,10 +4624,10 @@ class EdumindApp {
                   : `<div style="font-size: 34px; text-align: center; line-height: 72px;">${isFemale ? '👧' : '👦'}</div>`}
               </div>
               <div class="details-box">
-                <div class="student-name">${this.escapeHtml(fullName)}</div>
+                <div class="student-name" style="text-align: center;">${this.escapeHtml(fullName)}</div>
                 <div class="matricule-pill">N° ${this.escapeHtml(matricule)}</div>
                 <div class="info-line"><strong>${isAr ? 'المستوى :' : 'Niveau :'}</strong> ${this.escapeHtml(levelName)}</div>
-                <div class="info-line"><strong>${isAr ? 'الهاتف :' : 'Tél :'}</strong> ${this.escapeHtml(phone)}</div>
+                <div class="info-line"><strong>${isAr ? 'الجنس :' : 'Sexe :'}</strong> ${genderText}</div>
               </div>
             </div>
 
@@ -4721,7 +4820,7 @@ class EdumindApp {
           .avatar-box img { width: 100%; height: 100%; object-fit: cover; }
 
           .details-box { flex: 1; min-width: 0; line-height: 1.2; }
-          .student-name { font-size: 11.5px; font-weight: 800; margin-bottom: 0.8mm; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+          .student-name { font-size: 11.5px; font-weight: 800; margin-bottom: 0.8mm; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; text-align: center; }
           .matricule-pill { display: inline-block; font-family: monospace; font-size: 8px; font-weight: 800; background: rgba(59,130,246,0.25); padding: 1px 4px; border-radius: 2px; margin-bottom: 0.8mm; }
           .white .matricule-pill { background: #dbeafe; color: #1e40af; }
           .info-line { font-size: 7.2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
@@ -6693,7 +6792,7 @@ class EdumindApp {
 
     // School Info from settings
     const schoolName = this.settings?.school_name || 'EDUMIND ACADEMY';
-    const schoolYear = this.settings?.school_year || '2025/2026';
+    const schoolYear = this.settings?.active_year || this.settings?.school_year || '2026-2027';
     const schoolLogo = this.settings?.school_logo || '/img/logo-icon.png';
 
     const schoolNameEl = document.getElementById('cardSchoolName');
@@ -6708,7 +6807,8 @@ class EdumindApp {
     // Student Info
     const fullName = `${s.first_name || ''} ${s.last_name || ''}`.trim();
     const matricule = s.matricule || `ETU-${String(s.id).padStart(4, '0')}`;
-    const levelName = this.formatLevelName(s.level_name) || (this.lang === 'ar' ? 'المستوى غير محدد' : 'Niveau non défini');
+    const studentGroupName = (enrollments && enrollments[0]?.group_name) || s.group_name || '';
+    const levelName = this.formatLevelShort(s.level_name, studentGroupName);
     const groupName = enrollments.length > 0
       ? enrollments.map(e => this.formatGroupName(e.group_name)).slice(0, 2).join(' • ')
       : (this.lang === 'ar' ? 'غير مسجل في قسم' : 'Non inscrit');
@@ -6723,8 +6823,10 @@ class EdumindApp {
     const levelEl = document.getElementById('cardStudentLevel');
     if (levelEl) levelEl.textContent = levelName;
 
-    const phoneEl = document.getElementById('cardStudentPhone');
-    if (phoneEl) phoneEl.textContent = phone;
+    const isFemale = (s.gender || '').toUpperCase() === 'F';
+    const genderText = isFemale ? (this.lang === 'ar' ? 'أنثى' : 'Féminin') : (this.lang === 'ar' ? 'ذكر' : 'Masculin');
+    const genderEl = document.getElementById('cardStudentGender');
+    if (genderEl) genderEl.textContent = genderText;
 
     // Avatar / Photo
     const avatarContainer = document.getElementById('cardAvatarContainer');
@@ -6766,11 +6868,12 @@ class EdumindApp {
     if (!s) return;
 
     const schoolName = this.settings?.school_name || 'EDUMIND ACADEMY';
-    const schoolYear = this.settings?.school_year || '2025/2026';
+    const schoolYear = this.settings?.active_year || this.settings?.school_year || '2026-2027';
     const theme = this.currentCardTheme || 'emerald';
     const matricule = s.matricule || `ETU-${String(s.id).padStart(4, '0')}`;
     const fullName = `${s.first_name || ''} ${s.last_name || ''}`.trim();
-    const levelName = s.level_name || 'Niveau non défini';
+    const studentGroupName = (this.currentCardEnrollments && this.currentCardEnrollments[0]?.group_name) || s.group_name || '';
+    const levelName = this.formatLevelShort(s.level_name, studentGroupName);
     const phone = s.phone || s.parent_phone || '-';
 
     // Get current Barcode SVG HTML
@@ -6805,10 +6908,10 @@ class EdumindApp {
             ${s.photo_url ? `<img src="${s.photo_url}" alt="Photo">` : `<div style="font-size: 38px; text-align: center; line-height: 80px;">${(s.gender || '').toUpperCase() === 'F' ? '👧' : '👦'}</div>`}
           </div>
           <div class="details-box">
-            <div class="student-name">${this.escapeHtml(fullName)}</div>
+            <div class="student-name" style="text-align: center;">${this.escapeHtml(fullName)}</div>
             <div class="matricule-pill">N° ${this.escapeHtml(matricule)}</div>
             <div class="info-line"><strong>${isAr ? 'المستوى :' : 'Niveau :'}</strong> ${this.escapeHtml(levelName)}</div>
-            <div class="info-line"><strong>${isAr ? 'الهاتف :' : 'Tél :'}</strong> ${this.escapeHtml(phone)}</div>
+            <div class="info-line"><strong>${isAr ? 'الجنس :' : 'Sexe :'}</strong> ${(s.gender || '').toUpperCase() === 'F' ? (isAr ? 'أنثى' : 'Féminin') : (isAr ? 'ذكر' : 'Masculin')}</div>
           </div>
         </div>
 
@@ -6956,7 +7059,7 @@ class EdumindApp {
           .avatar-box img { width: 100%; height: 100%; object-fit: cover; }
 
           .details-box { flex: 1; min-width: 0; line-height: 1.25; }
-          .student-name { font-size: 12px; font-weight: 800; margin-bottom: 1mm; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+          .student-name { font-size: 12px; font-weight: 800; margin-bottom: 1mm; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; text-align: center; }
           .matricule-pill { display: inline-block; font-family: monospace; font-size: 8.5px; font-weight: 800; background: rgba(59,130,246,0.25); padding: 1px 4px; border-radius: 2px; margin-bottom: 1mm; }
           .white .matricule-pill { background: #dbeafe; color: #1e40af; }
           .info-line { font-size: 7.5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
@@ -7003,11 +7106,12 @@ class EdumindApp {
     if (!s) return;
 
     const schoolName = this.settings?.school_name || 'EDUMIND ACADEMY';
-    const schoolYear = this.settings?.school_year || '2025/2026';
+    const schoolYear = this.settings?.active_year || this.settings?.school_year || '2026-2027';
     const theme = this.currentCardTheme || 'emerald';
     const matricule = s.matricule || `ETU-${String(s.id).padStart(4, '0')}`;
     const fullName = `${s.first_name || ''} ${s.last_name || ''}`.trim() || 'Eleve';
-    const levelName = s.level_name || 'Niveau non défini';
+    const studentGroupName = (this.currentCardEnrollments && this.currentCardEnrollments[0]?.group_name) || s.group_name || '';
+    const levelName = this.formatLevelShort(s.level_name, studentGroupName);
     const phone = s.phone || s.parent_phone || '-';
     const latinOnly = `${s.first_name || ''}_${s.last_name || ''}`.replace(/[^a-zA-Z0-9_\-]/g, '_').replace(/_+/g, '_').replace(/^_|_$/g, '');
     const safeMatricule = matricule.replace(/[^a-zA-Z0-9_\-]/g, '_');
@@ -7116,7 +7220,7 @@ class EdumindApp {
           .pdf-cr80-card .avatar-box img { width: 100%; height: 100%; object-fit: cover; }
 
           .pdf-cr80-card .details-box { flex: 1; min-width: 0; line-height: 1.2; }
-          .pdf-cr80-card .student-name { font-size: 10.5px; font-weight: 800; margin-bottom: 0.6mm; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+          .pdf-cr80-card .student-name { font-size: 10.5px; font-weight: 800; margin-bottom: 0.6mm; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; text-align: center; }
           .pdf-cr80-card .matricule-pill { display: inline-block; font-family: monospace; font-size: 7.5px; font-weight: 800; background: rgba(59,130,246,0.25); padding: 1px 3.5px; border-radius: 2px; margin-bottom: 0.6mm; }
           .pdf-cr80-card.white .matricule-pill { background: #dbeafe; color: #1e40af; }
           .pdf-cr80-card .info-line { font-size: 6.8px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-bottom: 0.3mm; }
@@ -7157,10 +7261,10 @@ class EdumindApp {
               ${s.photo_url ? `<img src="${s.photo_url}" alt="Photo">` : `<div style="font-size: 32px; text-align: center; line-height: 19mm;">${(s.gender || '').toUpperCase() === 'F' ? '👧' : '👦'}</div>`}
             </div>
             <div class="details-box">
-              <div class="student-name">${this.escapeHtml(fullName)}</div>
+              <div class="student-name" style="text-align: center;">${this.escapeHtml(fullName)}</div>
               <div class="matricule-pill">N° ${this.escapeHtml(matricule)}</div>
               <div class="info-line"><strong>${this.lang === 'ar' ? 'المستوى :' : 'Niveau :'}</strong> ${this.escapeHtml(levelName)}</div>
-              <div class="info-line"><strong>${this.lang === 'ar' ? 'الهاتف :' : 'Tél :'}</strong> ${this.escapeHtml(phone)}</div>
+              <div class="info-line"><strong>${this.lang === 'ar' ? 'الجنس :' : 'Sexe :'}</strong> ${(s.gender || '').toUpperCase() === 'F' ? (this.lang === 'ar' ? 'أنثى' : 'Féminin') : (this.lang === 'ar' ? 'ذكر' : 'Masculin')}</div>
             </div>
           </div>
 
@@ -9061,7 +9165,7 @@ class EdumindApp {
       this.currentCardTeacher = t;
 
       const schoolName = this.settings?.school_name || 'EDUMIND ACADEMY';
-      const schoolYear = this.settings?.school_year || '2025/2026';
+      const schoolYear = this.settings?.active_year || this.settings?.school_year || '2026-2027';
       const schoolLogo = this.settings?.school_logo || '/img/logo-icon.png';
 
       const sNameEl = document.getElementById('cardTeacherSchoolName');
@@ -9129,7 +9233,7 @@ class EdumindApp {
     if (!t) return;
 
     const schoolName = this.settings?.school_name || 'EDUMIND ACADEMY';
-    const schoolYear = this.settings?.school_year || '2025/2026';
+    const schoolYear = this.settings?.active_year || this.settings?.school_year || '2026-2027';
     const matricule = t.matricule || `ENS-${String(t.id).padStart(3, '0')}`;
     const fullName = `${t.first_name || ''} ${t.last_name || ''}`.trim();
     const subject = t.subject_name || 'Enseignant';

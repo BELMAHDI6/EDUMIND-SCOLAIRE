@@ -4856,6 +4856,11 @@ app.get('/api/settings', (req, res) => {
   const rows = DB.queryAll("SELECT * FROM settings");
   const settings = {};
   rows.forEach(r => { settings[r.key] = r.value; });
+  if (settings.active_year && !settings.school_year) {
+    settings.school_year = settings.active_year;
+  } else if (settings.school_year && !settings.active_year) {
+    settings.active_year = settings.school_year;
+  }
   res.json({ success: true, settings });
 });
 
