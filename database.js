@@ -447,7 +447,7 @@ function initDatabase() {
       notes TEXT
     );
 
-    -- Teachers (Enseignants)
+    -- Teachers (Enseignants et Personnel)
     CREATE TABLE IF NOT EXISTS teachers (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       matricule TEXT UNIQUE,
@@ -458,6 +458,8 @@ function initDatabase() {
       subject_id INTEGER,
       remuneration_type TEXT DEFAULT 'percent', -- 'percent', 'fixed', 'hourly'
       remuneration_rate REAL DEFAULT 50.0,     -- e.g. 50%
+      employee_type TEXT DEFAULT 'teacher',    -- 'teacher' or 'employee'
+      job_title TEXT,                          -- for employee: 'Secrétaire', 'Chauffeur', etc.
       active INTEGER DEFAULT 1,
       created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
       FOREIGN KEY (subject_id) REFERENCES subjects(id) ON DELETE SET NULL
@@ -759,11 +761,13 @@ function initDatabase() {
     }
   }
 
-  // Ensure teachers columns for the 8 remuneration modes
+  // Ensure teachers columns for the 8 remuneration modes and staff extensions
   addColumnIfNotExists('teachers', 'tarif_heure', 'REAL DEFAULT 0');
   addColumnIfNotExists('teachers', 'tarif_seance', 'REAL DEFAULT 0');
   addColumnIfNotExists('teachers', 'salaire_fixe', 'REAL DEFAULT 0');
   addColumnIfNotExists('teachers', 'tarif_par_eleve', 'REAL DEFAULT 0');
+  addColumnIfNotExists('teachers', 'employee_type', "TEXT DEFAULT 'teacher'");
+  addColumnIfNotExists('teachers', 'job_title', 'TEXT');
 
   // Ensure teacher_payouts columns
   addColumnIfNotExists('teacher_payouts', 'remuneration_mode', "TEXT DEFAULT 'percent'");
@@ -1016,6 +1020,8 @@ function initDatabase() {
     try { db.exec("ALTER TABLE students ADD COLUMN national_id TEXT;"); } catch(e){}
     try { db.exec("ALTER TABLE students ADD COLUMN birth_place TEXT;"); } catch(e){}
     try { db.exec("ALTER TABLE teachers ADD COLUMN grade TEXT DEFAULT 'prof_titulaire';"); } catch(e){}
+    try { db.exec("ALTER TABLE teachers ADD COLUMN employee_type TEXT DEFAULT 'teacher';"); } catch(e){}
+    try { db.exec("ALTER TABLE teachers ADD COLUMN job_title TEXT;"); } catch(e){}
 
     // Ensure Preparatoire level exists for primary education
     try {

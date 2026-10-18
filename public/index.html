@@ -2454,9 +2454,9 @@
             <input type="text" id="searchTeacherInput" class="schoolaris-search-input"
               placeholder="Rechercher par nom, matière, grade..." onkeyup="app.filterTeachers(this.value)">
           </div>
-          <button class="btn-primary" onclick="app.openModalTeacher()">
+          <button class="btn-primary" onclick="app.openStaffTypeChoiceModal()">
             <i class="fa-solid fa-user-plus"></i>
-            <span data-i18n="btn_add_teacher">Ajouter un Enseignant</span>
+            <span data-i18n="btn_add_teacher">Ajouter un Enseignant / Personnel</span>
           </button>
         </div>
       </div>
@@ -5167,6 +5167,182 @@
         <div style="display: flex; justify-content: flex-end; gap: 12px; margin-top: 18px;">
           <button type="button" class="btn-secondary" onclick="app.closeModals()"><span data-i18n="btn_cancel">Annuler</span></button>
           <button type="submit" class="btn-primary"><span data-i18n="btn_save_teacher">Enregistrer l'Enseignant</span></button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Modal: Choix Type de Collaborateur (Enseignant vs Employé Normal) -->
+  <div class="modal-overlay" id="modalStaffTypeChoice">
+    <div class="modal-content" style="max-width: 600px; padding: 26px 28px;">
+      <div class="modal-header" style="margin-bottom: 8px; border-bottom: none; padding-bottom: 0;">
+        <h3 class="modal-title" style="display: flex; align-items: center; gap: 10px; font-size: 19px;">
+          <i class="fa-solid fa-users-gear" style="color: #6366f1;"></i>
+          <span id="choiceModalTitle">Ajouter un Membre du Personnel / إضافة عضو جديد</span>
+        </h3>
+        <button class="btn-icon" onclick="app.closeModals()"><i class="fa-solid fa-xmark"></i></button>
+      </div>
+      <p style="color: var(--text-muted); font-size: 13.5px; margin-bottom: 22px;">
+        Veuillez sélectionner la catégorie du collaborateur à enregistrer dans l'établissement :
+      </p>
+
+      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 16px; margin-bottom: 12px;">
+        <!-- Option 1: Enseignant / Professeur -->
+        <div onclick="app.chooseStaffType('teacher')"
+             style="cursor: pointer; border: 2px solid rgba(249, 115, 22, 0.25); border-radius: 14px; padding: 22px 18px; background: rgba(249, 115, 22, 0.04); transition: all 0.2s ease; display: flex; flex-direction: column; align-items: center; text-align: center; gap: 12px;"
+             onmouseover="this.style.borderColor='#f97316'; this.style.transform='translateY(-3px)'; this.style.boxShadow='0 8px 24px rgba(249, 115, 22, 0.15)';"
+             onmouseout="this.style.borderColor='rgba(249, 115, 22, 0.25)'; this.style.transform='translateY(0)'; this.style.boxShadow='none';">
+          <div style="width: 58px; height: 58px; border-radius: 16px; background: linear-gradient(135deg, #f97316, #ea580c); display: flex; align-items: center; justify-content: center; color: white; font-size: 24px; box-shadow: 0 4px 14px rgba(249, 115, 22, 0.35);">
+            <i class="fa-solid fa-chalkboard-user"></i>
+          </div>
+          <div>
+            <h4 style="font-size: 16px; font-weight: 700; color: var(--text-main); margin-bottom: 4px;">Professeur / Enseignant</h4>
+            <div style="font-size: 12.5px; color: #f97316; font-weight: 600; margin-bottom: 6px;">أستاذ / هيئة التدريس</div>
+            <p style="font-size: 12px; color: var(--text-muted); line-height: 1.4; margin: 0;">
+              Matière enseignée, grade, spécialité, attribution des classes pédagogiques et emploi du temps.
+            </p>
+          </div>
+          <span class="badge-pill" style="background: rgba(249, 115, 22, 0.15); color: #ea580c; font-weight: 700; font-size: 11px; padding: 5px 12px; border-radius: 20px;">
+            Sélectionner <i class="fa-solid fa-arrow-right" style="margin-left: 4px;"></i>
+          </span>
+        </div>
+
+        <!-- Option 2: Employé normal / Personnel -->
+        <div onclick="app.chooseStaffType('employee')"
+             style="cursor: pointer; border: 2px solid rgba(99, 102, 241, 0.25); border-radius: 14px; padding: 22px 18px; background: rgba(99, 102, 241, 0.04); transition: all 0.2s ease; display: flex; flex-direction: column; align-items: center; text-align: center; gap: 12px;"
+             onmouseover="this.style.borderColor='#6366f1'; this.style.transform='translateY(-3px)'; this.style.boxShadow='0 8px 24px rgba(99, 102, 241, 0.15)';"
+             onmouseout="this.style.borderColor='rgba(99, 102, 241, 0.25)'; this.style.transform='translateY(0)'; this.style.boxShadow='none';">
+          <div style="width: 58px; height: 58px; border-radius: 16px; background: linear-gradient(135deg, #6366f1, #4f46e5); display: flex; align-items: center; justify-content: center; color: white; font-size: 24px; box-shadow: 0 4px 14px rgba(99, 102, 241, 0.35);">
+            <i class="fa-solid fa-user-tie"></i>
+          </div>
+          <div>
+            <h4 style="font-size: 16px; font-weight: 700; color: var(--text-main); margin-bottom: 4px;">Employé Normal</h4>
+            <div style="font-size: 12.5px; color: #6366f1; font-weight: 600; margin-bottom: 6px;">موظف / عامل عادي</div>
+            <p style="font-size: 12px; color: var(--text-muted); line-height: 1.4; margin: 0;">
+              Nom, prénom, téléphone et type de métier personnalisable (Secrétaire, Chauffeur, Agent, etc.).
+            </p>
+          </div>
+          <span class="badge-pill" style="background: rgba(99, 102, 241, 0.15); color: #4f46e5; font-weight: 700; font-size: 11px; padding: 5px 12px; border-radius: 20px;">
+            Sélectionner <i class="fa-solid fa-arrow-right" style="margin-left: 4px;"></i>
+          </span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal: Ajouter / Modifier un Employé Normal (Personnel) -->
+  <div class="modal-overlay" id="modalEmployee">
+    <div class="modal-content" style="max-width: 540px;">
+      <div class="modal-header">
+        <h3 class="modal-title" id="modalEmployeeTitle" style="display: flex; align-items: center; gap: 8px;">
+          <i class="fa-solid fa-user-tie" style="color: #6366f1;"></i>
+          <span>Ajouter un Employé Normal</span>
+        </h3>
+        <button class="btn-icon" onclick="app.closeModals()"><i class="fa-solid fa-xmark"></i></button>
+      </div>
+      <form id="employeeForm" onsubmit="event.preventDefault(); app.saveEmployee();">
+        <input type="hidden" id="employeeId">
+        
+        <!-- Matricule -->
+        <div class="form-group" style="margin-bottom: 14px;">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+            <label class="form-label" style="margin-bottom: 0;">Matricule Employé</label>
+            <span style="font-size: 11px; color: var(--text-muted);">اتركه فارغاً للتوليد التلقائي (EMP-xxx)</span>
+          </div>
+          <input type="text" id="employeeMatricule" class="form-control"
+            style="font-family: monospace; font-weight: 700; color: #6366f1;" placeholder="Automatique (ex: EMP-001)">
+        </div>
+
+        <!-- Nom et Prénom -->
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">Nom (اللقب) *</label>
+            <input type="text" id="employeeLastName" class="form-control" required data-letters-only="true"
+              oninput="this.value = this.value.replace(/[^a-zA-Z\u00C0-\u024F\u0600-\u06FF\s'\-]/g, '')"
+              placeholder="ex: Bensalem">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Prénom (الاسم) *</label>
+            <input type="text" id="employeeFirstName" class="form-control" required data-letters-only="true"
+              oninput="this.value = this.value.replace(/[^a-zA-Z\u00C0-\u024F\u0600-\u06FF\s'\-]/g, '')"
+              placeholder="ex: Ahmed">
+          </div>
+        </div>
+
+        <!-- Téléphone -->
+        <div class="form-group" style="margin-bottom: 14px;">
+          <label class="form-label">Numéro de Téléphone (رقم الهاتف)</label>
+          <input type="tel" id="employeePhone" class="form-control" maxlength="10" inputmode="numeric" pattern="[0-9]*"
+            oninput="this.value = this.value.replace(/\D/g, '').slice(0, 10)" placeholder="0550 00 00 00">
+        </div>
+
+        <!-- Type de Métier / Poste avec dropdown personnalisable -->
+        <div class="form-group" style="margin-bottom: 16px;">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+            <label class="form-label" style="margin-bottom: 0;">Type de Métier / المهنة أو الوظيفة *</label>
+            <div style="display: flex; gap: 6px;">
+              <button type="button" class="btn-sm btn-secondary" onclick="app.toggleNewJobInput()"
+                      style="padding: 3px 9px; font-size: 11.5px; border-radius: 6px; cursor: pointer;">
+                <i class="fa-solid fa-plus" style="color: #6366f1;"></i> Nouveau métier
+              </button>
+              <button type="button" class="btn-sm btn-secondary" onclick="app.toggleManageJobsContainer()"
+                      style="padding: 3px 9px; font-size: 11.5px; border-radius: 6px; cursor: pointer; color: #ef4444;"
+                      title="Gérer / Supprimer des métiers de la liste">
+                <i class="fa-solid fa-list-check"></i> Supprimer / Gérer
+              </button>
+            </div>
+          </div>
+          
+          <div style="display: flex; gap: 8px; align-items: center;">
+            <select id="employeeJobTitle" class="form-control" required style="flex: 1;" onchange="app.onEmployeeJobSelected()">
+              <!-- Injected dynamically via app.loadStaffJobs() -->
+            </select>
+            <button type="button" id="btnDeleteCurrentJob" onclick="app.deleteCurrentJobTitle()"
+                    class="btn-icon" style="color: #ef4444; border: 1px solid rgba(239, 68, 68, 0.3); border-radius: 8px; width: 40px; height: 40px; display: none; background: rgba(239, 68, 68, 0.05);"
+                    title="Supprimer ce métier sélectionné de la liste">
+              <i class="fa-solid fa-trash-can"></i>
+            </button>
+          </div>
+
+          <!-- Zone pour gérer / supprimer les métiers enregistrés -->
+          <div id="manageJobsListContainer" style="display: none; margin-top: 10px; background: rgba(239, 68, 68, 0.04); padding: 12px; border-radius: 10px; border: 1px dashed rgba(239, 68, 68, 0.25);">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+              <span style="font-size: 12px; font-weight: 700; color: #b91c1c;">
+                <i class="fa-solid fa-trash-can" style="margin-right: 4px;"></i> Cliquez sur le ✖ pour supprimer un métier :
+              </span>
+              <button type="button" class="btn-icon" style="width: 22px; height: 22px; font-size: 11px;" onclick="app.toggleManageJobsContainer(false)">
+                <i class="fa-solid fa-xmark"></i>
+              </button>
+            </div>
+            <div id="manageJobsBadgesList" style="display: flex; flex-wrap: wrap; gap: 6px; max-height: 130px; overflow-y: auto;">
+              <!-- Badges rendered by JS -->
+            </div>
+          </div>
+
+          <!-- Zone pour ajouter un métier personnalisé directement -->
+          <div id="newJobInputContainer" style="display: none; margin-top: 10px; background: rgba(99, 102, 241, 0.06); padding: 10px 12px; border-radius: 8px; border: 1px dashed rgba(99, 102, 241, 0.3);">
+            <label style="font-size: 11.5px; font-weight: 600; color: #4f46e5; display: block; margin-bottom: 5px;">
+              Ajouter une nouvelle profession dans la liste :
+            </label>
+            <div style="display: flex; gap: 8px;">
+              <input type="text" id="newJobTitleInput" class="form-control" style="font-size: 13px;"
+                     placeholder="Ex: Responsable RH, Infirmier, Cuisinier..."
+                     onkeydown="if(event.key === 'Enter') { event.preventDefault(); app.saveNewJobTitle(); }">
+              <button type="button" class="btn-primary" onclick="app.saveNewJobTitle()" style="white-space: nowrap; padding: 6px 14px; font-size: 12px;">
+                <i class="fa-solid fa-check"></i> Ajouter
+              </button>
+              <button type="button" class="btn-secondary" onclick="app.toggleNewJobInput(false)" style="padding: 6px 10px; font-size: 12px;">
+                <i class="fa-solid fa-xmark"></i>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <div style="display: flex; justify-content: flex-end; gap: 12px; margin-top: 20px;">
+          <button type="button" class="btn-secondary" onclick="app.closeModals()"><span data-i18n="btn_cancel">Annuler</span></button>
+          <button type="submit" class="btn-primary" id="btnSaveEmployee">
+            <i class="fa-solid fa-floppy-disk"></i> Enregistrer l'Employé
+          </button>
         </div>
       </form>
     </div>
