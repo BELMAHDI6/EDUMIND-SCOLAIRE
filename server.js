@@ -4,6 +4,7 @@ const path = require('path');
 const fs = require('fs');
 const os = require('os');
 const DB = require('./database');
+const GoogleSheetsSync = require('./google_sheets_sync');
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -15,6 +16,30 @@ app.use('/api', (req, res, next) => {
   res.set('Cache-Control', 'no-store, no-cache, must-revalidate, private');
   res.set('Pragma', 'no-cache');
   res.set('Expires', '0');
+  next();
+});
+
+// Auto-sync middleware: triggers auto cloud export on successful mutations of relevant school entities
+app.use((req, res, next) => {
+  const method = req.method.toUpperCase();
+  if (['POST', 'PUT', 'DELETE', 'PATCH'].includes(method)) {
+    const p = req.path;
+    const isTarget =
+      p.startsWith('/api/teachers') ||
+      p.startsWith('/api/groups') ||
+      p.startsWith('/api/students') ||
+      p.startsWith('/api/enrollments') ||
+      p.startsWith('/api/room-schedules') ||
+      p.startsWith('/api/schedules');
+
+    if (isTarget && !p.startsWith('/api/sync') && !p.includes('/payout') && !p.includes('/earnings')) {
+      res.on('finish', () => {
+        if (res.statusCode >= 200 && res.statusCode < 300) {
+          GoogleSheetsSync.scheduleAutoSync();
+        }
+      });
+    }
+  }
   next();
 });
 
@@ -2190,6 +2215,162 @@ app.get('/api/planning/rooms-availability', (req, res) => {
     }));
 
     res.json({ success: true, rooms: result });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+app.get('/api/teachers/availability', (req, res) => {
+  try {
+    const day_of_week = req.query.day_of_week || req.query.day;
+    const { start_time, end_time, exclude_schedule_id, exclude_group_id, subject_id, group_id } = req.query;
+
+    const teachers = DB.queryAll(`
+      SELECT t.id, t.matricule, t.first_name, t.last_name, t.phone, t.subject_id,
+             sub.name as subject_name, sub.color as subject_color
+      FROM teachers t
+      LEFT JOIN subjects sub ON t.subject_id = sub.id
+      WHERE t.active = 1
+      ORDER BY t.first_name ASC, t.last_name ASC
+    `);
+
+    // Find assigned teacher for this class & subject if provided
+    let assignedTeacherId = null;
+    let targetSubject = null;
+    if (subject_id) {
+      targetSubject = DB.queryOne("SELECT id, name, code FROM subjects WHERE id = ?", [Number(subject_id)]);
+    }
+
+    if (group_id && subject_id) {
+      const assignedRow = DB.queryOne(
+        "SELECT teacher_id FROM class_subject_teachers WHERE group_id = ? AND subject_id = ?",
+        [Number(group_id), Number(subject_id)]
+      );
+      if (assignedRow && assignedRow.teacher_id) {
+        assignedTeacherId = assignedRow.teacher_id;
+      } else {
+        // Fallback: Check if this class had a teacher in room_schedules for this subject
+        const prevSlot = DB.queryOne(
+          "SELECT teacher_id FROM room_schedules WHERE group_id = ? AND subject_id = ? AND teacher_id IS NOT NULL ORDER BY id DESC LIMIT 1",
+          [Number(group_id), Number(subject_id)]
+        );
+        if (prevSlot && prevSlot.teacher_id) {
+          assignedTeacherId = prevSlot.teacher_id;
+        } else {
+          // Fallback: Check groups table
+          const grp = DB.queryOne(
+            "SELECT teacher_id FROM groups WHERE id = ? AND subject_id = ? AND teacher_id IS NOT NULL",
+            [Number(group_id), Number(subject_id)]
+          );
+          if (grp && grp.teacher_id) assignedTeacherId = grp.teacher_id;
+        }
+      }
+    }
+
+    function isTeacherForSubject(t) {
+      if (!subject_id || !targetSubject) return false;
+      if (assignedTeacherId && t.id === assignedTeacherId) return true;
+      if (t.subject_id && Number(t.subject_id) === Number(subject_id)) return true;
+      if (t.subject_code && targetSubject.code && t.subject_code.toUpperCase() === targetSubject.code.toUpperCase()) return true;
+      if (t.subject_name && targetSubject.name) {
+        const s1 = t.subject_name.trim().toLowerCase();
+        const s2 = targetSubject.name.trim().toLowerCase();
+        if (s1 === s2) return true;
+        if ((s1.includes('رياضيات') || s1.includes('math')) && (s2.includes('رياضيات') || s2.includes('math'))) return true;
+        if ((s1.includes('عربية') || s1.includes('arabe')) && (s2.includes('عربية') || s2.includes('arabe'))) return true;
+        if ((s1.includes('فرنسية') || s1.includes('français') || s1.includes('francais')) && (s2.includes('فرنسية') || s2.includes('français') || s2.includes('francais'))) return true;
+        if ((s1.includes('إنجليزية') || s1.includes('انجليزية') || s1.includes('anglais') || s1.includes('english')) && (s2.includes('إنجليزية') || s2.includes('انجليزية') || s2.includes('anglais') || s2.includes('english'))) return true;
+        if ((s1.includes('فيزياء') || s1.includes('physique')) && (s2.includes('فيزياء') || s2.includes('physique'))) return true;
+        if ((s1.includes('تاريخ') || s1.includes('histoire')) && (s2.includes('تاريخ') || s2.includes('histoire'))) return true;
+        if ((s1.includes('إسلامية') || s1.includes('اسلامية') || s1.includes('islam')) && (s2.includes('إسلامية') || s2.includes('اسلامية') || s2.includes('islam'))) return true;
+        if ((s1.includes('طبيعة') || s1.includes('snv') || s1.includes('naturelle')) && (s2.includes('طبيعة') || s2.includes('snv') || s2.includes('naturelle'))) return true;
+        if ((s1.includes('إعلام') || s1.includes('اعلام') || s1.includes('info')) && (s2.includes('إعلام') || s2.includes('اعلام') || s2.includes('info'))) return true;
+        if ((s1.includes('بدنية') || s1.includes('sport') || s1.includes('eps')) && (s2.includes('بدنية') || s2.includes('sport') || s2.includes('eps'))) return true;
+        if ((s1.includes('تشكيلية') || s1.includes('art') || s1.includes('فنية')) && (s2.includes('تشكيلية') || s2.includes('art') || s2.includes('فنية'))) return true;
+        if ((s1.includes('موسيقية') || s1.includes('musique')) && (s2.includes('موسيقية') || s2.includes('musique'))) return true;
+      }
+      return false;
+    }
+
+    if (!day_of_week || !start_time || !end_time) {
+      const sorted = teachers.map(t => ({
+        ...t,
+        is_available: true,
+        is_assigned_to_class: assignedTeacherId ? t.id === assignedTeacherId : false,
+        is_subject_specialist: isTeacherForSubject(t),
+        conflict: null
+      }));
+      sorted.sort((a, b) => {
+        if (a.is_assigned_to_class && !b.is_assigned_to_class) return -1;
+        if (!a.is_assigned_to_class && b.is_assigned_to_class) return 1;
+        if (a.is_subject_specialist && !b.is_subject_specialist) return -1;
+        if (!a.is_subject_specialist && b.is_subject_specialist) return 1;
+        return a.first_name.localeCompare(b.first_name);
+      });
+      return res.json({
+        success: true,
+        assigned_teacher_id: assignedTeacherId,
+        teachers: sorted
+      });
+    }
+
+    // 1. Check busy teachers in room_schedules
+    let rsSql = `
+      SELECT rs.teacher_id, rs.room_id, rs.day_of_week, rs.start_time, rs.end_time,
+             r.name as room_name, g.name as group_name, sub.name as subject_name
+      FROM room_schedules rs
+      LEFT JOIN rooms r ON rs.room_id = r.id
+      LEFT JOIN groups g ON rs.group_id = g.id
+      LEFT JOIN subjects sub ON rs.subject_id = sub.id
+      WHERE rs.day_of_week = ?
+        AND rs.start_time < ?
+        AND rs.end_time > ?
+        AND rs.teacher_id IS NOT NULL
+    `;
+    const rsParams = [day_of_week, end_time, start_time];
+    if (exclude_schedule_id) {
+      rsSql += ` AND rs.id != ?`;
+      rsParams.push(Number(exclude_schedule_id));
+    }
+    const busyRs = DB.queryAll(rsSql, rsParams);
+
+    const busyTeacherMap = {};
+    busyRs.forEach(b => {
+      busyTeacherMap[b.teacher_id] = b;
+    });
+
+    const result = teachers.map(t => {
+      const conflict = busyTeacherMap[t.id] || null;
+      return {
+        ...t,
+        is_available: !conflict,
+        is_assigned_to_class: assignedTeacherId ? t.id === assignedTeacherId : false,
+        is_subject_specialist: isTeacherForSubject(t),
+        conflict: conflict ? {
+          group_name: conflict.group_name || 'قسم آخر',
+          subject_name: conflict.subject_name || '',
+          start_time: conflict.start_time,
+          end_time: conflict.end_time,
+          message: `مشغول مع ${conflict.group_name || 'قسم آخر'} (${conflict.start_time} - ${conflict.end_time})`
+        } : null
+      };
+    });
+
+    // Smart sort:
+    // 1. Assigned teacher to this class for this subject first!
+    // 2. Subject specialist next
+    // 3. Available first
+    result.sort((a, b) => {
+      if (a.is_assigned_to_class && !b.is_assigned_to_class) return -1;
+      if (!a.is_assigned_to_class && b.is_assigned_to_class) return 1;
+      if (a.is_subject_specialist && !b.is_subject_specialist) return -1;
+      if (!a.is_subject_specialist && b.is_subject_specialist) return 1;
+      if (a.is_available && !b.is_available) return -1;
+      if (!a.is_available && b.is_available) return 1;
+      return a.first_name.localeCompare(b.first_name);
+    });
+
+    res.json({ success: true, assigned_teacher_id: assignedTeacherId, teachers: result });
   } catch (err) {
     res.status(500).json({ success: false, error: err.message });
   }
@@ -5005,15 +5186,38 @@ app.delete('/api/levels/:id', (req, res) => {
 
 app.get('/api/subjects', (req, res) => {
   try {
-    const { category } = req.query;
+    const { category, group_id } = req.query;
+    let targetCategory = category;
+
+    if (group_id) {
+      const grp = DB.queryOne(`
+        SELECT g.id, g.level_id, l.category as level_category 
+        FROM groups g 
+        LEFT JOIN levels l ON g.level_id = l.id 
+        WHERE g.id = ?
+      `, [Number(group_id)]);
+      if (grp && grp.level_category) {
+        targetCategory = grp.level_category;
+      }
+    }
+
     let subjects;
-    if (category && category !== 'all') {
-      subjects = DB.queryAll(
-        "SELECT * FROM subjects WHERE category = ? OR category = 'all' OR category IS NULL ORDER BY name ASC",
-        [category]
-      );
+    if (targetCategory && targetCategory !== 'all') {
+      subjects = DB.queryAll(`
+        SELECT MIN(id) as id, name, code, color, icon, category
+        FROM subjects
+        WHERE category = ? OR category = 'all' OR category IS NULL
+        GROUP BY name
+        ORDER BY name ASC
+      `, [targetCategory]);
     } else {
-      subjects = DB.queryAll("SELECT * FROM subjects ORDER BY name ASC");
+      // Deduplicate by name so each subject is unique and clean
+      subjects = DB.queryAll(`
+        SELECT MIN(id) as id, name, code, color, icon, category
+        FROM subjects
+        GROUP BY name
+        ORDER BY name ASC
+      `);
     }
     res.json({ success: true, subjects });
   } catch (err) {
@@ -5083,20 +5287,28 @@ app.get('/api/rooms/:id/schedule', (req, res) => {
       return res.status(404).json({ success: false, message: "Salle introuvable" });
     }
 
-    const groups = DB.queryAll(`
-      SELECT g.id, g.name, g.day_of_week, g.start_time, g.end_time, g.max_students,
-             COALESCE(l.name, 'Sans niveau') as level_name,
+    const schedule = DB.queryAll(`
+      SELECT rs.id, rs.room_id, rs.group_id, rs.subject_id, rs.teacher_id,
+             rs.day_of_week, rs.start_time, rs.end_time, rs.notes,
+             COALESCE(g.name, rs.notes, 'Séance de cours') as name,
+             COALESCE(g.name, rs.notes, 'Séance de cours') as group_name,
+             COALESCE(l.name, '-') as level_name,
              COALESCE(sub.name, 'Sans matière') as subject_name,
              COALESCE(sub.color, '#3b82f6') as subject_color,
+             COALESCE(sub.icon, 'book') as subject_icon,
              COALESCE(t.first_name || ' ' || t.last_name, 'Non assigné') as teacher_name,
-             (SELECT COUNT(*) FROM enrollments WHERE group_id = g.id AND status = 'active') as enrolled_count
-      FROM groups g
+             t.phone as teacher_phone,
+             COALESCE((SELECT 1 FROM class_subject_teachers cst WHERE cst.group_id = rs.group_id AND cst.subject_id = rs.subject_id AND cst.teacher_id = rs.teacher_id LIMIT 1), 0) as is_assigned_to_class,
+             (SELECT COUNT(*) FROM enrollments WHERE group_id = rs.group_id AND status = 'active') as enrolled_count,
+             COALESCE(g.max_students, ?) as max_students
+      FROM room_schedules rs
+      LEFT JOIN groups g ON rs.group_id = g.id
       LEFT JOIN levels l ON g.level_id = l.id
-      LEFT JOIN subjects sub ON g.subject_id = sub.id
-      LEFT JOIN teachers t ON g.teacher_id = t.id
-      WHERE g.room_id = ? AND g.active = 1
+      LEFT JOIN subjects sub ON rs.subject_id = sub.id
+      LEFT JOIN teachers t ON rs.teacher_id = t.id
+      WHERE rs.room_id = ?
       ORDER BY 
-        CASE g.day_of_week
+        CASE rs.day_of_week
           WHEN 'Samedi' THEN 1
           WHEN 'Dimanche' THEN 2
           WHEN 'Lundi' THEN 3
@@ -5106,10 +5318,379 @@ app.get('/api/rooms/:id/schedule', (req, res) => {
           WHEN 'Vendredi' THEN 7
           ELSE 8
         END,
-        g.start_time ASC
-    `, [roomId]);
+        rs.start_time ASC
+    `, [room.capacity || 30, roomId]);
 
-    res.json({ success: true, room, schedule: groups });
+    res.json({ success: true, room, schedule });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+// Add a session slot to a room's schedule
+app.post('/api/rooms/:id/schedule', (req, res) => {
+  try {
+    const roomId = Number(req.params.id);
+    const { group_id, subject_id, teacher_id, day_of_week, start_time, end_time, notes, force } = req.body;
+
+    if (!day_of_week || !start_time || !end_time) {
+      return res.status(400).json({ success: false, error: 'Jour, heure de début et heure de fin sont obligatoires' });
+    }
+
+    if (start_time >= end_time) {
+      return res.status(400).json({ success: false, error: 'L\'heure de début doit être antérieure à l\'heure de fin' });
+    }
+
+    // Conflict checking (unless forced)
+    if (!force) {
+      // 1. Room conflict check
+      const roomConflict = DB.queryOne(`
+        SELECT rs.*, COALESCE(g.name, 'Séance') as group_name, sub.name as subject_name
+        FROM room_schedules rs
+        LEFT JOIN groups g ON rs.group_id = g.id
+        LEFT JOIN subjects sub ON rs.subject_id = sub.id
+        WHERE rs.room_id = ?
+          AND rs.day_of_week = ?
+          AND rs.start_time < ?
+          AND rs.end_time > ?
+        LIMIT 1
+      `, [roomId, day_of_week, end_time, start_time]);
+
+      if (roomConflict) {
+        return res.status(409).json({
+          success: false,
+          conflictType: 'room',
+          error: `القاعة محجوزة بالفعل يوم ${day_of_week} من ${roomConflict.start_time} إلى ${roomConflict.end_time} (${roomConflict.subject_name || ''} - ${roomConflict.group_name || ''})`
+        });
+      }
+
+      // 2. Teacher conflict check
+      if (teacher_id) {
+        const teacherConflict = DB.queryOne(`
+          SELECT rs.*, r.name as room_name, COALESCE(g.name, 'فوج آخر') as group_name,
+                 t.first_name || ' ' || t.last_name as teacher_name
+          FROM room_schedules rs
+          LEFT JOIN rooms r ON rs.room_id = r.id
+          LEFT JOIN groups g ON rs.group_id = g.id
+          LEFT JOIN teachers t ON rs.teacher_id = t.id
+          WHERE rs.teacher_id = ?
+            AND rs.day_of_week = ?
+            AND rs.start_time < ?
+            AND rs.end_time > ?
+          LIMIT 1
+        `, [Number(teacher_id), day_of_week, end_time, start_time]);
+
+        if (teacherConflict) {
+          return res.status(409).json({
+            success: false,
+            conflictType: 'teacher',
+            error: `الأستاذ « ${teacherConflict.teacher_name} » مشغول بالفعل يوم ${day_of_week} من ${teacherConflict.start_time} إلى ${teacherConflict.end_time} مع قسم « ${teacherConflict.group_name} »`
+          });
+        }
+      }
+    }
+
+    const actualGroupId = toNullableId(group_id);
+    const actualSubjectId = toNullableId(subject_id);
+    const actualTeacherId = toNullableId(teacher_id);
+
+    const result = DB.run(`
+      INSERT INTO room_schedules (room_id, group_id, subject_id, teacher_id, day_of_week, start_time, end_time, notes)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+    `, [
+      roomId,
+      actualGroupId,
+      actualSubjectId,
+      actualTeacherId,
+      day_of_week,
+      start_time,
+      end_time,
+      notes || null
+    ]);
+
+    // Auto sync class_subject_teachers
+    if (actualGroupId && actualSubjectId && actualTeacherId) {
+      try {
+        DB.run(`
+          INSERT INTO class_subject_teachers (group_id, subject_id, teacher_id)
+          VALUES (?, ?, ?)
+          ON CONFLICT(group_id, subject_id) DO UPDATE SET teacher_id = excluded.teacher_id
+        `, [actualGroupId, actualSubjectId, actualTeacherId]);
+      } catch (e) {}
+    }
+
+    res.json({ success: true, slotId: result.lastInsertRowid });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+// Update a session slot in room_schedules
+app.put('/api/room-schedules/:id', (req, res) => {
+  try {
+    const slotId = Number(req.params.id);
+    const { room_id, group_id, subject_id, teacher_id, day_of_week, start_time, end_time, notes, force } = req.body;
+
+    const existing = DB.queryOne("SELECT * FROM room_schedules WHERE id = ?", [slotId]);
+    if (!existing) {
+      return res.status(404).json({ success: false, error: "Séance introuvable" });
+    }
+
+    const targetRoomId = room_id ? Number(room_id) : existing.room_id;
+    const targetDay = day_of_week || existing.day_of_week;
+    const targetStart = start_time || existing.start_time;
+    const targetEnd = end_time || existing.end_time;
+    const targetTeacherId = teacher_id !== undefined ? toNullableId(teacher_id) : existing.teacher_id;
+    const targetGroupId = group_id !== undefined ? toNullableId(group_id) : existing.group_id;
+    const targetSubjectId = subject_id !== undefined ? toNullableId(subject_id) : existing.subject_id;
+
+    if (targetStart >= targetEnd) {
+      return res.status(400).json({ success: false, error: 'L\'heure de début doit être antérieure à l\'heure de fin' });
+    }
+
+    if (!force) {
+      // 1. Class conflict
+      if (targetGroupId) {
+        const classConflict = DB.queryOne(`
+          SELECT rs.*, COALESCE(g.name, 'القسم') as group_name, sub.name as subject_name
+          FROM room_schedules rs
+          LEFT JOIN groups g ON rs.group_id = g.id
+          LEFT JOIN subjects sub ON rs.subject_id = sub.id
+          WHERE rs.group_id = ?
+            AND rs.day_of_week = ?
+            AND rs.start_time < ?
+            AND rs.end_time > ?
+            AND rs.id != ?
+          LIMIT 1
+        `, [targetGroupId, targetDay, targetEnd, targetStart, slotId]);
+
+        if (classConflict) {
+          return res.status(409).json({
+            success: false,
+            conflictType: 'class',
+            error: `القسم « ${classConflict.group_name} » لديه حصة أخرى مبرمجة يوم ${targetDay} من ${classConflict.start_time} إلى ${classConflict.end_time} (${classConflict.subject_name || 'مادة أخرى'})`
+          });
+        }
+      }
+
+      // 2. Teacher conflict
+      if (targetTeacherId) {
+        const teacherConflict = DB.queryOne(`
+          SELECT rs.*, r.name as room_name, COALESCE(g.name, 'فوج آخر') as group_name,
+                 t.first_name || ' ' || t.last_name as teacher_name
+          FROM room_schedules rs
+          LEFT JOIN rooms r ON rs.room_id = r.id
+          LEFT JOIN groups g ON rs.group_id = g.id
+          LEFT JOIN teachers t ON rs.teacher_id = t.id
+          WHERE rs.teacher_id = ?
+            AND rs.day_of_week = ?
+            AND rs.start_time < ?
+            AND rs.end_time > ?
+            AND rs.id != ?
+          LIMIT 1
+        `, [targetTeacherId, targetDay, targetEnd, targetStart, slotId]);
+
+        if (teacherConflict) {
+          return res.status(409).json({
+            success: false,
+            conflictType: 'teacher',
+            error: `الأستاذ « ${teacherConflict.teacher_name} » مشغول بالفعل يوم ${targetDay} من ${teacherConflict.start_time} إلى ${teacherConflict.end_time} مع قسم « ${teacherConflict.group_name} »`
+          });
+        }
+      }
+    }
+
+    DB.run(`
+      UPDATE room_schedules
+      SET room_id = ?, group_id = ?, subject_id = ?, teacher_id = ?,
+          day_of_week = ?, start_time = ?, end_time = ?, notes = ?
+      WHERE id = ?
+    `, [
+      targetRoomId,
+      targetGroupId,
+      targetSubjectId,
+      targetTeacherId,
+      targetDay,
+      targetStart,
+      targetEnd,
+      notes !== undefined ? notes : existing.notes,
+      slotId
+    ]);
+
+    // Auto sync class_subject_teachers
+    if (targetGroupId && targetSubjectId && targetTeacherId) {
+      try {
+        DB.run(`
+          INSERT INTO class_subject_teachers (group_id, subject_id, teacher_id)
+          VALUES (?, ?, ?)
+          ON CONFLICT(group_id, subject_id) DO UPDATE SET teacher_id = excluded.teacher_id
+        `, [targetGroupId, targetSubjectId, targetTeacherId]);
+      } catch (e) {}
+    }
+
+    res.json({ success: true, message: "Séance mise à jour avec succès" });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+// Delete a session slot
+app.delete('/api/room-schedules/:id', (req, res) => {
+  try {
+    const slotId = Number(req.params.id);
+    DB.run("DELETE FROM room_schedules WHERE id = ?", [slotId]);
+    res.json({ success: true });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+// Get schedule for a specific group / class
+app.get('/api/groups/:id/schedule', (req, res) => {
+  try {
+    const groupId = Number(req.params.id);
+    const group = DB.queryOne(`
+      SELECT g.*, l.name as level_name, l.category as level_category,
+             (SELECT COUNT(*) FROM enrollments WHERE group_id = g.id AND status = 'active') as enrolled_count
+      FROM groups g
+      LEFT JOIN levels l ON g.level_id = l.id
+      WHERE g.id = ?
+    `, [groupId]);
+
+    if (!group) {
+      return res.status(404).json({ success: false, error: "Classe introuvable" });
+    }
+
+    const schedule = DB.queryAll(`
+      SELECT rs.id, rs.room_id, rs.group_id, rs.subject_id, rs.teacher_id,
+             rs.day_of_week, rs.start_time, rs.end_time, rs.notes,
+             COALESCE(g.name, 'الفوج الدراسي') as group_name,
+             COALESCE(sub.name, 'Sans matière') as subject_name,
+             COALESCE(sub.color, '#3b82f6') as subject_color,
+             COALESCE(sub.icon, 'book') as subject_icon,
+             COALESCE(t.first_name || ' ' || t.last_name, 'غير محدد') as teacher_name,
+             t.phone as teacher_phone,
+             COALESCE((SELECT 1 FROM class_subject_teachers cst WHERE cst.group_id = rs.group_id AND cst.subject_id = rs.subject_id AND cst.teacher_id = rs.teacher_id LIMIT 1), 0) as is_assigned_to_class
+      FROM room_schedules rs
+      LEFT JOIN groups g ON rs.group_id = g.id
+      LEFT JOIN subjects sub ON rs.subject_id = sub.id
+      LEFT JOIN teachers t ON rs.teacher_id = t.id
+      WHERE rs.group_id = ?
+      ORDER BY 
+        CASE rs.day_of_week
+          WHEN 'Samedi' THEN 1
+          WHEN 'Dimanche' THEN 2
+          WHEN 'Lundi' THEN 3
+          WHEN 'Mardi' THEN 4
+          WHEN 'Mercredi' THEN 5
+          WHEN 'Jeudi' THEN 6
+          WHEN 'Vendredi' THEN 7
+          ELSE 8
+        END,
+        rs.start_time ASC
+    `, [groupId]);
+
+    res.json({ success: true, group, schedule });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+// Add a session slot directly for a class / group
+app.post('/api/groups/:id/schedule', (req, res) => {
+  try {
+    const groupId = Number(req.params.id);
+    const { subject_id, teacher_id, day_of_week, start_time, end_time, notes, force } = req.body;
+
+    const group = DB.queryOne("SELECT * FROM groups WHERE id = ?", [groupId]);
+    if (!group) {
+      return res.status(404).json({ success: false, error: "Classe introuvable" });
+    }
+
+    if (!day_of_week || !start_time || !end_time) {
+      return res.status(400).json({ success: false, error: 'Champs obligatoires manquants (jour, heures)' });
+    }
+
+    if (start_time >= end_time) {
+      return res.status(400).json({ success: false, error: 'L\'heure de début doit être antérieure à l\'heure de fin' });
+    }
+
+    const assignedSubjectId = toNullableId(subject_id);
+    const assignedTeacherId = toNullableId(teacher_id);
+    const assignedRoomId = group.room_id || 1;
+
+    if (!force) {
+      // 1. Check class collision (this class cannot have 2 sessions at the same time)
+      const classConflict = DB.queryOne(`
+        SELECT rs.*, sub.name as subject_name
+        FROM room_schedules rs
+        LEFT JOIN subjects sub ON rs.subject_id = sub.id
+        WHERE rs.group_id = ?
+          AND rs.day_of_week = ?
+          AND rs.start_time < ?
+          AND rs.end_time > ?
+        LIMIT 1
+      `, [groupId, day_of_week, end_time, start_time]);
+
+      if (classConflict) {
+        return res.status(409).json({
+          success: false,
+          conflictType: 'class',
+          error: `القسم « ${group.name} » لديه حصة أخرى مبرمجة يوم ${day_of_week} من ${classConflict.start_time} إلى ${classConflict.end_time} (${classConflict.subject_name || 'مادة أخرى'})`
+        });
+      }
+
+      // 2. Check teacher collision
+      if (assignedTeacherId) {
+        const teacherConflict = DB.queryOne(`
+          SELECT rs.*, COALESCE(g.name, 'فوج آخر') as group_name,
+                 t.first_name || ' ' || t.last_name as teacher_name
+          FROM room_schedules rs
+          LEFT JOIN groups g ON rs.group_id = g.id
+          LEFT JOIN teachers t ON rs.teacher_id = t.id
+          WHERE rs.teacher_id = ?
+            AND rs.day_of_week = ?
+            AND rs.start_time < ?
+            AND rs.end_time > ?
+          LIMIT 1
+        `, [assignedTeacherId, day_of_week, end_time, start_time]);
+
+        if (teacherConflict) {
+          return res.status(409).json({
+            success: false,
+            conflictType: 'teacher',
+            error: `الأستاذ « ${teacherConflict.teacher_name} » مشغول بالفعل يوم ${day_of_week} من ${teacherConflict.start_time} إلى ${teacherConflict.end_time} مع « ${teacherConflict.group_name} »`
+          });
+        }
+      }
+    }
+
+    const result = DB.run(`
+      INSERT INTO room_schedules (room_id, group_id, subject_id, teacher_id, day_of_week, start_time, end_time, notes)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+    `, [
+      assignedRoomId,
+      groupId,
+      assignedSubjectId,
+      assignedTeacherId,
+      day_of_week,
+      start_time,
+      end_time,
+      notes || null
+    ]);
+
+    // Keep class_subject_teachers updated so teacher is assigned to class for this subject
+    if (groupId && assignedSubjectId && assignedTeacherId) {
+      try {
+        DB.run(`
+          INSERT INTO class_subject_teachers (group_id, subject_id, teacher_id)
+          VALUES (?, ?, ?)
+          ON CONFLICT(group_id, subject_id) DO UPDATE SET teacher_id = excluded.teacher_id
+        `, [groupId, assignedSubjectId, assignedTeacherId]);
+      } catch (e) {}
+    }
+
+    res.json({ success: true, slotId: result.lastInsertRowid });
   } catch (err) {
     res.status(500).json({ success: false, error: err.message });
   }
@@ -5588,6 +6169,321 @@ app.get('/api/cantine/report', (req, res) => {
     res.status(500).json({ success: false, error: err.message });
   }
 });
+
+// ==========================================================================
+// GOOGLE SHEETS ATTENDANCE SYNC & TEACHER MOBILE CREDENTIALS
+// ==========================================================================
+// GOOGLE SHEETS ATTENDANCE SYNC & TEACHER MOBILE CREDENTIALS
+// ==========================================================================
+
+app.get('/api/sync/sheets/config', (req, res) => {
+  try {
+    const url = GoogleSheetsSync.getScriptUrl();
+    const enabled = GoogleSheetsSync.isSyncEnabled();
+    const schoolRow = DB.queryOne("SELECT value FROM settings WHERE key = 'school_name'");
+    const schoolName = (schoolRow && schoolRow.value) ? schoolRow.value : 'مؤسسة EDUMIND التربوية';
+    res.json({ success: true, url, enabled, schoolName });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+app.post('/api/sync/sheets/config', (req, res) => {
+  try {
+    const { url, enabled } = req.body;
+    let saved = url;
+    if (url !== undefined) {
+      saved = GoogleSheetsSync.setScriptUrl(url);
+    }
+    if (enabled !== undefined) {
+      GoogleSheetsSync.setSyncEnabled(!!enabled);
+    }
+    const currentEnabled = GoogleSheetsSync.isSyncEnabled();
+    res.json({ success: true, url: saved || GoogleSheetsSync.getScriptUrl(), enabled: currentEnabled });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+app.post('/api/sync/sheets/test', async (req, res) => {
+  try {
+    const { url } = req.body;
+    const testResult = await GoogleSheetsSync.testConnection(url);
+    res.json(testResult);
+  } catch (err) {
+    res.status(400).json({ success: false, error: err.message });
+  }
+});
+
+app.post('/api/sync/sheets/export', async (req, res) => {
+  try {
+    const result = await GoogleSheetsSync.exportDataToSheets();
+    res.json(result);
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+app.post('/api/sync/sheets/import-attendances', async (req, res) => {
+  try {
+    const result = await GoogleSheetsSync.importAttendancesFromSheets();
+    res.json(result);
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+app.post('/api/sync/sheets/full-sync', async (req, res) => {
+  try {
+    const exportResult = await GoogleSheetsSync.exportDataToSheets();
+    const importResult = await GoogleSheetsSync.importAttendancesFromSheets();
+    res.json({
+      success: true,
+      export: exportResult,
+      import: importResult,
+      message: 'Synchronisation globale avec Google Sheets terminée avec succès.'
+    });
+  } catch (err) {
+    const errorMsg = (err.message && err.message.includes('fetch failed'))
+      ? 'Impossible de joindre Google Sheets (Vérifiez votre connexion Internet)'
+      : (err.message || 'Erreur lors de la synchronisation');
+    res.status(500).json({ success: false, error: errorMsg });
+  }
+});
+
+// Periodic background polling: auto-import any new attendances from mobile phones every 2 minutes
+setInterval(async () => {
+  try {
+    const res = await GoogleSheetsSync.importAttendancesFromSheets();
+    if (res && res.count > 0) {
+      console.log(`📥 [GoogleSheetsSync] ${res.count} absence(s) importée(s) automatiquement depuis les téléphones des enseignants.`);
+    }
+  } catch (_) {
+    // Non-blocking background sync
+  }
+}, 2 * 60 * 1000);
+
+app.post('/api/teachers/:id/mobile-credentials', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { phone, password, mobile_pin } = req.body;
+    const result = await GoogleSheetsSync.updateTeacherCredentials(id, { phone, password, mobile_pin });
+    res.json(result);
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+// ==========================================================================
+// STUDENT DISCIPLINE & ABSENCES MANAGEMENT API
+// ==========================================================================
+
+// 1. Get List of Absences with Filters
+app.get('/api/discipline-absences', (req, res) => {
+  try {
+    const { date, start_date, end_date, group_id, period_type, is_justified, search, limit = 500 } = req.query;
+
+    let query = `
+      SELECT da.*,
+             s.matricule, s.first_name, s.last_name, s.gender, s.photo_url,
+             s.phone as student_phone, s.parent_name, s.parent_phone,
+             g.name as group_name, lvl.name as level_name
+      FROM discipline_absences da
+      JOIN students s ON da.student_id = s.id
+      LEFT JOIN groups g ON da.group_id = g.id
+      LEFT JOIN levels lvl ON s.level_id = lvl.id
+      WHERE 1=1
+    `;
+    const params = [];
+
+    if (date) {
+      query += ` AND (da.absence_date = ? OR da.absence_date LIKE ? OR substr(da.absence_date, 1, 10) = ?)`;
+      params.push(date, `${date}%`, date);
+    } else {
+      if (start_date) {
+        query += ` AND (da.absence_date >= ? OR substr(da.absence_date, 1, 10) >= ?)`;
+        params.push(start_date, start_date);
+      }
+      if (end_date) {
+        query += ` AND (da.absence_date <= ? OR substr(da.absence_date, 1, 10) <= ?)`;
+        params.push(end_date, end_date);
+      }
+    }
+
+    if (group_id && group_id !== 'all') {
+      query += ` AND da.group_id = ?`;
+      params.push(group_id);
+    }
+
+    if (period_type && period_type !== 'all') {
+      if (period_type === 'absence') {
+        query += ` AND da.period_type IN ('absence', 'absent')`;
+      } else {
+        query += ` AND da.period_type = ?`;
+        params.push(period_type);
+      }
+    }
+
+    if (is_justified !== undefined && is_justified !== 'all') {
+      query += ` AND da.is_justified = ?`;
+      params.push(is_justified == '1' ? 1 : 0);
+    }
+
+    if (search && search.trim()) {
+      const term = `%${search.trim()}%`;
+      query += ` AND (s.first_name LIKE ? OR s.last_name LIKE ? OR s.matricule LIKE ? OR (s.first_name || ' ' || s.last_name) LIKE ?)`;
+      params.push(term, term, term, term);
+    }
+
+    query += ` ORDER BY da.absence_date DESC, da.id DESC LIMIT ?`;
+    params.push(parseInt(limit, 10) || 500);
+
+    const absences = DB.queryAll(query, params);
+    res.json({ success: true, absences, count: absences.length });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+// 2. Absence Statistics (Today & This Month)
+app.get('/api/discipline-absences/stats', (req, res) => {
+  try {
+    const now = new Date();
+    const today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+    const monthStart = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-01`;
+
+    const todayTotal = DB.queryOne(
+      `SELECT COUNT(*) as count FROM discipline_absences WHERE (absence_date = ? OR substr(absence_date, 1, 10) = ?)`,
+      [today, today]
+    ).count;
+
+    const todayAbsences = DB.queryOne(
+      `SELECT COUNT(*) as count FROM discipline_absences WHERE (absence_date = ? OR substr(absence_date, 1, 10) = ?) AND period_type IN ('absence', 'absent')`,
+      [today, today]
+    ).count;
+
+    const todayLates = DB.queryOne(
+      `SELECT COUNT(*) as count FROM discipline_absences WHERE (absence_date = ? OR substr(absence_date, 1, 10) = ?) AND period_type = 'late'`,
+      [today, today]
+    ).count;
+
+    const todayUnjustified = DB.queryOne(
+      `SELECT COUNT(*) as count FROM discipline_absences WHERE (absence_date = ? OR substr(absence_date, 1, 10) = ?) AND is_justified = 0`,
+      [today, today]
+    ).count;
+
+    const monthTotal = DB.queryOne(
+      `SELECT COUNT(*) as count FROM discipline_absences WHERE (absence_date >= ? OR substr(absence_date, 1, 10) >= ?)`,
+      [monthStart, monthStart]
+    ).count;
+
+    const monthUnjustified = DB.queryOne(
+      `SELECT COUNT(*) as count FROM discipline_absences WHERE (absence_date >= ? OR substr(absence_date, 1, 10) >= ?) AND is_justified = 0`,
+      [monthStart, monthStart]
+    ).count;
+
+    res.json({
+      success: true,
+      stats: {
+        todayTotal,
+        todayAbsences,
+        todayLates,
+        todayUnjustified,
+        monthTotal,
+        monthUnjustified,
+        today
+      }
+    });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+// 3. Create Manual Absence / Retard
+app.post('/api/discipline-absences', (req, res) => {
+  try {
+    const { student_id, group_id, absence_date, time_slot, period_type = 'absence', subject_name, is_justified = 0, justification_reason, notes } = req.body;
+
+    if (!student_id || !absence_date) {
+      return res.status(400).json({ success: false, error: 'student_id et absence_date requis' });
+    }
+
+    const result = DB.run(`
+      INSERT INTO discipline_absences (
+        student_id, group_id, absence_date, time_slot, period_type,
+        subject_name, is_justified, justification_reason,
+        justified_at, notes, created_at
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
+    `, [
+      student_id,
+      group_id || null,
+      absence_date,
+      time_slot || '08:00 - 09:00',
+      period_type,
+      subject_name || '',
+      is_justified ? 1 : 0,
+      justification_reason || null,
+      is_justified ? new Date().toISOString() : null,
+      notes || null
+    ]);
+
+    res.json({ success: true, id: result.lastInsertRowid });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+// 4. Justify an Absence (avec émission de billet d'entrée facultatif)
+app.put('/api/discipline-absences/:id/justify', (req, res) => {
+  try {
+    const { id } = req.params;
+    const { justification_reason, issue_billet = false, notes } = req.body;
+
+    const existing = DB.queryOne(`SELECT * FROM discipline_absences WHERE id = ?`, [id]);
+    if (!existing) {
+      return res.status(404).json({ success: false, error: 'Enregistrement non trouvé' });
+    }
+
+    const billetNumber = issue_billet ? `BIL-${new Date().getFullYear()}-${String(id).padStart(4, '0')}` : existing.billet_number;
+    const billetIssuedAt = issue_billet ? new Date().toISOString() : existing.billet_issued_at;
+
+    DB.run(`
+      UPDATE discipline_absences
+      SET is_justified = 1,
+          justification_reason = ?,
+          justified_at = CURRENT_TIMESTAMP,
+          billet_issued = ?,
+          billet_number = ?,
+          billet_issued_at = ?,
+          notes = COALESCE(?, notes)
+      WHERE id = ?
+    `, [
+      justification_reason || 'تبرير إداري',
+      issue_billet ? 1 : 0,
+      billetNumber,
+      billetIssuedAt,
+      notes || null,
+      id
+    ]);
+
+    res.json({ success: true, id, billetNumber });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+// 5. Delete Absence
+app.delete('/api/discipline-absences/:id', (req, res) => {
+  try {
+    const { id } = req.params;
+    DB.run(`DELETE FROM discipline_absences WHERE id = ?`, [id]);
+    res.json({ success: true, id });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+
 
 // Serve frontend for all client routes
 app.get('*', (req, res) => {

@@ -514,6 +514,11 @@
         <span class="nav-icon icon-pointage" style="color: #38bdf8;"><i class="fa-solid fa-clipboard-user"></i></span>
         <span data-i18n="nav_pointage">الحياة المدرسية والغيابات</span>
       </li>
+      <li class="nav-item" data-view="absences" id="navItemAbsences">
+        <span class="nav-icon" style="color: #ef4444;"><i class="fa-solid fa-calendar-xmark"></i></span>
+        <span data-i18n="nav_absences">سجل غيابات التلاميذ</span>
+        <span class="nav-badge" id="sidebarAbsencesBadge" style="display: none; background: #ef4444; color: #fff; font-size: 11px; font-weight: 700; padding: 2px 7px; border-radius: 10px; margin-right: auto;">0</span>
+      </li>
       <li class="nav-item" data-view="caisse">
         <span class="nav-icon icon-caisse" style="color: #f59e0b;"><i class="fa-solid fa-coins"></i></span>
         <span data-i18n="nav_caisse">المصالح المالية (المقتصد)</span>
@@ -614,6 +619,13 @@
           <i class="fa-regular fa-calendar"></i>
           <span data-i18n="school_year_badge">Année 2026-2027</span>
         </div>
+
+        <!-- Global Google Sheets / Cloud Sync Button -->
+        <button class="btn-sync-header" id="btnHeaderSync" onclick="app.syncAllWithCloud(true)"
+          title="مزامنة شاملة وسريعة مع Google Sheets وهواتف الأساتذة" aria-label="Synchroniser avec le Cloud">
+          <i class="fa-solid fa-arrows-rotate" id="headerSyncIcon"></i>
+          <span class="btn-sync-label" data-i18n="btn_header_sync">مزامنة السحابة</span>
+        </button>
 
         <!-- Dark/Light Theme Switcher Button -->
         <button class="btn-icon btn-theme-header" id="btnThemeToggle" title="Changer le Thème (Mode Sombre / Clair)"
@@ -1880,6 +1892,195 @@
       </div>
     </section>
 
+    <!-- ==================== DEDICATED STUDENT ABSENCES VIEW (سجل ومتابعة غيابات التلاميذ) ==================== -->
+    <section class="view-container" id="view-absences">
+      <!-- Section Header -->
+      <div class="card-header" style="margin-bottom: 20px; flex-wrap: wrap; gap: 14px;">
+        <div>
+          <div class="card-title" style="font-size: 22px;">
+            <i class="fa-solid fa-calendar-xmark" style="color: #ef4444;"></i>
+            <span data-i18n="title_absences_journal">سجل ومتابعة غيابات وتأخرات التلاميذ</span>
+          </div>
+          <p style="color: var(--text-muted); font-size: 13px; margin-top: 4px;" data-i18n="subtitle_absences_journal">
+            سجل مركزي لكل الغيابات والتأخرات المسجلة من الهواتف والسحابة، تبرير الغياب وطباعة تصاريح الدخول.
+          </p>
+        </div>
+
+        <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
+          <button class="btn-primary" onclick="app.openAddManualAbsenceModal()">
+            <i class="fa-solid fa-user-clock"></i>
+            <span data-i18n="btn_record_absence">تسجيل غياب / تأخر يدوي</span>
+          </button>
+          <button class="btn-secondary" onclick="app.exportAbsencesToExcel()" title="تصدير السجل إلى Excel">
+            <i class="fa-solid fa-file-excel" style="color: #10b981;"></i>
+            <span>تصدير Excel</span>
+          </button>
+          <button class="btn-secondary" onclick="app.printAbsencesReport()" title="طباعة تقرير الغيابات">
+            <i class="fa-solid fa-print"></i>
+            <span>طباعة</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Absence KPI Stats Cards (Matched with Home Screen Design - Clickable for Instant Filter) -->
+      <div class="stats-grid" style="grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); margin-bottom: 24px;">
+        <!-- 1. غيابات اليوم -->
+        <div class="stat-card" style="border-inline-start: 4px solid #ef4444; cursor: pointer; transition: transform 0.2s, box-shadow 0.2s;" onclick="app.quickFilterAbsences('today_absences')" title="عرض غيابات اليوم">
+          <div class="stat-top">
+            <span class="stat-title" data-i18n="abs_kpi_today">غيابات اليوم</span>
+            <div class="stat-icon-badge" style="background: rgba(239, 68, 68, 0.15); color: #ef4444;">
+              <i class="fa-solid fa-user-xmark"></i>
+            </div>
+          </div>
+          <div class="stat-value" id="kpiAbsTodayCount" style="color: #ef4444;">0</div>
+          <div style="font-size: 11.5px; color: var(--text-muted); margin-top: 4px;" data-i18n="abs_kpi_today_sub">
+            تلاميذ غائبون اليوم
+          </div>
+        </div>
+
+        <!-- 2. غير مبررة (اليوم) -->
+        <div class="stat-card" style="border-inline-start: 4px solid #f59e0b; cursor: pointer; transition: transform 0.2s, box-shadow 0.2s;" onclick="app.quickFilterAbsences('today_unjustified')" title="عرض الغيابات والتأخرات غير المبررة لليوم">
+          <div class="stat-top">
+            <span class="stat-title" data-i18n="abs_kpi_unjustified">غير مبررة (اليوم)</span>
+            <div class="stat-icon-badge" style="background: rgba(245, 158, 11, 0.15); color: #f59e0b;">
+              <i class="fa-solid fa-triangle-exclamation"></i>
+            </div>
+          </div>
+          <div class="stat-value" id="kpiAbsUnjustifiedCount" style="color: #f59e0b;">0</div>
+          <div style="font-size: 11.5px; color: var(--text-muted); margin-top: 4px;" data-i18n="abs_kpi_unjustified_sub">
+            تتطلب اتصال بالولي وتبرير
+          </div>
+        </div>
+
+        <!-- 3. تأخرات اليوم -->
+        <div class="stat-card" style="border-inline-start: 4px solid #06b6d4; cursor: pointer; transition: transform 0.2s, box-shadow 0.2s;" onclick="app.quickFilterAbsences('today_lates')" title="عرض تأخرات اليوم">
+          <div class="stat-top">
+            <span class="stat-title" data-i18n="abs_kpi_lates">تأخرات اليوم</span>
+            <div class="stat-icon-badge" style="background: rgba(6, 182, 212, 0.15); color: #06b6d4;">
+              <i class="fa-solid fa-clock"></i>
+            </div>
+          </div>
+          <div class="stat-value" id="kpiAbsLatesCount" style="color: #06b6d4;">0</div>
+          <div style="font-size: 11.5px; color: var(--text-muted); margin-top: 4px;" data-i18n="abs_kpi_lates_sub">
+            دخول متأخر عن الحصة
+          </div>
+        </div>
+
+        <!-- 4. إجمالي غيابات الشهر -->
+        <div class="stat-card" style="border-inline-start: 4px solid #8b5cf6; cursor: pointer; transition: transform 0.2s, box-shadow 0.2s;" onclick="app.quickFilterAbsences('month_all')" title="عرض جميع غيابات هذا الشهر">
+          <div class="stat-top">
+            <span class="stat-title" data-i18n="abs_kpi_month">إجمالي غيابات الشهر</span>
+            <div class="stat-icon-badge" style="background: rgba(139, 92, 246, 0.15); color: #8b5cf6;">
+              <i class="fa-solid fa-chart-pie"></i>
+            </div>
+          </div>
+          <div class="stat-value" id="kpiAbsMonthCount" style="color: #8b5cf6;">0</div>
+          <div style="font-size: 11.5px; color: var(--text-muted); margin-top: 4px;" data-i18n="abs_kpi_month_sub">
+            مجموع الغيابات للشهر الحالي
+          </div>
+        </div>
+      </div>
+
+      <!-- Filters Toolbar -->
+      <div class="card" style="margin-bottom: 20px; padding: 18px;">
+        <div style="display: flex; gap: 14px; flex-wrap: wrap; align-items: flex-end;">
+          <!-- 1. Search -->
+          <div style="flex: 1; min-width: 220px;">
+            <label class="form-label" style="font-size: 12px; font-weight: 700; margin-bottom: 5px;">
+              <i class="fa-solid fa-magnifying-glass"></i> بحث عن تلميذ
+            </label>
+            <input type="text" id="searchAbsenceInput" class="form-control" placeholder="اسم التلميذ، اللقب أو رقم القيد..." onkeyup="app.filterDisciplineAbsences()">
+          </div>
+
+          <!-- 2. Date Filter -->
+          <div style="width: 170px;">
+            <label class="form-label" style="font-size: 12px; font-weight: 700; margin-bottom: 5px;">
+              <i class="fa-solid fa-calendar"></i> الفترة
+            </label>
+            <select id="filterAbsenceDatePreset" class="form-control" onchange="app.handleAbsenceDatePresetChange(this.value)">
+              <option value="today" selected>اليوم (Aujourd'hui)</option>
+              <option value="yesterday">أمس (Hier)</option>
+              <option value="week">هذا الأسبوع (Cette semaine)</option>
+              <option value="month">هذا الشهر (Ce mois)</option>
+              <option value="all">كل التواريخ (Historique)</option>
+              <option value="custom">تاريخ مخصص...</option>
+            </select>
+          </div>
+
+          <!-- 2.bis Date Picker (hidden unless custom or specific) -->
+          <div id="absenceCustomDatePicker" style="width: 150px; display: none;">
+            <label class="form-label" style="font-size: 12px; font-weight: 700; margin-bottom: 5px;">التاريخ المحدد</label>
+            <input type="date" id="filterAbsenceCustomDate" class="form-control" onchange="app.filterDisciplineAbsences()">
+          </div>
+
+          <!-- 3. Group Filter -->
+          <div style="width: 180px;">
+            <label class="form-label" style="font-size: 12px; font-weight: 700; margin-bottom: 5px;">
+              <i class="fa-solid fa-users"></i> القسم / الفوج
+            </label>
+            <select id="filterAbsenceGroup" class="form-control" onchange="app.filterDisciplineAbsences()">
+              <option value="all">جميع الأقسام</option>
+              <!-- Populated via JS -->
+            </select>
+          </div>
+
+          <!-- 4. Type Filter -->
+          <div style="width: 140px;">
+            <label class="form-label" style="font-size: 12px; font-weight: 700; margin-bottom: 5px;">
+              <i class="fa-solid fa-filter"></i> الحالة
+            </label>
+            <select id="filterAbsenceType" class="form-control" onchange="app.filterDisciplineAbsences()">
+              <option value="all">الكل</option>
+              <option value="absence">غياب فقط 🔴</option>
+              <option value="late">تأخر فقط 🟠</option>
+            </select>
+          </div>
+
+          <!-- 5. Justified Filter -->
+          <div style="width: 150px;">
+            <label class="form-label" style="font-size: 12px; font-weight: 700; margin-bottom: 5px;">
+              <i class="fa-solid fa-stamp"></i> التبرير
+            </label>
+            <select id="filterAbsenceJustified" class="form-control" onchange="app.filterDisciplineAbsences()">
+              <option value="all">الكل</option>
+              <option value="0">غير مبرر فقط ⚠️</option>
+              <option value="1">مبرر فقط ✓</option>
+            </select>
+          </div>
+
+          <!-- Reset Filter Button -->
+          <div>
+            <button class="btn-secondary" onclick="app.resetAbsenceFilters()" title="إعادة تعيين الفلاتر">
+              <i class="fa-solid fa-rotate-left"></i>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Absences Data Table Card -->
+      <div class="card">
+        <div class="table-responsive">
+          <table class="edumind-table" id="absencesTable">
+            <thead>
+              <tr>
+                <th style="width: 130px;">التاريخ والحصة</th>
+                <th>التلميذ</th>
+                <th>القسم</th>
+                <th>المادة / الأستاذ</th>
+                <th style="text-align: center;">النوع</th>
+                <th style="text-align: center;">التبرير</th>
+                <th>ولي الأمر والهاتف</th>
+                <th style="text-align: center; width: 140px;">إجراءات</th>
+              </tr>
+            </thead>
+            <tbody id="absencesTableBody">
+              <!-- Populated via JS -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
     <!-- ==================== CANTEEN / DEMI-PENSION VIEW (المطعم المدرسي) ==================== -->
     <section class="view-container" id="view-cantine">
       <!-- Canteen Header -->
@@ -2794,6 +2995,11 @@
             <i class="fa-solid fa-database"></i>
             <span data-i18n="tab_donnees">Données</span>
           </button>
+          <button type="button" class="settings-nav-btn" data-settings-tab="cloud_mobile"
+            onclick="app.switchSettingsTab('cloud_mobile'); app.loadCloudMobileSettings();">
+            <i class="fa-solid fa-cloud-arrow-up" style="color: #06b6d4;"></i>
+            <span data-i18n="tab_cloud_mobile">تطبيق الأساتذة (Google Sheets)</span>
+          </button>
 
           <div class="settings-nav-divider"></div>
 
@@ -3422,6 +3628,133 @@
             </div>
           </div>
 
+          <!-- 9. TAB: CLOUD & APPLICATION MOBILE DES ENSEIGNANTS -->
+          <div class="settings-tab-panel" id="settingsTab-cloud_mobile">
+            <h3 class="settings-panel-title" style="color: #06b6d4; display: flex; align-items: center; gap: 10px;">
+              <i class="fa-solid fa-cloud-arrow-up"></i>
+              <span>الربط السحابي مع Google Sheets وتطبيق الأساتذة (EDUMIND Presence)</span>
+            </h3>
+
+            <!-- Switcher Card (Enable / Disable) -->
+            <div class="cloud-switch-wrapper">
+              <div style="display: flex; align-items: center; gap: 14px;">
+                <div style="width: 44px; height: 44px; border-radius: 12px; background: rgba(6, 182, 212, 0.12); color: #06b6d4; display: flex; align-items: center; justify-content: center; font-size: 20px;">
+                  <i class="fa-solid fa-tower-broadcast"></i>
+                </div>
+                <div>
+                  <strong style="font-size: 15px; color: var(--text-heading); display: block; margin-bottom: 2px;">
+                    تفعيل المزامنة السحابية وتطبيق الأساتذة (Google Sheets)
+                  </strong>
+                  <span style="font-size: 12.5px; color: var(--text-muted);">
+                    عند التفعيل، يتم مزامنة بيانات الأفواج والأساتذة تلقائياً، وتوليد رمز QR لربط تطبيق الهاتف.
+                  </span>
+                </div>
+              </div>
+              <label class="toggle-switch-ios" title="تفعيل / تعطيل الربط السحابي">
+                <input type="checkbox" id="switchCloudSync" onchange="app.toggleCloudSyncEnabled(this.checked)">
+                <span class="toggle-switch-slider"></span>
+              </label>
+            </div>
+
+            <!-- Main Config Body (Visible when Switch is ON) -->
+            <div id="cloudSyncSettingsBody" style="display: none;">
+              <!-- Google Sheet URL Configuration Card -->
+              <div class="settings-card" style="margin-bottom: 20px;">
+                <h4 style="font-size: 15px; font-weight: 700; color: var(--text-heading); margin-bottom: 14px; display: flex; align-items: center; gap: 8px;">
+                  <i class="fa-brands fa-google-drive" style="color: #10b981;"></i>
+                  <span>إعداد رابط السحابة (Google Apps Script Web App URL)</span>
+                </h4>
+
+                <p style="font-size: 13px; color: var(--text-muted); line-height: 1.6; margin-bottom: 16px;">
+                  أدخل هنا رابط تطبيق الويب (Web App URL) المنتهي بـ <code>/exec</code> المنشور من جدول Google Sheets الخاص بالمؤسسة.
+                </p>
+
+                <div class="form-group" style="margin-bottom: 16px;">
+                  <label class="form-label" style="font-weight: 700;">رابط السكربت السحابي (Web App URL) :</label>
+                  <div style="position: relative;">
+                    <input type="url" id="settingCloudScriptUrl" class="form-control" style="font-family: monospace; font-size: 13px; padding-left: 36px; direction: ltr; text-align: left;"
+                      placeholder="https://script.google.com/macros/s/AKfy.../exec" required>
+                    <i class="fa-solid fa-link" style="position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: var(--text-muted);"></i>
+                  </div>
+                </div>
+
+                <!-- Test Alert Banner -->
+                <div id="cloudConnectionStatusAlert" class="alert" style="display: none; margin-bottom: 16px; align-items: center; gap: 12px; padding: 12px 16px; border-radius: 10px;"></div>
+
+                <!-- Action Buttons -->
+                <div style="display: flex; gap: 10px; flex-wrap: wrap; justify-content: flex-end;">
+                  <button type="button" class="btn-secondary" id="btnTestCloudConnection" onclick="app.testCloudConnection()"
+                    style="display: inline-flex; align-items: center; gap: 8px; font-weight: 600; padding: 10px 18px; border-radius: 8px;">
+                    <i class="fa-solid fa-plug"></i>
+                    <span>اختبار الاتصال بالرابط</span>
+                  </button>
+                  <button type="button" class="btn-primary" id="btnSaveCloudScriptUrl" onclick="app.saveCloudSettings()"
+                    style="display: inline-flex; align-items: center; gap: 8px; font-weight: 600; padding: 10px 20px; border-radius: 8px;">
+                    <i class="fa-solid fa-floppy-disk"></i>
+                    <span>حفظ الرابط</span>
+                  </button>
+                  <button type="button" class="btn-primary" id="btnManualSyncNow" onclick="app.syncAllWithCloud(true)"
+                    style="background: linear-gradient(135deg, #0ea5e9, #2563eb); display: inline-flex; align-items: center; gap: 8px; font-weight: 700; padding: 10px 20px; border-radius: 8px;">
+                    <i class="fa-solid fa-arrows-rotate"></i>
+                    <span>مزامنة فورية شاملة</span>
+                  </button>
+                </div>
+              </div>
+
+              <!-- QR Code Card for Mobile App Linking -->
+              <div class="settings-card" style="margin-bottom: 20px;">
+                <div class="cloud-qr-card">
+                  <!-- White box for the QR Code -->
+                  <div class="cloud-qr-box">
+                    <div id="schoolQrCodeContainer"></div>
+                    <div style="margin-top: 10px; font-size: 11.5px; font-weight: 700; color: #0f172a; text-align: center;" id="qrSchoolNameDisplay">
+                      EDUMIND
+                    </div>
+                  </div>
+
+                  <!-- QR Info & Instructions -->
+                  <div>
+                    <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 8px;">
+                      <span class="badge" style="background: rgba(16, 185, 129, 0.15); color: #10b981; font-weight: 700; padding: 4px 10px; border-radius: 12px; font-size: 11.5px;">
+                        <i class="fa-solid fa-circle-check"></i> جاهز للمسح
+                      </span>
+                      <span style="font-size: 12px; color: var(--text-muted);">تطبيق الهاتف المحمول</span>
+                    </div>
+
+                    <h4 style="font-size: 17px; font-weight: 800; color: var(--text-heading); margin-bottom: 8px;">
+                      📱 ربط تطبيق هاتف الأستاذ (EDUMIND Presence)
+                    </h4>
+
+                    <p style="font-size: 13px; color: var(--text-muted); line-height: 1.6; margin-bottom: 16px;">
+                      قبل تسجيل الدخول في تطبيق الهاتف، يقوم الأستاذ بمسح هذا الرمز بواسطة كاميرا التطبيق ليتم ربط هاتفه تلقائياً بمؤسستكم ومزامنة جداول التوقيت والأفواج والغيابات.
+                    </p>
+
+                    <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+                      <button type="button" class="btn-secondary" onclick="app.copyCloudUrl()" style="font-size: 12px; padding: 8px 14px; border-radius: 8px;">
+                        <i class="fa-solid fa-copy"></i> نسخ الرابط
+                      </button>
+                      <button type="button" class="btn-secondary" onclick="app.printSchoolQrCard()" style="font-size: 12px; padding: 8px 14px; border-radius: 8px;">
+                        <i class="fa-solid fa-print"></i> طباعة بطاقة الرمز للأساتذة
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Quick Setup Guide Card -->
+              <div class="settings-card" style="border: 1px dashed var(--border-color); background: rgba(255, 255, 255, 0.02);">
+                <h4 style="font-size: 14px; font-weight: 700; color: var(--text-heading); margin-bottom: 12px; display: flex; align-items: center; gap: 8px;">
+                  <i class="fa-solid fa-circle-question" style="color: #38bdf8;"></i>
+                  <span>كيفية إعداد جدول Google Sheet الخاص بمؤسستك (في 3 خطوات):</span>
+                </h4>
+                <ol style="font-size: 12.5px; color: var(--text-muted); line-height: 1.8; margin-right: 20px; padding: 0;">
+                  <li>أنشئ جدول Google Sheets جديد على حساب Google الخاص بالإدارة.</li>
+                  <li>افتح <strong>Extensions (الإضافات) ➔ Apps Script</strong>، والصق كود السكربت <code>google_apps_script.js</code> المرفق مع البرنامج.</li>
+                  <li>اضغط <strong>Deploy (نشر) ➔ New deployment (نشر جديد) ➔ Web app</strong>، واضبط خيار <em>Who has access</em> على <strong>Anyone (أي شخص)</strong>، ثم انسخ رابط الـ Web App وضعه في الحقل أعلاه.</li>
+                </ol>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     </section>
@@ -3446,78 +3779,81 @@
         </div>
       </div>
 
-      <!-- Top 3 Stat Cards Row -->
-      <div class="schoolaris-stats-grid">
-        <!-- 1. Groupes Actifs -->
-        <div class="schoolaris-stat-card">
-          <div class="schoolaris-stat-label">الأقسام التربوية النشطة</div>
-          <div class="schoolaris-stat-val-groupes" id="groupesKpiActive">0</div>
-        </div>
+      <!-- الأقسام التربوية -->
+        <!-- Top 3 Stat Cards Row -->
+        <div class="schoolaris-stats-grid">
+          <!-- 1. Groupes Actifs -->
+          <div class="schoolaris-stat-card">
+            <div class="schoolaris-stat-label">الأقسام التربوية النشطة</div>
+            <div class="schoolaris-stat-val-groupes" id="groupesKpiActive">0</div>
+          </div>
 
-        <!-- 2. Élèves Inscrits -->
-        <div class="schoolaris-stat-card">
-          <div class="schoolaris-stat-label">إجمالي التلاميذ في الأقسام</div>
-          <div>
-            <div class="schoolaris-stat-val-eleves" id="groupesKpiStudents">0</div>
+          <!-- 2. Élèves Inscrits -->
+          <div class="schoolaris-stat-card">
+            <div class="schoolaris-stat-label">إجمالي التلاميذ في الأقسام</div>
+            <div>
+              <div class="schoolaris-stat-val-eleves" id="groupesKpiStudents">0</div>
+            </div>
+          </div>
+
+          <!-- 3. Moyenne par classe -->
+          <div class="schoolaris-stat-card">
+            <div class="schoolaris-stat-label">متوسط التلاميذ لكل قسم</div>
+            <div>
+              <div class="schoolaris-stat-val-taux" id="groupesKpiAverage" style="color: #3b82f6;">0</div>
+            </div>
           </div>
         </div>
 
-        <!-- 3. Moyenne par classe -->
-        <div class="schoolaris-stat-card">
-          <div class="schoolaris-stat-label">متوسط التلاميذ لكل قسم</div>
-          <div>
-            <div class="schoolaris-stat-val-taux" id="groupesKpiAverage" style="color: #3b82f6;">0</div>
+        <!-- Main Card: Liste des groupes -->
+        <div class="schoolaris-card">
+          <!-- Card Header: Title, Count, Excel Export -->
+          <div class="schoolaris-card-header">
+            <span class="schoolaris-card-title" data-i18n="groupes_list_title">قائمة الأقسام الدراسية (Divisions Pédagogiques)</span>
+            <div class="schoolaris-card-actions">
+              <span class="schoolaris-counter-badge" id="groupesCounterDisplay">0 قسم</span>
+              <button class="btn-excel" onclick="app.exportGroupesToExcel()" title="Exporter en Excel">
+                <i class="fa-solid fa-download"></i>
+                <span>Excel</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- Filter Toolbar -->
+          <div class="schoolaris-filter-bar">
+            <div class="schoolaris-search-box">
+              <i class="fa-solid fa-magnifying-glass"></i>
+              <input type="text" id="groupesFilterSearch" class="schoolaris-search-input"
+                placeholder="بحث باسم القسم، المستوى، الشعبة..." oninput="app.filterGroupes()">
+            </div>
+            <select id="groupesFilterLevel" class="schoolaris-select" onchange="app.filterGroupes()">
+              <option value="">كل المستويات الدراسية</option>
+            </select>
+            <select id="groupesFilterSpecialite" class="schoolaris-select" onchange="app.filterGroupes()">
+              <option value="">كل الشعب والتخصصات</option>
+            </select>
+          </div>
+
+          <!-- Table -->
+          <div class="table-responsive">
+            <table class="schoolaris-table">
+              <thead>
+                <tr>
+                  <th data-i18n="th_groupe_name">DIVISION / CLASSE / القسم</th>
+                  <th data-i18n="th_niveau">NIVEAU / المستوى</th>
+                  <th data-i18n="th_filiere">SPÉCIALITÉ / التخصص</th>
+                  <th data-i18n="th_effectif_eleves">ÉLÈVES / عدد التلاميذ</th>
+                  <th style="text-align: right; width: 220px;" data-i18n="th_actions">الإجراءات</th>
+                </tr>
+              </thead>
+              <tbody id="schoolarisGroupesTableBody">
+                <!-- Injected via JS -->
+              </tbody>
+            </table>
           </div>
         </div>
-      </div>
 
-      <!-- Main Card: Liste des groupes -->
-      <div class="schoolaris-card">
-        <!-- Card Header: Title, Count, Excel Export -->
-        <div class="schoolaris-card-header">
-          <span class="schoolaris-card-title" data-i18n="groupes_list_title">قائمة الأقسام الدراسية (Divisions Pédagogiques)</span>
-          <div class="schoolaris-card-actions">
-            <span class="schoolaris-counter-badge" id="groupesCounterDisplay">0 قسم</span>
-            <button class="btn-excel" onclick="app.exportGroupesToExcel()" title="Exporter en Excel">
-              <i class="fa-solid fa-download"></i>
-              <span>Excel</span>
-            </button>
-          </div>
-        </div>
 
-        <!-- Filter Toolbar -->
-        <div class="schoolaris-filter-bar">
-          <div class="schoolaris-search-box">
-            <i class="fa-solid fa-magnifying-glass"></i>
-            <input type="text" id="groupesFilterSearch" class="schoolaris-search-input"
-              placeholder="بحث باسم القسم، المستوى، الشعبة..." oninput="app.filterGroupes()">
-          </div>
-          <select id="groupesFilterLevel" class="schoolaris-select" onchange="app.filterGroupes()">
-            <option value="">كل المستويات الدراسية</option>
-          </select>
-          <select id="groupesFilterSpecialite" class="schoolaris-select" onchange="app.filterGroupes()">
-            <option value="">كل الشعب والتخصصات</option>
-          </select>
-        </div>
-
-        <!-- Table -->
-        <div class="table-responsive">
-          <table class="schoolaris-table">
-            <thead>
-              <tr>
-                <th data-i18n="th_groupe_name">DIVISION / CLASSE / القسم</th>
-                <th data-i18n="th_niveau">NIVEAU / المستوى</th>
-                <th data-i18n="th_filiere">SPÉCIALITÉ / التخصص</th>
-                <th data-i18n="th_effectif_eleves">ÉLÈVES / عدد التلاميذ</th>
-                <th style="text-align: right; width: 220px;" data-i18n="th_actions">الإجراءات</th>
-              </tr>
-            </thead>
-            <tbody id="schoolarisGroupesTableBody">
-              <!-- Injected via JS -->
-            </tbody>
-          </table>
-        </div>
-      </div>
     </section>
 
   </main>
@@ -5230,6 +5566,278 @@
     </div>
   </div>
 
+  <!-- Modal: Compte Application Mobile Enseignant -->
+  <div class="modal-overlay" id="modalTeacherMobile">
+    <div class="modal-content" style="max-width: 480px; width: 95%; border-radius: 18px; padding: 24px;">
+      <div class="modal-header" style="margin-bottom: 18px; padding-bottom: 12px; border-bottom: 1px solid var(--border-color); display: flex; align-items: center; justify-content: space-between;">
+        <div style="display: flex; align-items: center; gap: 12px;">
+          <div style="width: 40px; height: 40px; border-radius: 12px; background: rgba(6, 182, 212, 0.15); color: #06b6d4; display: flex; align-items: center; justify-content: center; font-size: 18px;">
+            <i class="fa-solid fa-mobile-screen"></i>
+          </div>
+          <div>
+            <h3 class="modal-title" style="margin: 0; font-size: 17px; font-weight: 800; color: var(--text-heading);">حساب تطبيق الحضور (الأستاذ)</h3>
+            <p style="margin: 2px 0 0; font-size: 11.5px; color: var(--text-muted);">إعداد رقم الهاتف ورمز PIN للدخول السريع من هاتف الأستاذ</p>
+          </div>
+        </div>
+        <button type="button" class="btn-icon" onclick="app.closeModals()"><i class="fa-solid fa-xmark"></i></button>
+      </div>
+      <form id="teacherMobileForm" onsubmit="event.preventDefault(); app.saveTeacherMobileCredentials();">
+        <input type="hidden" id="mobileTeacherId">
+        <div style="background: rgba(37, 99, 235, 0.08); border: 1px solid rgba(37, 99, 235, 0.2); border-radius: 12px; padding: 12px; margin-bottom: 16px;">
+          <div style="font-weight: 700; font-size: 15px; color: #fff;" id="mobileTeacherName">-</div>
+          <div style="font-size: 12px; color: var(--text-muted); margin-top: 3px;" id="mobileTeacherSub">-</div>
+        </div>
+        <div class="form-group" style="margin-bottom: 14px;">
+          <label class="form-label" style="font-size: 13px; font-weight: 600; margin-bottom: 6px;">
+            <i class="fa-solid fa-phone" style="color: #2563eb;"></i> رقم الهاتف (اسم المستخدم في التطبيق)
+          </label>
+          <input type="tel" id="mobileTeacherPhone" class="form-control" placeholder="05 / 06 / 07 XX XX XX XX" dir="ltr" style="font-family: monospace; font-size: 14px;" required>
+        </div>
+        <div class="form-group" style="margin-bottom: 16px;">
+          <label class="form-label" style="font-size: 13px; font-weight: 600; margin-bottom: 6px;">
+            <i class="fa-solid fa-key" style="color: #f59e0b;"></i> كلمة المرور أو رمز PIN السريع (4 أرقام)
+          </label>
+          <div style="display: flex; gap: 8px;">
+            <input type="text" id="mobileTeacherPin" class="form-control" placeholder="Ex: 1234" dir="ltr" style="font-family: monospace; font-size: 14px; letter-spacing: 2px;" required>
+            <button type="button" class="btn-secondary" onclick="app.generateRandomPin()" title="توليد PIN تلقائي">
+              <i class="fa-solid fa-wand-magic-sparkles"></i>
+            </button>
+          </div>
+          <small style="color: var(--text-muted); font-size: 11.5px; display: block; margin-top: 5px;">
+            يدخل الأستاذ في هاتفه برقم هاتفه وهذا الرمز PIN لتسجيل حضور تلاميذه لحظياً.
+          </small>
+        </div>
+        <div class="modal-footer" style="display: flex; justify-content: flex-end; gap: 10px; padding-top: 14px; border-top: 1px solid var(--border-color);">
+          <button type="button" class="btn-secondary" onclick="app.closeModals()">إلغاء</button>
+          <button type="submit" class="btn-primary">
+            <i class="fa-solid fa-cloud-arrow-up"></i> حفظ ومزامنة السحابة
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Modal: تبرير الغياب / التأخر (Justification d'absence) -->
+  <div class="modal-overlay" id="modalJustifyAbsence">
+    <div class="modal-content" style="max-width: 500px; width: 95%; border-radius: 18px; padding: 24px;">
+      <div class="modal-header" style="margin-bottom: 16px; padding-bottom: 12px; border-bottom: 1px solid var(--border-color); display: flex; align-items: center; justify-content: space-between;">
+        <div style="display: flex; align-items: center; gap: 12px;">
+          <div style="width: 40px; height: 40px; border-radius: 12px; background: rgba(16, 185, 129, 0.15); color: #10b981; display: flex; align-items: center; justify-content: center; font-size: 18px;">
+            <i class="fa-solid fa-stamp"></i>
+          </div>
+          <div>
+            <h3 class="modal-title" style="margin: 0; font-size: 17px; font-weight: 800; color: var(--text-heading);">تبرير الغياب / التأخر</h3>
+            <p style="margin: 2px 0 0; font-size: 11.5px; color: var(--text-muted);">تسجيل سبب التبرير وإصدار تصريح بالدخول للحصة</p>
+          </div>
+        </div>
+        <button type="button" class="btn-icon" onclick="app.closeModals()"><i class="fa-solid fa-xmark"></i></button>
+      </div>
+
+      <form id="formJustifyAbsence" onsubmit="event.preventDefault(); app.saveJustifyAbsence();">
+        <input type="hidden" id="justifyAbsenceId">
+
+        <!-- Student summary badge -->
+        <div style="background: rgba(16, 185, 129, 0.08); border: 1px solid rgba(16, 185, 129, 0.2); border-radius: 12px; padding: 12px; margin-bottom: 16px;">
+          <div style="font-weight: 700; font-size: 15px; color: #fff;" id="justifyStudentName">-</div>
+          <div style="font-size: 12px; color: var(--text-muted); margin-top: 3px;" id="justifyAbsenceDetails">-</div>
+        </div>
+
+        <!-- Reason category -->
+        <div class="form-group" style="margin-bottom: 14px;">
+          <label class="form-label" style="font-size: 13px; font-weight: 600; margin-bottom: 6px;">
+            <i class="fa-solid fa-clipboard-check" style="color: #10b981;"></i> سبب التبرير (Motif)
+          </label>
+          <select id="justifyReasonSelect" class="form-control" style="font-size: 13.5px;" required onchange="app.handleJustifyReasonChange(this.value)">
+            <option value="شهادة طبية (Certificat Médical)">شهادة طبية (Certificat Médical)</option>
+            <option value="عذر عائلي قاهر (Motif familial impérieux)">عذر عائلي قاهر (Motif familial impérieux)</option>
+            <option value="استدعاء رسمي / مسابقة (Convocation officielle)">استدعاء رسمي / مسابقة (Convocation officielle)</option>
+            <option value="إشعار مسبق من الولي (Autorisation préalable)">إشعار مسبق من الولي (Autorisation préalable)</option>
+            <option value="أخرى (Autre motif)">أخرى (Autre motif personnalisé)...</option>
+          </select>
+        </div>
+
+        <div class="form-group" id="customReasonWrapper" style="margin-bottom: 14px; display: none;">
+          <label class="form-label" style="font-size: 13px; font-weight: 600; margin-bottom: 6px;">تحديد السبب بالتفصيل</label>
+          <input type="text" id="justifyCustomReasonInput" class="form-control" placeholder="اكتب سبب الغياب هنا...">
+        </div>
+
+        <!-- Notes -->
+        <div class="form-group" style="margin-bottom: 14px;">
+          <label class="form-label" style="font-size: 13px; font-weight: 600; margin-bottom: 6px;">
+            <i class="fa-solid fa-comment-dots" style="color: #38bdf8;"></i> ملاحظات إضافية (رقم الشهادة / الطبيب / الملاحظات)
+          </label>
+          <textarea id="justifyNotesInput" class="form-control" rows="2" placeholder="ملاحظات الإدارة أو مستشار التربية..."></textarea>
+        </div>
+
+        <!-- Checkbox: Issue entry billet -->
+        <div style="background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); border-radius: 12px; padding: 12px; margin-bottom: 18px;">
+          <label style="display: flex; align-items: center; gap: 10px; cursor: pointer; margin-bottom: 0;">
+            <input type="checkbox" id="justifyIssueBilletCheckbox" checked style="width: 18px; height: 18px; accent-color: #10b981;">
+            <div>
+              <span style="font-size: 13px; font-weight: 700; color: #fff;">إصدار تصريح بالدخول للصف (Billet d'Entrée)</span>
+              <div style="font-size: 11.5px; color: var(--text-muted); margin-top: 2px;">يسمح بطباعة ورقة دخول التلميذ للحصة فورا بعد التبرير</div>
+            </div>
+          </label>
+        </div>
+
+        <div class="modal-footer" style="display: flex; justify-content: flex-end; gap: 10px; padding-top: 14px; border-top: 1px solid var(--border-color);">
+          <button type="button" class="btn-secondary" onclick="app.closeModals()">إلغاء</button>
+          <button type="submit" class="btn-primary" style="background: linear-gradient(135deg, #10b981, #059669);">
+            <i class="fa-solid fa-check"></i> حفظ التبرير
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Modal: تسجيل غياب / تأخر يدوي (Ajout Manuel d'Absence) -->
+  <div class="modal-overlay" id="modalAddManualAbsence">
+    <div class="modal-content" style="max-width: 520px; width: 95%; border-radius: 18px; padding: 24px;">
+      <div class="modal-header" style="margin-bottom: 16px; padding-bottom: 12px; border-bottom: 1px solid var(--border-color); display: flex; align-items: center; justify-content: space-between;">
+        <div style="display: flex; align-items: center; gap: 12px;">
+          <div style="width: 40px; height: 40px; border-radius: 12px; background: rgba(239, 68, 68, 0.15); color: #ef4444; display: flex; align-items: center; justify-content: center; font-size: 18px;">
+            <i class="fa-solid fa-user-clock"></i>
+          </div>
+          <div>
+            <h3 class="modal-title" style="margin: 0; font-size: 17px; font-weight: 800; color: var(--text-heading);">تسجيل غياب أو تأخر يدوي</h3>
+            <p style="margin: 2px 0 0; font-size: 11.5px; color: var(--text-muted);">إدخال غياب تلميذ مباشرة من الإدارة أو الاستشارة</p>
+          </div>
+        </div>
+        <button type="button" class="btn-icon" onclick="app.closeModals()"><i class="fa-solid fa-xmark"></i></button>
+      </div>
+
+      <form id="formAddManualAbsence" onsubmit="event.preventDefault(); app.saveManualAbsence();">
+        <!-- 1. Select Group first to filter students -->
+        <div class="form-group" style="margin-bottom: 14px;">
+          <label class="form-label" style="font-size: 13px; font-weight: 600; margin-bottom: 6px;">
+            <i class="fa-solid fa-users" style="color: #3b82f6;"></i> القسم / الفوج التربوي
+          </label>
+          <select id="manualAbsenceGroupSelect" class="form-control" required onchange="app.handleManualAbsenceGroupChange(this.value)">
+            <option value="">-- اختر القسم --</option>
+            <!-- Populated via JS -->
+          </select>
+        </div>
+
+        <!-- 2. Select Student -->
+        <div class="form-group" style="margin-bottom: 14px;">
+          <label class="form-label" style="font-size: 13px; font-weight: 600; margin-bottom: 6px;">
+            <i class="fa-solid fa-user-graduate" style="color: #10b981;"></i> التلميذ المعني
+          </label>
+          <select id="manualAbsenceStudentSelect" class="form-control" required>
+            <option value="">-- اختر التلميذ --</option>
+          </select>
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 14px;">
+          <!-- Date -->
+          <div class="form-group" style="margin-bottom: 0;">
+            <label class="form-label" style="font-size: 13px; font-weight: 600; margin-bottom: 6px;">
+              <i class="fa-solid fa-calendar"></i> التاريخ
+            </label>
+            <input type="date" id="manualAbsenceDate" class="form-control" required>
+          </div>
+
+          <!-- Type -->
+          <div class="form-group" style="margin-bottom: 0;">
+            <label class="form-label" style="font-size: 13px; font-weight: 600; margin-bottom: 6px;">
+              <i class="fa-solid fa-circle-exclamation"></i> الحالة
+            </label>
+            <select id="manualAbsenceType" class="form-control">
+              <option value="absence">غياب كامل (Absent)</option>
+              <option value="late">تأخر عن الحصة (Retard)</option>
+            </select>
+          </div>
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 14px;">
+          <!-- Time slot -->
+          <div class="form-group" style="margin-bottom: 0;">
+            <label class="form-label" style="font-size: 13px; font-weight: 600; margin-bottom: 6px;">
+              <i class="fa-solid fa-clock"></i> توقيت الحصة
+            </label>
+            <input type="text" id="manualAbsenceTimeSlot" class="form-control" placeholder="08:00 - 09:00" value="08:00 - 09:00">
+          </div>
+
+          <!-- Subject -->
+          <div class="form-group" style="margin-bottom: 0;">
+            <label class="form-label" style="font-size: 13px; font-weight: 600; margin-bottom: 6px;">
+              <i class="fa-solid fa-book"></i> المادة التعليمية
+            </label>
+            <input type="text" id="manualAbsenceSubject" class="form-control" placeholder="مثال: الرياضيات">
+          </div>
+        </div>
+
+        <!-- Notes -->
+        <div class="form-group" style="margin-bottom: 18px;">
+          <label class="form-label" style="font-size: 13px; font-weight: 600; margin-bottom: 6px;">ملاحظات</label>
+          <input type="text" id="manualAbsenceNotes" class="form-control" placeholder="ملاحظات إضافية...">
+        </div>
+
+        <div class="modal-footer" style="display: flex; justify-content: flex-end; gap: 10px; padding-top: 14px; border-top: 1px solid var(--border-color);">
+          <button type="button" class="btn-secondary" onclick="app.closeModals()">إلغاء</button>
+          <button type="submit" class="btn-primary">
+            <i class="fa-solid fa-save"></i> تسجيل الغياب
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Modal: تصريح بالدخول للحصة (Billet d'Entrée Imprimable) -->
+  <div class="modal-overlay" id="modalBilletEntree">
+    <div class="modal-content" style="max-width: 440px; width: 95%; border-radius: 18px; padding: 22px; background: #fff; color: #1e293b;">
+      <div class="modal-header" style="margin-bottom: 12px; padding-bottom: 8px; border-bottom: 1px dashed #cbd5e1; display: flex; align-items: center; justify-content: space-between;">
+        <h4 style="margin: 0; font-size: 16px; font-weight: 800; color: #0f172a;">تصريح بالدخول للحصة (Billet d'Entrée)</h4>
+        <button type="button" class="btn-icon" onclick="app.closeModals()" style="color: #64748b;"><i class="fa-solid fa-xmark"></i></button>
+      </div>
+
+      <!-- Printable Area -->
+      <div id="billetPrintArea" style="padding: 14px; border: 2px dashed #94a3b8; border-radius: 12px; background: #fafafa; font-family: 'Cairo', sans-serif;">
+        <!-- Header -->
+        <div style="text-align: center; border-bottom: 1px solid #e2e8f0; padding-bottom: 8px; margin-bottom: 10px;">
+          <div style="font-size: 16px; font-weight: 800; color: #1e3a8a;" id="billetSchoolName">EDUMIND ACADEMY</div>
+          <div style="font-size: 11px; color: #64748b;">مصلحة الحياة المدرسية والاستشارة التربوية</div>
+          <div style="display: inline-block; background: #0f172a; color: #fff; font-weight: 800; font-size: 12px; padding: 3px 12px; border-radius: 20px; margin-top: 6px;">
+            بطاقة دخول إلى القسم / Billet d'Entrée
+          </div>
+        </div>
+
+        <!-- Details -->
+        <div style="font-size: 12.5px; line-height: 1.8; color: #334155;">
+          <div><strong>التلميذ(ة) :</strong> <span id="billetStudentName" style="font-size: 14px; font-weight: 700; color: #0f172a;">-</span></div>
+          <div><strong>رقم القيد :</strong> <span id="billetStudentMatricule" style="font-family: monospace; font-weight: 700;">-</span></div>
+          <div><strong>القسم / الفوج :</strong> <span id="billetGroupName" style="font-weight: 700;">-</span></div>
+          <div><strong>تاريخ الغياب :</strong> <span id="billetAbsenceDate">-</span></div>
+          <div><strong>الحصة المعنية :</strong> <span id="billetTimeSlot">-</span></div>
+          <div><strong>سبب التبرير :</strong> <span id="billetReason" style="color: #047857; font-weight: 700;">-</span></div>
+        </div>
+
+        <div style="margin-top: 14px; padding: 8px; background: #ecfdf5; border: 1px solid #a7f3d0; border-radius: 8px; font-size: 11.5px; color: #065f46; text-align: center;">
+          ✓ يُسمح للتلميذ(ة) بالالتحاق بمقاعد الدراسة واستئناف الحصص.
+        </div>
+
+        <!-- Signatures & Date -->
+        <div style="display: flex; justify-content: space-between; align-items: flex-end; margin-top: 18px; padding-top: 10px; border-top: 1px solid #e2e8f0; font-size: 11px; color: #64748b;">
+          <div>
+            <div>حرر بتاريخ : <span id="billetIssuedDate">-</span></div>
+            <div style="font-family: monospace; margin-top: 2px;" id="billetNumberBadge">BIL-2026-0001</div>
+          </div>
+          <div style="text-align: center;">
+            <div>تأشيرة مستشار التربية / الإدارة</div>
+            <div style="width: 80px; height: 35px; border-bottom: 1px dotted #94a3b8; margin: 0 auto;"></div>
+          </div>
+        </div>
+      </div>
+
+      <div style="display: flex; justify-content: flex-end; gap: 10px; margin-top: 16px;">
+        <button type="button" class="btn-secondary" onclick="app.closeModals()" style="color: #475569; background: #f1f5f9; border-color: #cbd5e1;">إغلاق</button>
+        <button type="button" class="btn-primary" onclick="app.printBilletContent()" style="background: #0f172a;">
+          <i class="fa-solid fa-print"></i> طباعة التصريح
+        </button>
+      </div>
+    </div>
+  </div>
+
   <!-- Modal: Ajouter / Modifier un Employé Normal (Personnel) -->
   <div class="modal-overlay" id="modalEmployee">
     <div class="modal-content" style="max-width: 540px;">
@@ -5395,6 +6003,13 @@
         <div class="form-group">
           <label class="form-label" data-i18n="modal_group_year_lbl">السنة الدراسية (Année Scolaire)</label>
           <input type="text" id="groupSchoolYear" class="form-control" value="2026-2027">
+        </div>
+
+        <div class="form-group">
+          <label class="form-label"><i class="fa-solid fa-door-open" style="color: #10b981;"></i> القاعة المخصصة للقسم (Salle de classe)</label>
+          <select id="groupRoomId" class="form-control">
+            <option value="">-- بدون قاعة محددة (تعيين لاحقاً) --</option>
+          </select>
         </div>
 
         <div style="display: flex; justify-content: flex-end; gap: 12px; margin-top: 24px;">
@@ -5767,58 +6382,221 @@
     </div>
   </div>
 
-  <!-- Modal: Emploi du Temps de la Salle (Room Weekly Timetable) -->
+  <!-- Modal: Emploi du Temps de la Classe (Class Weekly Timetable) -->
   <div class="modal-overlay" id="modalRoomTimetable">
-    <div class="modal-content" style="max-width: 950px; width: 95%;">
-      <div class="modal-header">
-        <div style="display: flex; align-items: center; gap: 12px;">
-          <div class="room-icon-box" style="width: 38px; height: 38px; font-size: 18px;">
-            <i class="fa-solid fa-door-open"></i>
+    <div class="modal-content" style="max-width: 1420px; width: 98%; max-height: 94vh; display: flex; flex-direction: column;">
+      <div class="modal-header" style="border-bottom: 1px solid var(--border-color); padding-bottom: 14px;">
+        <div style="display: flex; align-items: center; gap: 12px; flex-wrap: wrap;">
+          <div class="room-icon-box" style="width: 44px; height: 44px; border-radius: 12px; background: rgba(139, 92, 246, 0.15); color: #8b5cf6; display: flex; align-items: center; justify-content: center; font-size: 21px;">
+            <i class="fa-solid fa-chalkboard-user"></i>
           </div>
           <div>
-            <h3 class="modal-title" id="roomTimetableTitle" data-i18n="modal_timetable_title">Emploi du Temps — Salle</h3>
-            <span style="font-size: 12.5px; color: var(--text-muted);" id="roomTimetableSubtitle">Planning hebdomadaire
-              d'occupation de la salle</span>
+            <h3 class="modal-title" id="roomTimetableTitle" style="margin-bottom: 2px;">جدول توقيت واستعمال القسم</h3>
+            <span style="font-size: 12px; color: var(--text-muted);" id="roomTimetableSubtitle">التوقيت الأسبوعي، الحصص المبرمجة، المواد، والأساتذة</span>
+          </div>
+          <div style="display: flex; align-items: center; gap: 8px; margin-inline-start: 16px;">
+            <label for="roomTimetableSelectGroup" style="font-size: 13px; font-weight: 700; color: var(--text-muted); white-space: nowrap;">
+              <i class="fa-solid fa-arrow-right-arrow-left"></i> تغيير القسم:
+            </label>
+            <select id="roomTimetableSelectGroup" class="schoolaris-select" style="min-width: 220px; padding: 6px 12px; font-weight: 700; height: 36px;" onchange="app.openClassTimetable(Number(this.value))">
+              <!-- Dynamically populated with all classes -->
+            </select>
           </div>
         </div>
-        <div style="display: flex; align-items: center; gap: 8px;">
-          <button type="button" class="btn-primary" onclick="app.printRoomTimetable()"
-            style="padding: 6px 14px; font-size: 12.5px;">
-            <i class="fa-solid fa-print"></i> <span data-i18n="btn_print_schedule">Imprimer</span>
+        <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+          <button type="button" class="btn-primary" onclick="app.openModalAddSlot()"
+            style="padding: 7px 15px; font-size: 12.5px; background: #10b981; border-color: #10b981; display: inline-flex; align-items: center; gap: 6px; box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);">
+            <i class="fa-solid fa-plus"></i> <span>+ إضافة حصة للقسم</span>
+          </button>
+          <button type="button" class="btn-secondary" onclick="app.printRoomTimetable()"
+            style="padding: 7px 14px; font-size: 12.5px; display: inline-flex; align-items: center; gap: 6px;">
+            <i class="fa-solid fa-print"></i> <span>طباعة الجدول</span>
           </button>
           <button class="btn-icon" onclick="app.closeModals()"><i class="fa-solid fa-xmark"></i></button>
         </div>
       </div>
 
-      <!-- Room Timetable Meta Info Box -->
-      <div class="room-timetable-header-box">
-        <div class="room-timetable-meta">
-          <div class="room-timetable-meta-item">
-            <i class="fa-solid fa-users" style="color: #10b981;"></i>
-            <span id="roomTimetableCapBadge">Capacité: 25 places</span>
+      <div class="modal-body" style="overflow-y: auto; padding: 16px 20px; flex: 1;">
+        <!-- Class Timetable Meta Info Box -->
+        <div class="room-timetable-header-box" style="margin-bottom: 14px;">
+          <div class="room-timetable-meta">
+            <div class="room-timetable-meta-item">
+              <i class="fa-solid fa-chalkboard-user" style="color: #8b5cf6;"></i>
+              <span id="classTimetableNameBadge">القسم: --</span>
+            </div>
+            <div class="room-timetable-meta-item">
+              <i class="fa-solid fa-layer-group" style="color: #06b6d4;"></i>
+              <span id="classTimetableLevelBadge">المستوى: --</span>
+            </div>
+            <div class="room-timetable-meta-item">
+              <i class="fa-solid fa-users" style="color: #10b981;"></i>
+              <span id="classTimetableStudentsBadge">0 تلميذ</span>
+            </div>
+            <div class="room-timetable-meta-item">
+              <i class="fa-solid fa-calendar-check" style="color: #a855f7;"></i>
+              <span id="roomTimetableGroupsBadge">0 حصة مبرمجة</span>
+            </div>
+            <div class="room-timetable-meta-item">
+              <i class="fa-solid fa-clock" style="color: #3b82f6;"></i>
+              <span id="roomTimetableHoursBadge">0 ساعة أسبوعياً</span>
+            </div>
           </div>
-          <div class="room-timetable-meta-item">
-            <i class="fa-solid fa-video" style="color: #f59e0b;"></i>
-            <span id="roomTimetableProjBadge">Projecteur: Oui</span>
-          </div>
-          <div class="room-timetable-meta-item">
-            <i class="fa-solid fa-layer-group" style="color: #a855f7;"></i>
-            <span id="roomTimetableGroupsBadge">0 groupe programmé</span>
+          <div id="roomTimetableEquipNotes" style="font-size: 12px; color: var(--text-muted);">
+            <!-- Notes -->
           </div>
         </div>
-        <div id="roomTimetableEquipNotes" style="font-size: 12px; color: var(--text-muted);">
-          <!-- Notes -->
+
+        <!-- Navigation Bar: Search, View Mode Toggle, and Day Filter Tabs -->
+        <div class="room-timetable-top-bar" style="display: flex; flex-direction: column; gap: 12px; margin-bottom: 16px;">
+          <div style="display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap;">
+            <!-- View Mode Switcher: Daily (Clear List) vs Full Weekly (7 Columns) -->
+            <div class="room-view-toggle-group">
+              <button type="button" class="btn-room-view-toggle active" id="btnModeDaily" onclick="app.setRoomTimetableViewMode('daily')">
+                <i class="fa-solid fa-list-check"></i>
+                <span>عرض اليوم المفصل (قائمة واضحة)</span>
+              </button>
+              <button type="button" class="btn-room-view-toggle" id="btnModeWeekly" onclick="app.setRoomTimetableViewMode('weekly')">
+                <i class="fa-solid fa-table-columns"></i>
+                <span>عرض الأسبوع كاملاً (7 أيام)</span>
+              </button>
+            </div>
+
+            <!-- Quick Search Bar -->
+            <div class="schoolaris-search-box" style="flex: 1; min-width: 220px; max-width: 380px;">
+              <i class="fa-solid fa-magnifying-glass"></i>
+              <input type="text" id="roomTimetableSearchInput" class="schoolaris-search-input" placeholder="بحث بحصة، مادة، أو أستاذ..." oninput="app.filterRoomTimetable()">
+            </div>
+          </div>
+
+          <!-- Day Filter Tabs Bar -->
+          <div class="room-timetable-day-tabs-bar" id="roomTimetableDayTabs">
+            <!-- Dynamically populated: [السبت (0)] [الأحد (8)] [الإثنين (0)] etc. -->
+          </div>
+        </div>
+
+        <!-- VIEW 1: Daily High-Visibility List Container -->
+        <div class="room-timetable-daily-view" id="roomTimetableDailyContainer">
+          <!-- Dynamically populated when viewMode === 'daily' -->
+        </div>
+
+        <!-- VIEW 2: Weekly 7-Day Grid Container -->
+        <div class="room-timetable-days-container" id="roomTimetableDaysGrid" style="display: none; max-height: calc(90vh - 280px); overflow-y: auto;">
+          <!-- Injected via JS for each day (Samedi -> Vendredi) -->
         </div>
       </div>
 
-      <!-- Weekly 7-Day Grid Container -->
-      <div class="room-timetable-days-container" id="roomTimetableDaysGrid">
-        <!-- Injected via JS for each day (Samedi -> Vendredi) -->
+      <div class="modal-footer" style="border-top: 1px solid var(--border-color); padding: 12px 20px; display: flex; justify-content: space-between; align-items: center;">
+        <div style="font-size: 12px; color: var(--text-muted); display: flex; align-items: center; gap: 14px;">
+          <span><i class="fa-solid fa-circle-check" style="color: #10b981;"></i> ⭐ = أستاذ المادة المسند للقسم</span>
+          <span><i class="fa-solid fa-circle-info" style="color: #3b82f6;"></i> انقر على أي حصة لتعديلها أو حذفها مباشرة</span>
+        </div>
+        <button type="button" class="btn-secondary" onclick="app.closeModals()">إغلاق</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal: Ajouter / Modifier Séance dans l'Emploi du Temps d'une Classe -->
+  <div class="modal-overlay" id="modalRoomScheduleSlot">
+    <div class="modal-content" style="max-width: 580px; width: 95%;">
+      <div class="modal-header" style="border-bottom: 1px solid var(--border-color); padding-bottom: 12px;">
+        <div style="display: flex; align-items: center; gap: 10px;">
+          <div style="width: 38px; height: 38px; border-radius: 10px; background: rgba(16, 185, 129, 0.15); color: #10b981; display: flex; align-items: center; justify-content: center; font-size: 18px;">
+            <i class="fa-solid fa-calendar-plus" id="slotModalIcon"></i>
+          </div>
+          <div>
+            <h3 class="modal-title" id="slotModalTitle" style="margin-bottom: 2px;">إضافة حصة دراسية للقسم</h3>
+            <span style="font-size: 12px; color: var(--text-muted);" id="slotModalSubtitle">تحديد اليوم، التوقيت، المادة، والأستاذ</span>
+          </div>
+        </div>
+        <button class="btn-icon" onclick="app.closeSlotModal()"><i class="fa-solid fa-xmark"></i></button>
       </div>
 
-      <div style="display: flex; justify-content: flex-end; margin-top: 20px;">
-        <button type="button" class="btn-secondary" onclick="app.closeModals()" data-i18n="btn_close">Fermer</button>
-      </div>
+      <form id="slotForm" onsubmit="event.preventDefault(); app.saveSlot();" style="padding-top: 14px;">
+        <input type="hidden" id="slotId">
+        <!-- Room ID hidden to operate strictly with classes -->
+        <input type="hidden" id="slotRoomId" value="1">
+
+        <!-- Jour & Horaires -->
+        <div class="form-row">
+          <div class="form-group" style="flex: 1.2;">
+            <label class="form-label"><i class="fa-solid fa-calendar-day" style="color: #3b82f6;"></i> اليوم (Jour) *</label>
+            <select id="slotDayOfWeek" class="form-control" required onchange="app.checkSlotTeacherAvailability()">
+              <option value="Samedi">السبت (Samedi)</option>
+              <option value="Dimanche">الأحد (Dimanche)</option>
+              <option value="Lundi">الإثنين (Lundi)</option>
+              <option value="Mardi">الثلاثاء (Mardi)</option>
+              <option value="Mercredi">الأربعاء (Mercredi)</option>
+              <option value="Jeudi">الخميس (Jeudi)</option>
+              <option value="Vendredi">الجمعة (Vendredi)</option>
+            </select>
+          </div>
+          <div class="form-group" style="flex: 1;">
+            <label class="form-label"><i class="fa-regular fa-clock" style="color: #06b6d4;"></i> من (Début) *</label>
+            <input type="time" id="slotStartTime" class="form-control" value="08:00" required onchange="app.checkSlotTeacherAvailability()">
+          </div>
+          <div class="form-group" style="flex: 1;">
+            <label class="form-label"><i class="fa-regular fa-clock" style="color: #06b6d4;"></i> إلى (Fin) *</label>
+            <input type="time" id="slotEndTime" class="form-control" value="10:00" required onchange="app.checkSlotTeacherAvailability()">
+          </div>
+        </div>
+
+        <!-- Conflict Banner Notice -->
+        <div id="slotConflictBanner" style="display: none; padding: 10px 14px; border-radius: 8px; margin-bottom: 14px; font-size: 13px; line-height: 1.4; border: 1px solid rgba(239, 68, 68, 0.3); background: rgba(239, 68, 68, 0.1); color: #ef4444;">
+          <!-- Dynamically populated warning / alert -->
+        </div>
+
+        <!-- Classe / Division -->
+        <div class="form-group">
+          <label class="form-label"><i class="fa-solid fa-chalkboard-user" style="color: #8b5cf6;"></i> القسم / الفوج الدراسي (Classe / Division) *</label>
+          <select id="slotGroupId" class="form-control" required onchange="app.onSlotGroupChange()">
+            <!-- Injected dynamically -->
+          </select>
+        </div>
+
+        <!-- Matière -->
+        <div class="form-group">
+          <label class="form-label"><i class="fa-solid fa-book" style="color: #f59e0b;"></i> المادة الدراسية (Matière) *</label>
+          <select id="slotSubjectId" class="form-control" required onchange="app.onSlotSubjectChange()">
+            <!-- Injected dynamically -->
+          </select>
+        </div>
+
+        <!-- Notification: Professeur assigné à la classe -->
+        <div id="slotAssignedTeacherNotice" style="display: none; padding: 10px 14px; border-radius: 8px; margin-bottom: 14px; font-size: 12.5px; background: rgba(16, 185, 129, 0.12); border: 1px solid rgba(16, 185, 129, 0.35); color: #10b981;">
+          <!-- Dynamically populated with assigned teacher name -->
+        </div>
+
+        <!-- Professeur avec Disponibilité en direct -->
+        <div class="form-group">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+            <label class="form-label" style="margin-bottom: 0;">
+              <i class="fa-solid fa-user-tie" style="color: #10b981;"></i> الأستاذ المشرف (Enseignant disponible) *
+            </label>
+            <span id="slotTeacherAvailCountBadge" style="font-size: 11px; padding: 2px 8px; border-radius: 12px; background: rgba(16, 185, 129, 0.15); color: #10b981; font-weight: 700;">
+              جاري فحص المتاحين...
+            </span>
+          </div>
+          <select id="slotTeacherId" class="form-control" required onchange="app.onSlotTeacherSelect()">
+            <!-- Injected dynamically with [متاح] and [مشغول] -->
+          </select>
+          <div id="slotTeacherStatusDetail" style="margin-top: 6px; font-size: 12px; display: none;">
+            <!-- Message detail if busy -->
+          </div>
+        </div>
+
+        <!-- Notes / Remarques -->
+        <div class="form-group">
+          <label class="form-label">ملاحظات إضافية (Remarques)</label>
+          <input type="text" id="slotNotes" class="form-control" placeholder="مثال: أعمال تطبيقية، دعم مكثف، مخبر...">
+        </div>
+
+        <div style="display: flex; justify-content: flex-end; gap: 10px; margin-top: 20px;">
+          <button type="button" class="btn-secondary" onclick="app.closeSlotModal()">إلغاء</button>
+          <button type="submit" class="btn-primary" id="btnSaveSlot" style="background: #10b981; border-color: #10b981;">
+            <i class="fa-solid fa-check"></i> <span id="btnSaveSlotText">حفظ الحصة في جدول القاعة</span>
+          </button>
+        </div>
+      </form>
     </div>
   </div>
 
@@ -6580,7 +7358,7 @@
   <!-- Hidden Printable Area for Attendance Matrix -->
   <div id="attendancePrintMatrix" class="printable-area" style="display: none;"></div>
 
-  <script src="/js/app.js?v=1792008600000"></script>
+  <script src="/js/app.js?v=20261019_1"></script>
 </body>
 
 </html>

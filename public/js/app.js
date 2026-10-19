@@ -167,7 +167,7 @@ const i18n = {
     th_montant_du: 'MONTANT DÛ',
     title_caisse: 'Trésorerie & Journal de Caisse',
     title_enseignants: 'Gestion du Corps Enseignant',
-    btn_add_teacher: 'Ajouter un Enseignant',
+    btn_add_teacher: 'Nouvel Enseignant / Employé',
     title_planning: 'Emploi du Temps & Groupes',
     title_attendance: "Gestion des Présences & Feuilles d'Appel",
     subtitle_attendance: "Vérification manuelle des présences par groupe, suivi des dates et nombre de séances.",
@@ -466,6 +466,7 @@ const i18n = {
     tab_facturation: "Facturation & Échéances",
     tab_caisse: "Catégories de Caisse",
     tab_donnees: "Sauvegardes & Restauration",
+    tab_cloud_mobile: "Application Mobile (Google Sheets)",
     tab_reseau: "Réseau & Multi-Postes",
     tab_administration: "Administration & Année",
     tab_apropos: "À propos & Support",
@@ -576,6 +577,15 @@ const i18n = {
     th_code: "CODE",
     th_cycle: "CYCLE SCOLAIRE",
     school_year_badge: "Année Scolaire 2026-2027",
+    btn_header_sync: "Synchroniser le Cloud",
+    abs_kpi_today: "Absences du Jour",
+    abs_kpi_today_sub: "Élèves absents aujourd'hui",
+    abs_kpi_unjustified: "Non Justifiées (Jour)",
+    abs_kpi_unjustified_sub: "En attente de justificatif",
+    abs_kpi_lates: "Retards du Jour",
+    abs_kpi_lates_sub: "Entrées en retard en classe",
+    abs_kpi_month: "Cumul Absences du Mois",
+    abs_kpi_month_sub: "Total du mois en cours",
     th_regime_cantine: "Régime / Cantine",
     btn_fiche_student: "Fiche de l'élève",
     btn_badge_student: "Carte scolaire",
@@ -1214,6 +1224,7 @@ const i18n = {
     tab_facturation: "الفوترة ومواعيد الاستحقاق",
     tab_caisse: "تصنيفات الصندوق",
     tab_donnees: "النسخ الاحتياطي والاسترجاع",
+    tab_cloud_mobile: "تطبيق الأساتذة (Google Sheets)",
     tab_reseau: "الشبكة والربط المتعدد",
     tab_administration: "الإدارة والسنة الدراسية",
     tab_apropos: "حول البرنامج والدعم",
@@ -1324,6 +1335,15 @@ const i18n = {
     th_code: "الرمز",
     th_cycle: "الطور التعليمي",
     school_year_badge: "السنة الدراسية 2026-2027",
+    btn_header_sync: "مزامنة السحابة",
+    abs_kpi_today: "غيابات اليوم",
+    abs_kpi_today_sub: "تلاميذ غائبون اليوم",
+    abs_kpi_unjustified: "غير مبررة (اليوم)",
+    abs_kpi_unjustified_sub: "تتطلب اتصال بالولي وتبرير",
+    abs_kpi_lates: "تأخرات اليوم",
+    abs_kpi_lates_sub: "دخول متأخر عن الحصة",
+    abs_kpi_month: "إجمالي غيابات الشهر",
+    abs_kpi_month_sub: "مجموع الغيابات للشهر الحالي",
     th_regime_cantine: "الصفة / المطعم",
     btn_fiche_student: "استمارة التلميذ",
     btn_badge_student: "بطاقة التلميذ",
@@ -3421,7 +3441,7 @@ class EdumindApp {
     const now = Date.now();
     const lastLoad = this._lastViewLoads[viewName] || 0;
     // Always reload pointage, cantine and enseignants so live status is accurate; buffer other views for 15s
-    const shouldReload = forceReload || viewName === 'pointage' || viewName === 'cantine' || viewName === 'enseignants' || (now - lastLoad > 15000);
+    const shouldReload = forceReload || viewName === 'pointage' || viewName === 'cantine' || viewName === 'enseignants' || viewName === 'absences' || (now - lastLoad > 15000);
 
     if (!shouldReload) {
       return; // Instant view toggle with zero network lag
@@ -3454,6 +3474,9 @@ class EdumindApp {
     }
     else if (viewName === 'cantine') {
       this.loadCantineData();
+    }
+    else if (viewName === 'absences') {
+      this.loadDisciplineAbsences();
     }
   }
 
@@ -3510,6 +3533,7 @@ class EdumindApp {
   }
 
   async loadDashboardData() {
+    this.fetchDisciplineAbsenceStats();
     try {
       const res = await fetch('/api/dashboard/stats');
       const data = await res.json();
@@ -9249,6 +9273,127 @@ class EdumindApp {
     });
   }
 
+  // -------------------------------------------------------------
+  // CLOUD GOOGLE SHEETS & TEACHER MOBILE APP MANAGEMENT
+  // -------------------------------------------------------------
+  async openTeacherMobileModal(teacherId) {
+    const isAr = this.lang === 'ar';
+    try {
+      const res = await fetch(`/api/teachers/${teacherId}`);
+      const data = await res.json();
+      if (!data.success || !data.teacher) {
+        this.showToast(isAr ? 'تعذر جلب بيانات الأستاذ' : 'Impossible de charger l\'enseignant', 'error');
+        return;
+      }
+      const t = data.teacher;
+      document.getElementById('mobileTeacherId').value = t.id;
+      document.getElementById('mobileTeacherName').textContent = `${t.first_name || ''} ${t.last_name || ''} (${t.matricule || '-'})`;
+      document.getElementById('mobileTeacherSub').textContent = `${t.subject_name || t.job_title || 'هيئة التدريس'}`;
+      document.getElementById('mobileTeacherPhone').value = t.phone || '';
+      document.getElementById('mobileTeacherPin').value = t.mobile_pin || t.password || '';
+
+      document.getElementById('modalTeacherMobile')?.classList.add('active');
+    } catch (err) {
+      console.error('openTeacherMobileModal error:', err);
+      this.showToast(isAr ? 'حدث خطأ أثناء فتح النافذة' : 'Erreur d\'ouverture du modal', 'error');
+    }
+  }
+
+  generateRandomPin() {
+    const randomPin = Math.floor(1000 + Math.random() * 9000).toString();
+    const pinInput = document.getElementById('mobileTeacherPin');
+    if (pinInput) pinInput.value = randomPin;
+  }
+
+  async saveTeacherMobileCredentials() {
+    const isAr = this.lang === 'ar';
+    const id = document.getElementById('mobileTeacherId')?.value;
+    const phone = document.getElementById('mobileTeacherPhone')?.value?.trim();
+    const pin = document.getElementById('mobileTeacherPin')?.value?.trim();
+
+    if (!id || !phone) {
+      this.showToast(isAr ? 'يرجى إدخال رقم الهاتف' : 'Veuillez renseigner le numéro de téléphone', 'warning');
+      return;
+    }
+    if (!pin) {
+      this.showToast(isAr ? 'يرجى إدخال كلمة المرور أو رمز PIN' : 'Veuillez définir un mot de passe ou code PIN', 'warning');
+      return;
+    }
+
+    try {
+      const res = await fetch(`/api/teachers/${id}/mobile-credentials`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ phone, password: pin, mobile_pin: pin })
+      });
+      const data = await res.json();
+      if (data.success) {
+        this.showToast(isAr ? 'تم حفظ ومزامنة بيانات حساب الأستاذ بنجاح' : 'Compte mobile enseignant enregistré et synchronisé', 'success');
+        this.closeModals();
+        await this.loadTeachers();
+      } else {
+        this.showToast(data.error || 'Erreur lors de l\'enregistrement', 'error');
+      }
+    } catch (err) {
+      console.error('saveTeacherMobileCredentials error:', err);
+      this.showToast(isAr ? 'حدث خطأ أثناء الحفظ' : 'Erreur lors de la sauvegarde', 'error');
+    }
+  }
+
+  async syncAllWithCloud(interactive = true) {
+    const isAr = this.lang === 'ar';
+    const btn = document.getElementById('btnHeaderSync');
+
+    if (btn) btn.classList.add('is-syncing');
+    if (interactive) {
+      this.showToast(isAr ? 'جاري المزامنة الشاملة مع السحابة وهواتف الأساتذة...' : 'Synchronisation globale avec Google Sheets en cours...', 'info');
+    }
+
+    try {
+      const res = await fetch('/api/sync/sheets/full-sync', { method: 'POST' });
+      const data = await res.json();
+
+      if (data.success) {
+        const impCount = data.import?.count || 0;
+        const expCounts = data.export?.counts || {};
+        if (interactive) {
+          const msg = isAr
+            ? `اكتملت المزامنة بنجاح! (${expCounts.teachers || 0} أستاذ، ${expCounts.groups || 0} قسم، ${expCounts.students || 0} تلميذ، ${impCount} غياب جديد)`
+            : `Synchronisation réussie ! (${expCounts.teachers || 0} profs, ${expCounts.groups || 0} classes, ${impCount} absence(s) importée(s))`;
+          this.showToast(msg, 'success');
+        }
+
+        // Refresh view if on relevant screen
+        if (this.currentView === 'teachers') {
+          await this.loadTeachers?.();
+        } else if (this.currentView === 'absences') {
+          await this.loadDisciplineAbsences?.();
+        } else if (this.currentView === 'pointage' || this.currentView === 'vie-scolaire') {
+          await this.loadAttendanceData?.();
+        }
+      } else {
+        if (interactive) {
+          this.showToast(data.error || 'Erreur de synchronisation', 'error');
+        }
+      }
+    } catch (err) {
+      console.error('syncAllWithCloud error:', err);
+      if (interactive) {
+        this.showToast(isAr ? 'فشلت المزامنة مع Google Sheets' : 'Échec de la synchronisation cloud', 'error');
+      }
+    } finally {
+      if (btn) btn.classList.remove('is-syncing');
+    }
+  }
+
+  async exportDataToCloudSheets() {
+    return this.syncAllWithCloud(true);
+  }
+
+  async syncCloudAttendances() {
+    return this.syncAllWithCloud(true);
+  }
+
   printSingleTeacherCard() {
     const t = this.currentCardTeacher;
     if (!t) return;
@@ -12674,6 +12819,9 @@ class EdumindApp {
                 <button class="btn-action-badge" title="${isEmployee ? (isAr ? 'بطاقة الموظف' : 'Badge Employé') : (isAr ? 'بطاقة الأستاذ' : 'Badge Enseignant')}" onclick="app.showTeacherCard(${t.id})">
                   <i class="fa-solid fa-id-badge"></i>
                 </button>
+                <button class="btn-action-badge" style="background: rgba(6, 182, 212, 0.15); color: #06b6d4;" title="${isAr ? 'حساب تطبيق الحضور المحمول (PIN / الهاتف)' : 'Compte App Mobile (Téléphone / PIN)'}" onclick="app.openTeacherMobileModal(${t.id})">
+                  <i class="fa-solid fa-mobile-screen"></i>
+                </button>
                 <button class="btn-icon" title="${isAr ? 'تعديل' : 'Modifier'}" onclick="${isEmployee ? `app.editEmployee(${t.id})` : `app.editTeacher(${t.id})`}">
                   <i class="fa-solid fa-pen-to-square"></i>
                 </button>
@@ -13435,6 +13583,9 @@ class EdumindApp {
               <button class="btn-group-students-action" style="display: inline-flex; align-items: center; gap: 6px; padding: 6px 13px; border-radius: 8px; background: rgba(59, 130, 246, 0.12); color: #2563eb; border: 1px solid rgba(59, 130, 246, 0.32); font-weight: 700; font-size: 12px; cursor: pointer; white-space: nowrap; transition: all 0.2s;" title="${this.lang === 'ar' ? 'عرض وإدارة تلاميذ هذا القسم' : 'Voir et gérer les élèves du groupe'}" onclick="app.viewGroupStudents(${g.id})">
                 <i class="fa-solid fa-users" style="font-size: 12px;"></i>
                 <span>${this.lang === 'ar' ? 'تلاميذ القسم' : 'Élèves du groupe'}</span>
+              </button>
+              <button class="btn-action-edit" style="color: #8b5cf6; border-color: rgba(139, 92, 246, 0.35); background: rgba(139, 92, 246, 0.1);" title="${this.lang === 'ar' ? 'عرض جدول التوقيت والحصص لهذا القسم' : 'Consulter l\'emploi du temps de la classe'}" onclick="app.openClassTimetable(${g.id})">
+                <i class="fa-regular fa-calendar-days"></i>
               </button>
               <button class="btn-action-edit" title="${this.lang === 'ar' ? 'تعديل' : 'Modifier'}" onclick="app.editGroup(${g.id})">
                 <i class="fa-solid fa-pen-to-square"></i>
@@ -14947,47 +15098,177 @@ class EdumindApp {
     }
   }
 
-  async openRoomTimetable(roomId) {
-    const r = this.rooms?.find(item => item.id === roomId);
-    if (!r) return;
+  // =========================================================================
+  // ROOM TIMETABLE & SCHEDULE MANAGEMENT (نظام جدول استعمال القاعات الأسبوعي)
+  // =========================================================================
 
-    this.currentTimetableRoom = r;
-    const titleEl = document.getElementById('roomTimetableTitle');
-    const capEl = document.getElementById('roomTimetableCapBadge');
-    const projEl = document.getElementById('roomTimetableProjBadge');
-    const equipEl = document.getElementById('roomTimetableEquipNotes');
-    const daysGrid = document.getElementById('roomTimetableDaysGrid');
+  async viewClassRoomTimetable(groupId) {
+    await this.openClassTimetable(groupId);
+  }
 
-    if (titleEl) titleEl.textContent = `${this.lang === 'ar' ? 'جدول استعمال' : 'Emploi du Temps —'} ${r.name}`;
-    if (capEl) capEl.textContent = `${this.lang === 'ar' ? 'السعة:' : 'Capacité:'} ${r.capacity} ${this.lang === 'ar' ? 'مقعد' : 'places'}`;
-    if (projEl) {
-      const hasP = r.has_projector == 1 || r.has_projector === true;
-      projEl.textContent = `${this.lang === 'ar' ? 'عارض داتاشو:' : 'Vidéoprojecteur:'} ${hasP ? (this.lang === 'ar' ? 'متوفر' : 'Oui') : (this.lang === 'ar' ? 'غير متوفر' : 'Non')}`;
+  async openRoomTimetable(roomId, highlightGroupId = null) {
+    await this.openClassTimetable(highlightGroupId || roomId);
+  }
+
+  async openClassTimetable(groupId) {
+    if (!this.allGroupes || this.allGroupes.length === 0) {
+      try {
+        const res = await fetch('/api/groups?status=all');
+        const data = await res.json();
+        if (data.success) this.allGroupes = data.groups || [];
+      } catch (e) {}
     }
-    if (equipEl) equipEl.textContent = r.notes || '';
 
-    if (daysGrid) {
-      daysGrid.innerHTML = `<div style="grid-column: 1 / -1; text-align: center; padding: 30px;"><i class="fa-solid fa-spinner fa-spin"></i> ${this.lang === 'ar' ? 'جاري تحميل جدول التوقيت...' : 'Chargement du planning...'}</div>`;
+    const groupsList = (this.allGroupes && this.allGroupes.length > 0) ? this.allGroupes : (this.groups || []);
+    let g = groupsList.find(item => Number(item.id) === Number(groupId));
+    if (!g && groupsList.length > 0) {
+      g = groupsList[0];
+      groupId = g.id;
+    }
+    if (!g) return;
+
+    this.currentTimetableGroupId = Number(groupId);
+    this.currentTimetableGroup = g;
+    this.highlightTimetableGroupId = Number(groupId);
+    this.currentTimetableViewMode = this.currentTimetableViewMode || 'daily';
+
+    // Update Class Switcher in Modal Header
+    const groupSelect = document.getElementById('roomTimetableSelectGroup');
+    if (groupSelect) {
+      groupSelect.innerHTML = groupsList.map(item => `
+        <option value="${item.id}" ${Number(item.id) === Number(groupId) ? 'selected' : ''}>
+          ${this.escapeHtml(item.name)} ${item.level_name ? `(${this.escapeHtml(item.level_name)})` : ''}
+        </option>
+      `).join('');
+      groupSelect.value = groupId;
+    }
+
+    const titleEl = document.getElementById('roomTimetableTitle');
+    const subtitleEl = document.getElementById('roomTimetableSubtitle');
+    const nameBadge = document.getElementById('classTimetableNameBadge');
+    const levelBadge = document.getElementById('classTimetableLevelBadge');
+    const studentsBadge = document.getElementById('classTimetableStudentsBadge');
+    const dailyContainer = document.getElementById('roomTimetableDailyContainer');
+    const searchInput = document.getElementById('roomTimetableSearchInput');
+    if (searchInput) searchInput.value = '';
+
+    if (titleEl) titleEl.textContent = `جدول توقيت واستعمال قسم: ${g.name}`;
+    if (subtitleEl) subtitleEl.textContent = `المستوى: ${g.level_name || '-'} • الفوج التربوي الرسمي`;
+    if (nameBadge) nameBadge.textContent = `القسم: ${g.name}`;
+    if (levelBadge) levelBadge.textContent = `المستوى: ${g.level_name || '-'}`;
+    if (studentsBadge) studentsBadge.textContent = `${g.student_count || g.students_count || 0} تلميذ`;
+
+    if (dailyContainer) {
+      dailyContainer.innerHTML = `<div style="text-align: center; padding: 40px; color: var(--text-muted);"><i class="fa-solid fa-spinner fa-spin fa-2x" style="color: #3b82f6; margin-bottom: 12px; display: block;"></i> جاري تحميل جدول توقيت وحصص القسم...</div>`;
     }
 
     document.getElementById('modalRoomTimetable')?.classList.add('active');
 
     let sessions = [];
     try {
-      const res = await fetch(`/api/rooms/${roomId}/schedule`);
+      const res = await fetch(`/api/groups/${groupId}/schedule`);
       const data = await res.json();
       if (data.success && data.schedule) {
         sessions = data.schedule;
-      } else {
-        sessions = (this.groups || []).filter(g => g.room_id == roomId && (g.active === 1 || g.active === undefined));
+        if (data.group) {
+          this.currentTimetableGroup = { ...g, ...data.group };
+          if (studentsBadge && data.group.enrolled_count !== undefined) {
+            studentsBadge.textContent = `${data.group.enrolled_count} تلميذ`;
+          }
+        }
       }
     } catch (e) {
-      sessions = (this.groups || []).filter(g => g.room_id == roomId && (g.active === 1 || g.active === undefined));
+      console.error(e);
     }
 
+    this.currentRoomSessions = sessions;
+
+    // Pick appropriate default day:
+    if (!this.currentTimetableDay || (sessions.length > 0 && !sessions.some(s => s.day_of_week && s.day_of_week.toLowerCase() === this.currentTimetableDay.toLowerCase()))) {
+      const counts = {};
+      sessions.forEach(s => {
+        if (s.day_of_week) counts[s.day_of_week] = (counts[s.day_of_week] || 0) + 1;
+      });
+      let bestDay = 'Dimanche';
+      let bestCount = -1;
+      Object.keys(counts).forEach(dk => {
+        if (counts[dk] > bestCount) {
+          bestCount = counts[dk];
+          bestDay = dk;
+        }
+      });
+      this.currentTimetableDay = bestDay;
+    }
+
+    this.renderRoomTimetableGrid(sessions);
+  }
+
+  async loadSlotSubjects(groupId, selectedSubjectId = null) {
+    const subjectSelect = document.getElementById('slotSubjectId');
+    if (!subjectSelect) return;
+
+    try {
+      const url = groupId ? `/api/subjects?group_id=${groupId}&deduplicate=true` : `/api/subjects?deduplicate=true`;
+      const res = await fetch(url);
+      const data = await res.json();
+      if (data.success && data.subjects) {
+        this.slotSubjects = data.subjects;
+      }
+    } catch (e) {
+      console.error(e);
+    }
+
+    const subs = this.slotSubjects || this.subjects || [];
+    subjectSelect.innerHTML = `<option value="">-- اختر المادة الدراسية (${subs.length} مادة) --</option>` +
+      subs.map(s => `
+        <option value="${s.id}" ${selectedSubjectId && Number(selectedSubjectId) === Number(s.id) ? 'selected' : ''}>
+          ${this.escapeHtml(s.name)}
+        </option>
+      `).join('');
+
+    if (selectedSubjectId) {
+      subjectSelect.value = selectedSubjectId;
+    }
+  }
+
+  setRoomTimetableViewMode(mode) {
+    this.currentTimetableViewMode = mode;
+    document.getElementById('btnModeDaily')?.classList.toggle('active', mode === 'daily');
+    document.getElementById('btnModeWeekly')?.classList.toggle('active', mode === 'weekly');
+    this.renderRoomTimetableGrid(this.currentRoomSessions || []);
+  }
+
+  selectRoomTimetableDay(dayKey) {
+    this.currentTimetableDay = dayKey;
+    this.currentTimetableViewMode = 'daily';
+    document.getElementById('btnModeDaily')?.classList.add('active');
+    document.getElementById('btnModeWeekly')?.classList.remove('active');
+    this.renderRoomTimetableGrid(this.currentRoomSessions || []);
+  }
+
+  renderRoomTimetableGrid(sessions) {
+    const dailyContainer = document.getElementById('roomTimetableDailyContainer');
+    const daysGrid = document.getElementById('roomTimetableDaysGrid');
+    const dayTabsBar = document.getElementById('roomTimetableDayTabs');
     const groupsBadge = document.getElementById('roomTimetableGroupsBadge');
+    const hoursBadge = document.getElementById('roomTimetableHoursBadge');
+
+    let totalMinutes = 0;
+    (sessions || []).forEach(s => {
+      if (s.start_time && s.end_time) {
+        const [sh, sm] = s.start_time.split(':').map(Number);
+        const [eh, em] = s.end_time.split(':').map(Number);
+        const mins = (eh * 60 + em) - (sh * 60 + sm);
+        if (mins > 0) totalMinutes += mins;
+      }
+    });
+    const totalHours = (totalMinutes / 60).toFixed(totalMinutes % 60 === 0 ? 0 : 1);
+
     if (groupsBadge) {
-      groupsBadge.textContent = `${sessions.length} ${this.lang === 'ar' ? 'حصص مبرمجة' : (sessions.length > 1 ? 'séances programmées' : 'séance programmée')}`;
+      groupsBadge.textContent = `${sessions.length} ${this.lang === 'ar' ? 'حصة مبرمجة' : (sessions.length > 1 ? 'séances' : 'séance')}`;
+    }
+    if (hoursBadge) {
+      hoursBadge.textContent = `${totalHours} ${this.lang === 'ar' ? 'ساعة أسبوعياً' : 'h / semaine'}`;
     }
 
     const days = [
@@ -15000,41 +15281,798 @@ class EdumindApp {
       { key: 'Vendredi', fr: 'Vendredi', ar: 'الجمعة' }
     ];
 
-    if (daysGrid) {
-      daysGrid.innerHTML = days.map(d => {
-        const daySessions = sessions.filter(s => s.day_of_week && s.day_of_week.toLowerCase() === d.key.toLowerCase());
+    // Render Day Navigation Tabs
+    if (dayTabsBar) {
+      dayTabsBar.innerHTML = days.map(d => {
+        const count = (sessions || []).filter(s => s.day_of_week && s.day_of_week.toLowerCase() === d.key.toLowerCase()).length;
+        const isActive = (this.currentTimetableViewMode === 'daily') && this.currentTimetableDay && this.currentTimetableDay.toLowerCase() === d.key.toLowerCase();
         const dayLabel = this.lang === 'ar' ? d.ar : d.fr;
 
         return `
-          <div class="room-day-column">
-            <div class="room-day-header">
-              <span>${dayLabel}</span>
-              <span class="room-day-badge">${daySessions.length} ${this.lang === 'ar' ? 'حصص' : 'cours'}</span>
-            </div>
-            <div class="room-day-sessions-list">
-              ${daySessions.length === 0 ? `
-                <div class="room-session-empty">${this.lang === 'ar' ? 'لا توجد حصص في هذا اليوم' : 'Aucun cours programmé'}</div>
-              ` : daySessions.map(s => `
-                <div class="room-session-item" style="border-inline-start-color: ${s.subject_color || '#3b82f6'};">
-                  <div class="room-session-time">
-                    <i class="fa-regular fa-clock"></i>
-                    <span>${s.start_time || '--:--'} — ${s.end_time || '--:--'}</span>
-                  </div>
-                  <div class="room-session-name">${this.escapeHtml(s.name)}</div>
-                  <div class="room-session-details">
-                    <span style="font-weight: 600; color: ${s.subject_color || 'var(--text-main)'};">
-                      <i class="fa-solid fa-book"></i> ${this.escapeHtml(s.subject_name || '')}
-                    </span>
-                    ${s.teacher_name ? `<span><i class="fa-solid fa-user-tie"></i> ${this.escapeHtml(s.teacher_name)}</span>` : ''}
-                    ${s.enrolled_count !== undefined ? `<span><i class="fa-solid fa-users"></i> ${s.enrolled_count}/${s.max_students || r.capacity}</span>` : ''}
-                  </div>
-                </div>
-              `).join('')}
-            </div>
-          </div>
+          <button type="button" class="room-day-tab-btn ${isActive ? 'active' : ''}" onclick="app.selectRoomTimetableDay('${d.key}')">
+            <span>${dayLabel}</span>
+            <span class="room-day-tab-badge">${count}</span>
+          </button>
         `;
       }).join('');
     }
+
+    // Toggle Containers based on current mode
+    if (this.currentTimetableViewMode === 'daily') {
+      if (dailyContainer) dailyContainer.style.display = 'flex';
+      if (daysGrid) daysGrid.style.display = 'none';
+      this.renderRoomDailyView(sessions, days);
+    } else {
+      if (dailyContainer) dailyContainer.style.display = 'none';
+      if (daysGrid) daysGrid.style.display = 'grid';
+      this.renderRoomWeeklyGrid(sessions, days);
+    }
+  }
+
+  renderRoomDailyView(sessions, days) {
+    const dailyContainer = document.getElementById('roomTimetableDailyContainer');
+    if (!dailyContainer) return;
+
+    const currentKey = this.currentTimetableDay || 'Dimanche';
+    const dayObj = (days || []).find(d => d.key.toLowerCase() === currentKey.toLowerCase()) || { key: currentKey, ar: currentKey, fr: currentKey };
+    const dayLabel = this.lang === 'ar' ? dayObj.ar : dayObj.fr;
+
+    // Filter sessions for this day
+    const daySessions = (sessions || []).filter(s => s.day_of_week && s.day_of_week.toLowerCase() === currentKey.toLowerCase());
+    
+    // Sort chronologically by start_time
+    daySessions.sort((a, b) => (a.start_time || '').localeCompare(b.start_time || ''));
+
+    let dayMinutes = 0;
+    daySessions.forEach(s => {
+      if (s.start_time && s.end_time) {
+        const [sh, sm] = s.start_time.split(':').map(Number);
+        const [eh, em] = s.end_time.split(':').map(Number);
+        const mins = (eh * 60 + em) - (sh * 60 + sm);
+        if (mins > 0) dayMinutes += mins;
+      }
+    });
+    const dayHours = (dayMinutes / 60).toFixed(dayMinutes % 60 === 0 ? 0 : 1);
+
+    dailyContainer.innerHTML = `
+      <!-- Daily Header Card -->
+      <div class="room-daily-header-card">
+        <div class="room-daily-header-title">
+          <div style="width: 36px; height: 36px; border-radius: 10px; background: rgba(59, 130, 246, 0.2); color: #38bdf8; display: flex; align-items: center; justify-content: center; font-size: 17px;">
+            <i class="fa-regular fa-calendar-check"></i>
+          </div>
+          <div>
+            <div style="display: flex; align-items: center; gap: 8px;">
+              <span>${this.lang === 'ar' ? 'جدول وتوقيت حصص يوم:' : 'Planning détaillé du :'}</span>
+              <strong style="color: #38bdf8; font-size: 18px;">${dayLabel}</strong>
+            </div>
+            <div style="font-size: 12px; color: var(--text-muted); font-weight: normal; margin-top: 2px;">
+              ${daySessions.length} ${this.lang === 'ar' ? 'حصص مبرمجة' : 'séance(s)'} • إجمالي ${dayHours} ${this.lang === 'ar' ? 'ساعة تدريس' : 'heures'}
+            </div>
+          </div>
+        </div>
+        <div style="display: flex; align-items: center; gap: 10px;">
+          <button type="button" class="btn-primary" onclick="app.openModalAddSlot('${dayObj.key}')"
+            style="padding: 8px 16px; font-size: 13px; background: #10b981; border-color: #10b981; display: inline-flex; align-items: center; gap: 7px; box-shadow: 0 4px 12px rgba(16, 185, 129, 0.25);">
+            <i class="fa-solid fa-plus"></i>
+            <span>+ ${this.lang === 'ar' ? 'إضافة حصة في يوم ' + dayLabel : 'Ajouter une séance le ' + dayLabel}</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- High-Visibility Slots List -->
+      <div class="room-daily-slots-list">
+        ${daySessions.length === 0 ? `
+          <div style="text-align: center; padding: 45px 20px; background: var(--bg-hover); border: 2px dashed var(--border-color); border-radius: 14px;">
+            <i class="fa-regular fa-calendar-xmark" style="font-size: 38px; color: var(--text-muted); opacity: 0.5; margin-bottom: 12px; display: block;"></i>
+            <h4 style="margin-bottom: 6px; font-size: 15px; color: var(--text-heading);">${this.lang === 'ar' ? 'لا توجد حصص مبرمجة في يوم ' + dayLabel : 'Aucun cours ce jour-là'}</h4>
+            <p style="font-size: 13px; color: var(--text-muted); max-width: 420px; margin: 0 auto 16px auto;">
+              ${this.lang === 'ar' ? 'لا توجد حصص مبرمجة لهذا القسم في هذا اليوم. يمكنك إضافة حصص دراسية جديدة وتحديد المواد والأساتذة.' : 'Aucun cours programmé pour cette classe ce jour-là.'}
+            </p>
+            <button type="button" class="btn-primary" style="padding: 8px 18px; font-size: 13px; background: #10b981; border-color: #10b981;" onclick="app.openModalAddSlot('${dayObj.key}')">
+              <i class="fa-solid fa-plus"></i> ${this.lang === 'ar' ? '+ إضافة أول حصة في هذا اليوم' : '+ Ajouter un cours'}
+            </button>
+          </div>
+        ` : daySessions.map(s => {
+          const isHighlighted = this.highlightTimetableGroupId && String(s.group_id) === String(this.highlightTimetableGroupId);
+
+          // Calculate duration text
+          let durText = '';
+          if (s.start_time && s.end_time) {
+            const [sh, sm] = s.start_time.split(':').map(Number);
+            const [eh, em] = s.end_time.split(':').map(Number);
+            const diffMin = (eh * 60 + em) - (sh * 60 + sm);
+            if (diffMin > 0) {
+              const h = Math.floor(diffMin / 60);
+              const m = diffMin % 60;
+              durText = m > 0 ? `${h}h${m}` : `${h}h00`;
+            }
+          }
+
+          const isAssigned = s.is_assigned_to_class == 1 || s.is_assigned_to_class === true;
+
+          return `
+            <div class="room-daily-slot-card ${isHighlighted ? 'highlighted' : ''}" style="border-inline-start-color: ${s.subject_color || '#3b82f6'};">
+              <!-- Prominent Time Badge -->
+              <div class="room-daily-time-badge">
+                <div class="room-daily-time-range">
+                  <i class="fa-regular fa-clock"></i>
+                  <span>${s.start_time || '--:--'} ➔ ${s.end_time || '--:--'}</span>
+                </div>
+                ${durText ? `<div class="room-daily-time-duration">المدة: ${durText}</div>` : ''}
+              </div>
+
+              <!-- Main Slot Info -->
+              <div class="room-daily-slot-main">
+                <div class="room-daily-subject-row">
+                  <span class="room-daily-subject-name" style="color: ${s.subject_color || '#3b82f6'};">
+                    <i class="fa-solid fa-${s.subject_icon || 'book'}"></i>
+                    ${this.escapeHtml(s.subject_name || 'مادة تعليمية')}
+                  </span>
+                  ${isAssigned ? `
+                    <span class="slot-assigned-badge" title="هذا الأستاذ مسند رسمياً لتدريس هذه المادة لهذا القسم">
+                      <i class="fa-solid fa-circle-check"></i>
+                      <span>أستاذ المادة للقسم</span>
+                    </span>
+                  ` : ''}
+                  ${isHighlighted ? `
+                    <span style="font-size: 11px; background: #8b5cf6; color: #fff; padding: 2px 8px; border-radius: 6px; font-weight: 700;">
+                      القسم الحالي
+                    </span>
+                  ` : ''}
+                </div>
+
+                <div class="room-daily-details-row">
+                  <!-- Class Badge -->
+                  <span class="slot-class-badge" title="القسم أو الفوج التربوي">
+                    <i class="fa-solid fa-chalkboard-user"></i>
+                    <span>${this.escapeHtml(s.group_name || s.name || 'فوج دراسي')}</span>
+                    ${s.level_name && s.level_name !== '-' ? `<span style="font-size: 11.5px; opacity: 0.8; font-weight: normal;">(${this.escapeHtml(s.level_name)})</span>` : ''}
+                  </span>
+
+                  <!-- Teacher -->
+                  <span class="slot-teacher-badge">
+                    <i class="fa-solid fa-user-tie" style="color: #10b981;"></i>
+                    <span>الأستاذ: <strong>${this.escapeHtml(s.teacher_name || 'غير محدد')}</strong></span>
+                    ${s.teacher_phone ? `<span style="font-size: 11.5px; color: var(--text-muted);"><i class="fa-solid fa-phone" style="font-size: 10px;"></i> ${this.escapeHtml(s.teacher_phone)}</span>` : ''}
+                  </span>
+
+                  <!-- Enrolled count -->
+                  ${s.enrolled_count !== undefined ? `
+                    <span style="font-size: 12px; color: var(--text-muted); display: inline-flex; align-items: center; gap: 5px;">
+                      <i class="fa-solid fa-users" style="color: #64748b;"></i>
+                      <span>${s.enrolled_count} تلميذ</span>
+                    </span>
+                  ` : ''}
+                </div>
+
+                ${s.notes && s.notes.trim() && s.notes !== 'Séance de cours' && s.notes !== 'Séance régulière' ? `
+                  <div style="font-size: 12px; color: var(--text-muted); margin-top: 3px; display: inline-flex; align-items: center; gap: 6px;">
+                    <i class="fa-regular fa-note-sticky" style="color: #f59e0b;"></i>
+                    <span>${this.escapeHtml(s.notes)}</span>
+                  </div>
+                ` : ''}
+              </div>
+
+              <!-- Actions -->
+              <div class="room-daily-actions">
+                <button type="button" class="btn-daily-action edit" onclick="app.openModalEditSlot(${s.id})" title="${this.lang === 'ar' ? 'تعديل الحصة' : 'Modifier'}">
+                  <i class="fa-solid fa-pen-to-square"></i>
+                  <span>${this.lang === 'ar' ? 'تعديل' : 'Modifier'}</span>
+                </button>
+                <button type="button" class="btn-daily-action delete" onclick="app.deleteSlot(${s.id})" title="${this.lang === 'ar' ? 'حذف الحصة' : 'Supprimer'}">
+                  <i class="fa-solid fa-trash-can"></i>
+                  <span>${this.lang === 'ar' ? 'حذف' : 'Supprimer'}</span>
+                </button>
+              </div>
+            </div>
+          `;
+        }).join('')}
+      </div>
+    `;
+  }
+
+  renderRoomWeeklyGrid(sessions, days) {
+    const daysGrid = document.getElementById('roomTimetableDaysGrid');
+    if (!daysGrid) return;
+
+    daysGrid.innerHTML = (days || []).map(d => {
+      const daySessions = (sessions || []).filter(s => s.day_of_week && s.day_of_week.toLowerCase() === d.key.toLowerCase());
+      daySessions.sort((a, b) => (a.start_time || '').localeCompare(b.start_time || ''));
+      const dayLabel = this.lang === 'ar' ? d.ar : d.fr;
+
+      return `
+        <div class="room-day-column">
+          <div class="room-day-header" style="cursor: pointer;" onclick="app.selectRoomTimetableDay('${d.key}')" title="${this.lang === 'ar' ? 'انقر لتكبير وعرض تفاصيل هذا اليوم' : 'Cliquer pour voir le détail'}">
+            <div style="display: flex; align-items: center; gap: 8px;">
+              <span>${dayLabel}</span>
+              <span class="room-day-badge">${daySessions.length} ${this.lang === 'ar' ? 'حصص' : 'cours'}</span>
+            </div>
+            <button type="button" class="room-day-add-btn" title="${this.lang === 'ar' ? 'إضافة حصة في يوم ' + dayLabel : 'Ajouter une séance le ' + dayLabel}" onclick="event.stopPropagation(); app.openModalAddSlot('${d.key}')">
+              <i class="fa-solid fa-plus"></i>
+            </button>
+          </div>
+          <div class="room-day-sessions-list">
+            ${daySessions.length === 0 ? `
+              <div class="room-session-empty">
+                <div>${this.lang === 'ar' ? 'لا توجد حصص مبرمجة' : 'Aucun cours'}</div>
+                <button type="button" class="btn-link" style="margin-top: 8px; font-size: 11.5px; color: #3b82f6; background: none; border: none; cursor: pointer; text-decoration: underline;" onclick="app.openModalAddSlot('${d.key}')">
+                  <i class="fa-solid fa-plus"></i> ${this.lang === 'ar' ? '+ إضافة حصة' : '+ Ajouter'}
+                </button>
+              </div>
+            ` : daySessions.map(s => {
+              const isHighlighted = this.highlightTimetableGroupId && String(s.group_id) === String(this.highlightTimetableGroupId);
+              const isAssigned = s.is_assigned_to_class == 1 || s.is_assigned_to_class === true;
+
+              let durText = '';
+              if (s.start_time && s.end_time) {
+                const [sh, sm] = s.start_time.split(':').map(Number);
+                const [eh, em] = s.end_time.split(':').map(Number);
+                const diffMin = (eh * 60 + em) - (sh * 60 + sm);
+                if (diffMin > 0) {
+                  const h = Math.floor(diffMin / 60);
+                  const m = diffMin % 60;
+                  durText = m > 0 ? `${h}h${m}` : `${h}h00`;
+                }
+              }
+
+              return `
+                <div class="room-session-item ${isHighlighted ? 'highlighted' : ''}" style="border-inline-start-color: ${s.subject_color || '#3b82f6'};">
+                  <div style="display: flex; justify-content: space-between; align-items: center;">
+                    <div class="room-session-time">
+                      <i class="fa-regular fa-clock"></i>
+                      <span>${s.start_time || '--:--'} — ${s.end_time || '--:--'}</span>
+                      ${durText ? `<span style="font-size: 10.5px; opacity: 0.8; font-weight: normal;">(${durText})</span>` : ''}
+                    </div>
+                    <div class="room-session-actions">
+                      <button type="button" class="btn-slot-edit" title="${this.lang === 'ar' ? 'تعديل' : 'Modifier'}" onclick="app.openModalEditSlot(${s.id})">
+                        <i class="fa-solid fa-pen-to-square"></i>
+                      </button>
+                      <button type="button" class="btn-slot-delete" title="${this.lang === 'ar' ? 'حذف' : 'Supprimer'}" onclick="app.deleteSlot(${s.id})">
+                        <i class="fa-solid fa-trash-can"></i>
+                      </button>
+                    </div>
+                  </div>
+
+                  <!-- Subject Badge -->
+                  <div style="display: flex; align-items: center; justify-content: space-between; gap: 6px; margin-top: 2px;">
+                    <span style="font-weight: 700; font-size: 13px; color: ${s.subject_color || '#3b82f6'}; display: inline-flex; align-items: center; gap: 6px;">
+                      <i class="fa-solid fa-${s.subject_icon || 'book'}"></i>
+                      ${this.escapeHtml(s.subject_name || 'مادة تعليمية')}
+                    </span>
+                    ${isAssigned ? `<span class="slot-assigned-badge" style="font-size: 10px; padding: 1px 6px;"><i class="fa-solid fa-circle-check"></i> أستاذ القسم</span>` : ''}
+                    ${isHighlighted ? `<span style="font-size: 10px; background: #8b5cf6; color: #fff; padding: 1px 6px; border-radius: 8px; font-weight: 700;">القسم الحالي</span>` : ''}
+                  </div>
+
+                  <!-- Class / Division -->
+                  <div style="font-size: 12.5px; font-weight: 700; color: var(--text-heading); display: flex; align-items: center; gap: 6px;">
+                    <i class="fa-solid fa-chalkboard-user" style="color: #8b5cf6; font-size: 12px;"></i>
+                    <span>${this.escapeHtml(s.group_name || s.name || 'فوج دراسي')}</span>
+                    ${s.level_name && s.level_name !== '-' ? `<span style="font-size: 11px; color: var(--text-muted); font-weight: normal;">(${this.escapeHtml(s.level_name)})</span>` : ''}
+                  </div>
+
+                  <!-- Teacher -->
+                  <div class="room-session-details">
+                    <span style="display: inline-flex; align-items: center; gap: 5px; color: var(--text-main); font-weight: 600;">
+                      <i class="fa-solid fa-user-tie" style="color: #10b981;"></i>
+                      ${this.escapeHtml(s.teacher_name || 'غير محدد')}
+                    </span>
+                    ${s.enrolled_count !== undefined ? `
+                      <span style="font-size: 11px; color: var(--text-muted);">
+                        <i class="fa-solid fa-users"></i> ${s.enrolled_count}
+                      </span>
+                    ` : ''}
+                  </div>
+                </div>
+              `;
+            }).join('')}
+          </div>
+        </div>
+      `;
+    }).join('');
+  }
+
+  filterRoomTimetable() {
+    const query = (document.getElementById('roomTimetableSearchInput')?.value || '').trim().toLowerCase();
+    if (!query) {
+      this.renderRoomTimetableGrid(this.currentRoomSessions || []);
+      return;
+    }
+
+    const filtered = (this.currentRoomSessions || []).filter(s => {
+      const matchSubject = (s.subject_name || '').toLowerCase().includes(query);
+      const matchTeacher = (s.teacher_name || '').toLowerCase().includes(query);
+      const matchGroup = (s.group_name || s.name || '').toLowerCase().includes(query);
+      const matchLevel = (s.level_name || '').toLowerCase().includes(query);
+      const matchNotes = (s.notes || '').toLowerCase().includes(query);
+      const matchDay = (s.day_of_week || '').toLowerCase().includes(query);
+      return matchSubject || matchTeacher || matchGroup || matchLevel || matchNotes || matchDay;
+    });
+
+    this.renderRoomTimetableGrid(filtered);
+  }
+
+  async openModalAddSlot(presetDay = null) {
+    if (!this.allGroupes || this.allGroupes.length === 0) {
+      try {
+        const resG = await fetch('/api/groups?status=all');
+        const dataG = await resG.json();
+        if (dataG.success) this.allGroupes = dataG.groups || [];
+      } catch (e) {}
+    }
+
+    // Modal Titles
+    const titleEl = document.getElementById('slotModalTitle');
+    const subtitleEl = document.getElementById('slotModalSubtitle');
+    const btnText = document.getElementById('btnSaveSlotText');
+    const icon = document.getElementById('slotModalIcon');
+    if (titleEl) titleEl.textContent = this.lang === 'ar' ? 'إضافة حصة دراسية للقسم' : 'Ajouter une Séance à la Classe';
+    if (subtitleEl) subtitleEl.textContent = this.lang === 'ar' ? 'تحديد المادة، الأستاذ المتاح، والتوقيت للقسم' : 'Choisir la matière, l\'enseignant disponible et l\'horaire';
+    if (btnText) btnText.textContent = this.lang === 'ar' ? 'حفظ الحصة في جدول القسم' : 'Enregistrer la séance';
+    if (icon) icon.className = 'fa-solid fa-calendar-plus';
+
+    document.getElementById('slotId').value = '';
+    const hiddenRoom = document.getElementById('slotRoomId');
+    if (hiddenRoom) hiddenRoom.value = '1';
+
+    // Populate Groups / Classes
+    const groupSelect = document.getElementById('slotGroupId');
+    const targetGroupId = this.currentTimetableGroupId || (this.currentTimetableGroup ? this.currentTimetableGroup.id : null);
+    if (groupSelect) {
+      const groupsList = (this.allGroupes && this.allGroupes.length > 0) ? this.allGroupes : (this.groups || []);
+      groupSelect.innerHTML = `<option value="">-- اختر القسم أو الفوج التربوي --</option>` +
+        groupsList.map(g => `
+          <option value="${g.id}" ${targetGroupId && Number(g.id) === Number(targetGroupId) ? 'selected' : ''}>
+            ${this.escapeHtml(g.name)} ${g.level_name ? `(${this.escapeHtml(g.level_name)})` : ''}
+          </option>
+        `).join('');
+      if (targetGroupId) groupSelect.value = targetGroupId;
+    }
+
+    // Load deduplicated, cycle-specific subjects for this class
+    await this.loadSlotSubjects(targetGroupId);
+    const subjectSelect = document.getElementById('slotSubjectId');
+    if (subjectSelect) subjectSelect.value = '';
+
+    // Preset Day & Hours
+    if (presetDay) {
+      document.getElementById('slotDayOfWeek').value = presetDay;
+    } else if (this.currentTimetableDay) {
+      document.getElementById('slotDayOfWeek').value = this.currentTimetableDay;
+    }
+    document.getElementById('slotStartTime').value = '08:00';
+    document.getElementById('slotEndTime').value = '10:00';
+    document.getElementById('slotNotes').value = '';
+
+    const conflictBanner = document.getElementById('slotConflictBanner');
+    if (conflictBanner) conflictBanner.style.display = 'none';
+
+    // Check teacher availability (will prompt to select subject first)
+    await this.checkSlotTeacherAvailability(null, null, true);
+
+    document.getElementById('modalRoomScheduleSlot')?.classList.add('active');
+  }
+
+  async openModalEditSlot(slotId) {
+    if (!this.allGroupes || this.allGroupes.length === 0) {
+      try {
+        const resG = await fetch('/api/groups?status=all');
+        const dataG = await resG.json();
+        if (dataG.success) this.allGroupes = dataG.groups || [];
+      } catch (e) {}
+    }
+
+    const slot = (this.currentRoomSessions || []).find(item => item.id === Number(slotId));
+    if (!slot) return;
+
+    // Modal Titles
+    const titleEl = document.getElementById('slotModalTitle');
+    const subtitleEl = document.getElementById('slotModalSubtitle');
+    const btnText = document.getElementById('btnSaveSlotText');
+    const icon = document.getElementById('slotModalIcon');
+    if (titleEl) titleEl.textContent = this.lang === 'ar' ? 'تعديل الحصة الدراسية' : 'Modifier la Séance';
+    if (subtitleEl) subtitleEl.textContent = this.lang === 'ar' ? 'تعديل المادة، الأستاذ، أو التوقيت للقسم' : 'Modifier les horaires ou l\'enseignant';
+    if (btnText) btnText.textContent = this.lang === 'ar' ? 'تحديث وتأكيد التغييرات' : 'Mettre à jour la séance';
+    if (icon) icon.className = 'fa-solid fa-pen-to-square';
+
+    document.getElementById('slotId').value = slot.id;
+    const hiddenRoom = document.getElementById('slotRoomId');
+    if (hiddenRoom) hiddenRoom.value = slot.room_id || '1';
+
+    // Day & Times
+    document.getElementById('slotDayOfWeek').value = slot.day_of_week || 'Samedi';
+    document.getElementById('slotStartTime').value = slot.start_time || '08:00';
+    document.getElementById('slotEndTime').value = slot.end_time || '10:00';
+    document.getElementById('slotNotes').value = slot.notes || '';
+
+    // Groupes
+    const groupSelect = document.getElementById('slotGroupId');
+    if (groupSelect) {
+      const groupsList = (this.allGroupes && this.allGroupes.length > 0) ? this.allGroupes : (this.groups || []);
+      groupSelect.innerHTML = `<option value="">-- اختر القسم أو الفوج التربوي --</option>` +
+        groupsList.map(g => `
+          <option value="${g.id}" ${Number(slot.group_id) === Number(g.id) ? 'selected' : ''}>
+            ${this.escapeHtml(g.name)} ${g.level_name ? `(${this.escapeHtml(g.level_name)})` : ''}
+          </option>
+        `).join('');
+      groupSelect.value = slot.group_id || '';
+    }
+
+    // Load deduplicated subjects for this class
+    await this.loadSlotSubjects(slot.group_id, slot.subject_id);
+
+    const conflictBanner = document.getElementById('slotConflictBanner');
+    if (conflictBanner) conflictBanner.style.display = 'none';
+
+    // Check teacher availability with this slot excluded
+    await this.checkSlotTeacherAvailability(slot.id, slot.teacher_id, false);
+
+    document.getElementById('modalRoomScheduleSlot')?.classList.add('active');
+  }
+
+  async onSlotGroupChange() {
+    const groupId = document.getElementById('slotGroupId')?.value;
+    await this.loadSlotSubjects(groupId);
+    await this.checkSlotTeacherAvailability(null, null, true);
+  }
+
+  async onSlotSubjectChange() {
+    await this.checkSlotTeacherAvailability(null, null, true);
+  }
+
+  async onSlotGroupOrSubjectChange() {
+    const groupId = document.getElementById('slotGroupId')?.value;
+    await this.loadSlotSubjects(groupId);
+    await this.checkSlotTeacherAvailability(null, null, true);
+  }
+
+  onSlotRoomChange() {
+    this.checkSlotTeacherAvailability();
+  }
+
+  async checkSlotTeacherAvailability(excludeSlotId = null, preselectedTeacherId = null, autoSelectAssigned = false) {
+    const day = document.getElementById('slotDayOfWeek')?.value;
+    const start = document.getElementById('slotStartTime')?.value;
+    const end = document.getElementById('slotEndTime')?.value;
+    const groupId = document.getElementById('slotGroupId')?.value;
+    const subjectId = document.getElementById('slotSubjectId')?.value;
+    const slotId = excludeSlotId || document.getElementById('slotId')?.value || '';
+    const teacherSelect = document.getElementById('slotTeacherId');
+    const badge = document.getElementById('slotTeacherAvailCountBadge');
+    const assignedNotice = document.getElementById('slotAssignedTeacherNotice');
+    const statusDetail = document.getElementById('slotTeacherStatusDetail');
+
+    if (!day || !start || !end) return;
+
+    if (start >= end) {
+      if (badge) {
+        badge.textContent = this.lang === 'ar' ? 'توقيت غير صحيح' : 'Horaires invalides';
+        badge.style.background = 'rgba(239, 68, 68, 0.15)';
+        badge.style.color = '#ef4444';
+      }
+      return;
+    }
+
+    // If no subject selected yet, prompt user to select subject first
+    if (!subjectId) {
+      if (teacherSelect) {
+        teacherSelect.innerHTML = `<option value="">-- يرجى اختيار المادة الدراسية أولاً --</option>`;
+        teacherSelect.disabled = true;
+      }
+      if (badge) {
+        badge.textContent = this.lang === 'ar' ? 'اختر المادة أولاً' : 'Choisir la matière d\'abord';
+        badge.style.background = 'rgba(100, 116, 139, 0.15)';
+        badge.style.color = '#64748b';
+      }
+      if (assignedNotice) assignedNotice.style.display = 'none';
+      if (statusDetail) statusDetail.style.display = 'none';
+      return;
+    }
+
+    if (teacherSelect) {
+      teacherSelect.disabled = false;
+    }
+
+    if (badge) {
+      badge.textContent = this.lang === 'ar' ? 'جاري الفحص...' : 'Vérification...';
+      badge.style.background = 'rgba(59, 130, 246, 0.15)';
+      badge.style.color = '#3b82f6';
+    }
+
+    try {
+      const url = `/api/teachers/availability?day_of_week=${encodeURIComponent(day)}&start_time=${encodeURIComponent(start)}&end_time=${encodeURIComponent(end)}&exclude_schedule_id=${slotId}&group_id=${encodeURIComponent(groupId || '')}&subject_id=${encodeURIComponent(subjectId || '')}`;
+      const res = await fetch(url);
+      const data = await res.json();
+      if (!data.success) return;
+
+      const teachers = data.teachers || [];
+      const assignedTeacherId = data.assigned_teacher_id;
+      this.currentTeacherAvailability = teachers;
+
+      // Filter teachers: strictly matching specialists / assigned
+      const matchingTeachers = teachers.filter(t => t.is_assigned_to_class || t.is_subject_specialist);
+      const otherTeachers = teachers.filter(t => !t.is_assigned_to_class && !t.is_subject_specialist);
+
+      if (badge) {
+        const availCount = (matchingTeachers.length > 0 ? matchingTeachers : teachers).filter(t => t.is_available).length;
+        if (matchingTeachers.length > 0) {
+          badge.textContent = `${availCount} ${this.lang === 'ar' ? 'أستاذ متاح للمادة' : 'disponible(s)'}`;
+          badge.style.background = availCount > 0 ? 'rgba(16, 185, 129, 0.15)' : 'rgba(239, 68, 68, 0.15)';
+          badge.style.color = availCount > 0 ? '#10b981' : '#ef4444';
+        } else {
+          badge.textContent = this.lang === 'ar' ? 'لا يوجد أستاذ مسجل للمادة' : 'Aucun prof spécialisé';
+          badge.style.background = 'rgba(245, 158, 11, 0.15)';
+          badge.style.color = '#f59e0b';
+        }
+      }
+
+      // Display assigned teacher banner notice if applicable
+      if (assignedTeacherId && assignedNotice) {
+        const assignedT = teachers.find(t => t.id === assignedTeacherId);
+        if (assignedT) {
+          const availText = assignedT.is_available 
+            ? `<span style="color: #10b981; font-weight: 700;">✓ متاح للحصة</span>` 
+            : `<span style="color: #ef4444; font-weight: 700;">⚠️ مشغول (${assignedT.conflict?.group_name ? 'مع ' + this.escapeHtml(assignedT.conflict.group_name) : 'في قسم آخر'})</span>`;
+
+          assignedNotice.innerHTML = `
+            <div style="display: flex; align-items: center; justify-content: space-between; gap: 8px;">
+              <div style="display: flex; align-items: center; gap: 8px;">
+                <i class="fa-solid fa-star" style="color: #f59e0b; font-size: 15px;"></i>
+                <div>
+                  أستاذ المادة المسند رسمياً لهذا القسم: <strong>أ. ${this.escapeHtml(assignedT.first_name)} ${this.escapeHtml(assignedT.last_name)}</strong>
+                </div>
+              </div>
+              <div>${availText}</div>
+            </div>
+          `;
+          assignedNotice.style.display = 'block';
+        } else {
+          assignedNotice.style.display = 'none';
+        }
+      } else if (assignedNotice) {
+        assignedNotice.style.display = 'none';
+      }
+
+      if (teacherSelect) {
+        let optionsHtml = '';
+        if (matchingTeachers.length > 0) {
+          optionsHtml = `<option value="">-- اختر أستاذ المادة (${matchingTeachers.length} أستاذ) --</option>` +
+            matchingTeachers.map(t => {
+              const conflictWith = t.conflict?.group_name ? `مع ${this.escapeHtml(t.conflict.group_name)}` : 'قسم آخر';
+              if (t.is_assigned_to_class) {
+                const status = t.is_available ? '✓ متاح' : `⚠️ مشغول (${conflictWith})`;
+                return `<option value="${t.id}" style="color: #10b981; font-weight: 700; background: rgba(16, 185, 129, 0.08);">⭐ [أستاذ المادة للقسم] أ. ${this.escapeHtml(t.first_name)} ${this.escapeHtml(t.last_name)} — [${status}]</option>`;
+              } else {
+                const status = t.is_available ? '✓ متاح' : `⚠️ مشغول (${conflictWith})`;
+                return `<option value="${t.id}" style="color: #3b82f6; font-weight: 600;">✓ [أستاذ المادة] أ. ${this.escapeHtml(t.first_name)} ${this.escapeHtml(t.last_name)} — [${status}]</option>`;
+              }
+            }).join('');
+
+          if (otherTeachers.length > 0) {
+            optionsHtml += `
+              <optgroup label="${this.lang === 'ar' ? '── أساتذة آخرين (غير مختصين بهذه المادة) ──' : '── Autres enseignants ──'}">
+                ${otherTeachers.map(t => {
+                  const conflictWith = t.conflict?.group_name ? `مع ${this.escapeHtml(t.conflict.group_name)}` : 'قسم آخر';
+                  const status = t.is_available ? '✓ متاح' : `⚠️ مشغول (${conflictWith})`;
+                  return `<option value="${t.id}" style="color: var(--text-muted);">أ. ${this.escapeHtml(t.first_name)} ${this.escapeHtml(t.last_name)} (${this.escapeHtml(t.subject_name || 'عام')}) — [${status}]</option>`;
+                }).join('')}
+              </optgroup>
+            `;
+          }
+        } else {
+          optionsHtml = `<option value="">-- لم يتم العثور على أستاذ مسجل لهذه المادة --</option>` +
+            teachers.map(t => {
+              const conflictWith = t.conflict?.group_name ? `مع ${this.escapeHtml(t.conflict.group_name)}` : 'قسم آخر';
+              const status = t.is_available ? '✓ متاح' : `⚠️ مشغول (${conflictWith})`;
+              return `<option value="${t.id}">أ. ${this.escapeHtml(t.first_name)} ${this.escapeHtml(t.last_name)} (${this.escapeHtml(t.subject_name || 'عام')}) — [${status}]</option>`;
+            }).join('');
+        }
+
+        teacherSelect.innerHTML = optionsHtml;
+
+        // Auto selection:
+        let currentVal = preselectedTeacherId;
+        if (!currentVal && autoSelectAssigned && assignedTeacherId) {
+          currentVal = assignedTeacherId;
+        } else if (!currentVal && matchingTeachers.length > 0) {
+          const availSpec = matchingTeachers.find(t => t.is_available);
+          if (availSpec) currentVal = availSpec.id;
+          else currentVal = matchingTeachers[0].id;
+        }
+
+        if (currentVal) {
+          teacherSelect.value = currentVal;
+        }
+      }
+
+      this.onSlotTeacherSelect();
+
+      // Check class collision for this time
+      const conflictBanner = document.getElementById('slotConflictBanner');
+      if (groupId && this.currentRoomSessions) {
+        const classOverlap = this.currentRoomSessions.find(s => {
+          if (slotId && Number(s.id) === Number(slotId)) return false;
+          if (String(s.group_id) !== String(groupId)) return false;
+          if (s.day_of_week !== day) return false;
+          return s.start_time < end && s.end_time > start;
+        });
+
+        if (classOverlap && conflictBanner) {
+          conflictBanner.innerHTML = `
+            <div style="display: flex; align-items: center; gap: 8px;">
+              <i class="fa-solid fa-triangle-exclamation" style="font-size: 16px;"></i>
+              <div>
+                <strong>تنبيه تعارض في توقيت القسم:</strong> القسم لديه حصة أخرى مبرمجة يوم ${day} من ${classOverlap.start_time} إلى ${classOverlap.end_time} لحصة <strong>${this.escapeHtml(classOverlap.subject_name || '')}</strong>.
+              </div>
+            </div>
+          `;
+          conflictBanner.style.display = 'block';
+        } else if (conflictBanner && (!teacherSelect?.value || !this.currentTeacherAvailability.find(t => t.id == teacherSelect.value && !t.is_available))) {
+          conflictBanner.style.display = 'none';
+        }
+      }
+    } catch (err) {
+      console.error(err);
+    }
+  }
+
+  onSlotTeacherSelect() {
+    const teacherId = document.getElementById('slotTeacherId')?.value;
+    const statusDetail = document.getElementById('slotTeacherStatusDetail');
+    if (!teacherId || !this.currentTeacherAvailability || !statusDetail) {
+      if (statusDetail) statusDetail.style.display = 'none';
+      return;
+    }
+
+    const t = this.currentTeacherAvailability.find(item => String(item.id) === String(teacherId));
+    if (!t) return;
+
+    if (!t.is_available && t.conflict) {
+      statusDetail.innerHTML = `
+        <span style="color: #ef4444; font-weight: 700; display: inline-flex; align-items: center; gap: 6px;">
+          <i class="fa-solid fa-circle-exclamation"></i>
+          <span>تحذير: ${this.escapeHtml(t.conflict.message)}</span>
+        </span>
+      `;
+      statusDetail.style.display = 'block';
+    } else {
+      statusDetail.innerHTML = `
+        <span style="color: #10b981; font-weight: 600; display: inline-flex; align-items: center; gap: 6px;">
+          <i class="fa-solid fa-circle-check"></i>
+          <span>الأستاذ متاح تماماً في هذا التوقيت</span>
+        </span>
+      `;
+      statusDetail.style.display = 'block';
+    }
+  }
+
+  async saveSlot() {
+    const slotId = document.getElementById('slotId')?.value;
+    const roomId = document.getElementById('slotRoomId')?.value || 1;
+    const day = document.getElementById('slotDayOfWeek')?.value;
+    const start = document.getElementById('slotStartTime')?.value;
+    const end = document.getElementById('slotEndTime')?.value;
+    const groupId = document.getElementById('slotGroupId')?.value;
+    const subjectId = document.getElementById('slotSubjectId')?.value;
+    const teacherId = document.getElementById('slotTeacherId')?.value;
+    const notes = document.getElementById('slotNotes')?.value?.trim();
+
+    if (!groupId) {
+      alert(this.lang === 'ar' ? 'يرجى اختيار القسم أو الفوج التربوي' : 'Veuillez choisir la classe');
+      return;
+    }
+    if (!subjectId) {
+      alert(this.lang === 'ar' ? 'يرجى اختيار المادة' : 'Veuillez choisir la matière');
+      return;
+    }
+    if (!teacherId) {
+      alert(this.lang === 'ar' ? 'يرجى اختيار الأستاذ المشرف' : 'Veuillez choisir l\'enseignant');
+      return;
+    }
+    if (!day) {
+      alert(this.lang === 'ar' ? 'يرجى اختيار اليوم' : 'Veuillez choisir le jour');
+      return;
+    }
+    if (!start || !end || start >= end) {
+      alert(this.lang === 'ar' ? 'يرجى التأكد من صحة توقيت البداية والنهاية' : 'Horaires invalides');
+      return;
+    }
+
+    // Check if teacher has conflict
+    const teacher = (this.currentTeacherAvailability || []).find(t => String(t.id) === String(teacherId));
+    let force = false;
+    if (teacher && !teacher.is_available) {
+      const confirmForce = confirm(
+        this.lang === 'ar'
+          ? `⚠️ تنبيه تعارض: الأستاذ (${teacher.first_name} ${teacher.last_name}) لديه حصة أخرى مبرمجة في هذا التوقيت!\n\nهل تريد تأكيد وحفظ الحصة بالقوة رغم التعارض؟`
+          : `L'enseignant est déjà occupé à ce créneau. Voulez-vous quand même enregistrer ?`
+      );
+      if (!confirmForce) return;
+      force = true;
+    }
+
+    const payload = {
+      room_id: Number(roomId || 1),
+      group_id: Number(groupId),
+      subject_id: Number(subjectId),
+      teacher_id: Number(teacherId),
+      day_of_week: day,
+      start_time: start,
+      end_time: end,
+      notes: notes || null,
+      force: force
+    };
+
+    const url = slotId ? `/api/room-schedules/${slotId}` : `/api/groups/${groupId}/schedule`;
+    const method = slotId ? 'PUT' : 'POST';
+
+    try {
+      const res = await fetch(url, {
+        method: method,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+      const data = await res.json();
+
+      if (data.success) {
+        this.closeSlotModal();
+        this.playChime('success');
+        this.showToast(this.lang === 'ar' ? 'تم حفظ الحصة في جدول القسم بنجاح' : 'Séance enregistrée avec succès', 'success');
+        await this.openClassTimetable(groupId);
+      } else if (res.status === 409) {
+        const proceed = confirm(`⚠️ ${data.error}\n\nهل تريد حفظ الحصة وتجاوز هذا التعارض؟`);
+        if (proceed) {
+          payload.force = true;
+          const retryRes = await fetch(url, {
+            method: method,
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+          });
+          const retryData = await retryRes.json();
+          if (retryData.success) {
+            this.closeSlotModal();
+            this.playChime('success');
+            this.showToast(this.lang === 'ar' ? 'تم حفظ الحصة بنجاح' : 'Séance enregistrée', 'success');
+            await this.openClassTimetable(groupId);
+          } else {
+            alert(retryData.error || 'Erreur');
+          }
+        }
+      } else {
+        alert(data.error || 'Erreur lors de l\'enregistrement');
+      }
+    } catch (e) {
+      console.error(e);
+      alert('Erreur réseau');
+    }
+  }
+
+  async deleteSlot(slotId) {
+    if (!confirm(this.lang === 'ar' ? 'هل تريد حقاً حذف هذه الحصة من جدول توقيت القسم؟' : 'Voulez-vous vraiment supprimer cette séance ?')) {
+      return;
+    }
+
+    try {
+      const res = await fetch(`/api/room-schedules/${slotId}`, { method: 'DELETE' });
+      const data = await res.json();
+      if (data.success) {
+        this.playChime('success');
+        this.showToast(this.lang === 'ar' ? 'تم حذف الحصة بنجاح' : 'Séance supprimée avec succès', 'success');
+        const gid = this.currentTimetableGroupId || (this.currentTimetableGroup ? this.currentTimetableGroup.id : null);
+        if (gid) {
+          await this.openClassTimetable(gid);
+        }
+      } else {
+        alert(data.error || 'Erreur lors de la suppression');
+      }
+    } catch (e) {
+      console.error(e);
+      alert('Erreur réseau');
+    }
+  }
+
+  closeSlotModal() {
+    document.getElementById('modalRoomScheduleSlot')?.classList.remove('active');
   }
 
   printRoomTimetable() {
@@ -16352,6 +17390,21 @@ class EdumindApp {
       lvlSelect.innerHTML = (this.levels || []).map(l => `<option value="${l.id}">${this.escapeHtml(l.name)}</option>`).join('');
     }
 
+    if (!this.rooms || this.rooms.length === 0) {
+      try {
+        const resR = await fetch('/api/rooms');
+        const dataR = await resR.json();
+        if (dataR.success) this.rooms = dataR.rooms || [];
+      } catch (e) {}
+    }
+
+    const roomSelect = document.getElementById('groupRoomId');
+    if (roomSelect) {
+      roomSelect.innerHTML = `<option value="">-- بدون قاعة محددة (تعيين لاحقاً) --</option>` +
+        (this.rooms || []).map(r => `<option value="${r.id}">${this.escapeHtml(r.name)} (${r.capacity} مقعد)</option>`).join('');
+      roomSelect.value = '';
+    }
+
     const titleEl = document.getElementById('modalGroupTitle');
     if (titleEl) titleEl.textContent = this.lang === 'ar' ? 'إضافة قسم تربوي جديد' : 'Créer une Nouvelle Classe';
 
@@ -16375,6 +17428,13 @@ class EdumindApp {
     if (!this.levels || this.levels.length === 0) {
       await this.loadLevels();
     }
+    if (!this.rooms || this.rooms.length === 0) {
+      try {
+        const resR = await fetch('/api/rooms');
+        const dataR = await resR.json();
+        if (dataR.success) this.rooms = dataR.rooms || [];
+      } catch (e) {}
+    }
 
     const g = (this.allGroupes || this.groups || []).find(item => item.id === id);
     if (!g) return;
@@ -16382,6 +17442,13 @@ class EdumindApp {
     const lvlSelect = document.getElementById('groupLevel');
     if (lvlSelect) {
       lvlSelect.innerHTML = (this.levels || []).map(l => `<option value="${l.id}" ${l.id == g.level_id ? 'selected' : ''}>${this.escapeHtml(l.name)}</option>`).join('');
+    }
+
+    const roomSelect = document.getElementById('groupRoomId');
+    if (roomSelect) {
+      roomSelect.innerHTML = `<option value="">-- بدون قاعة محددة (تعيين لاحقاً) --</option>` +
+        (this.rooms || []).map(r => `<option value="${r.id}" ${r.id == g.room_id ? 'selected' : ''}>${this.escapeHtml(r.name)} (${r.capacity} مقعد)</option>`).join('');
+      roomSelect.value = g.room_id || '';
     }
 
     const titleEl = document.getElementById('modalGroupTitle');
@@ -16409,6 +17476,7 @@ class EdumindApp {
     const levelId = document.getElementById('groupLevel')?.value;
     const specialite = document.getElementById('groupSpecialite')?.value?.trim() || null;
     const schoolYear = document.getElementById('groupSchoolYear')?.value?.trim() || '2026-2027';
+    const roomId = document.getElementById('groupRoomId')?.value;
 
     if (!name) {
       alert(this.lang === 'ar' ? 'يرجى إدخال اسم القسم' : 'Veuillez saisir un nom pour la classe.');
@@ -16423,7 +17491,8 @@ class EdumindApp {
       name,
       level_id: levelId,
       specialite,
-      school_year: schoolYear
+      school_year: schoolYear,
+      room_id: roomId ? Number(roomId) : null
     };
 
     const url = id ? `/api/groups/${id}` : '/api/groups';
@@ -18217,9 +19286,264 @@ class EdumindApp {
     document.querySelectorAll('.settings-panels-container .settings-tab-panel').forEach(panel => {
       panel.classList.toggle('active', panel.id === `settingsTab-${tabName}`);
     });
+    if (tabName === 'cloud_mobile') {
+      this.loadCloudMobileSettings();
+    }
     if (tabName === 'securite') {
       this.loadSchoolCyclesInputs();
     }
+  }
+
+  // -------------------------------------------------------------
+  // SCHOOL CYCLES & EDUCATIONAL LEVELS FILTERING
+  // -------------------------------------------------------------
+
+  // -------------------------------------------------------------
+  // CLOUD SYNC & TEACHER MOBILE APP LINKING (GOOGLE SHEETS)
+  // -------------------------------------------------------------
+  async loadCloudMobileSettings() {
+    try {
+      const res = await fetch('/api/sync/sheets/config');
+      const data = await res.json();
+      if (data.success) {
+        const switchEl = document.getElementById('switchCloudSync');
+        const urlInput = document.getElementById('settingCloudScriptUrl');
+        const container = document.getElementById('cloudSyncSettingsBody');
+        const schoolNameEl = document.getElementById('qrSchoolNameDisplay');
+
+        const isEnabled = !!data.enabled;
+        if (switchEl) switchEl.checked = isEnabled;
+        if (urlInput) urlInput.value = data.url || '';
+        if (container) container.style.display = isEnabled ? 'block' : 'none';
+        if (schoolNameEl) schoolNameEl.textContent = data.schoolName || 'مؤسسة EDUMIND التربوية';
+
+        if (isEnabled && data.url) {
+          this.renderSchoolQrCode(data.url, data.schoolName);
+        }
+      }
+    } catch (e) {
+      console.warn('Erreur chargement config cloud:', e);
+    }
+  }
+
+  async toggleCloudSyncEnabled(enabled) {
+    const container = document.getElementById('cloudSyncSettingsBody');
+    if (container) {
+      container.style.display = enabled ? 'block' : 'none';
+    }
+    const isAr = (this.lang || localStorage.getItem('edumind_lang') || 'ar') === 'ar';
+    try {
+      const urlInput = document.getElementById('settingCloudScriptUrl');
+      const url = urlInput ? urlInput.value.trim() : '';
+      await fetch('/api/sync/sheets/config', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ enabled, url })
+      });
+      if (enabled && url) {
+        this.renderSchoolQrCode(url);
+      }
+      this.showToast(enabled ? (isAr ? 'تم تفعيل الربط السحابي ومزامنة التطبيق' : 'Synchronisation Cloud activée') : (isAr ? 'تم تعطيل الربط السحابي' : 'Synchronisation Cloud désactivée'), 'info');
+    } catch (e) {
+      this.showToast(isAr ? 'تعذر حفظ حالة الربط' : 'Erreur de sauvegarde', 'error');
+    }
+  }
+
+  async testCloudConnection() {
+    const urlInput = document.getElementById('settingCloudScriptUrl');
+    const alertBox = document.getElementById('cloudConnectionStatusAlert');
+    const btnTest = document.getElementById('btnTestCloudConnection');
+    const isAr = (this.lang || localStorage.getItem('edumind_lang') || 'ar') === 'ar';
+    if (!urlInput || !alertBox) return;
+
+    const url = urlInput.value.trim();
+    if (!url) {
+      alertBox.className = 'alert alert-error';
+      alertBox.style.display = 'flex';
+      alertBox.innerHTML = '<i class="fa-solid fa-triangle-exclamation"></i> <span>' + (isAr ? 'يرجى إدخال رابط الـ Web App الخاص بـ Google Apps Script أولاً.' : 'Veuillez saisir l URL du Web App Google Apps Script.') + '</span>';
+      return;
+    }
+
+    if (btnTest) {
+      btnTest.disabled = true;
+      btnTest.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin"></i> <span>' + (isAr ? 'جاري اختبار الاتصال...' : 'Test de connexion...') + '</span>';
+    }
+
+    alertBox.className = 'alert alert-info';
+    alertBox.style.display = 'flex';
+    alertBox.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin"></i> <span>' + (isAr ? 'جاري اختبار الربط مع السحابة...' : 'Test en cours...') + '</span>';
+
+    try {
+      const res = await fetch('/api/sync/sheets/test', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ url })
+      });
+      const data = await res.json();
+
+      if (data.success) {
+        alertBox.className = 'alert alert-success';
+        alertBox.style.display = 'flex';
+        alertBox.innerHTML = `
+          <i class="fa-solid fa-circle-check" style="color: #10b981; font-size: 18px;"></i>
+          <div>
+            <strong>${isAr ? 'تم الاتصال بنجاح مع السحابة!' : 'Connexion Cloud réussie !'}</strong>
+            <div style="font-size: 12px; margin-top: 2px;">${isAr ? 'زمن الاستجابة' : 'Latence'}: ${data.latencyMs}ms · ${isAr ? 'إصدار API' : 'Version'}: ${data.version}</div>
+          </div>
+        `;
+        // Auto-save on successful test
+        await fetch('/api/sync/sheets/config', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ url, enabled: true })
+        });
+        const switchEl = document.getElementById('switchCloudSync');
+        if (switchEl) switchEl.checked = true;
+        this.renderSchoolQrCode(url);
+        this.showToast(isAr ? 'تم التحقق من الاتصال وتحديث الرمز بنجاح ✓' : 'Connexion validée et QR code généré ✓', 'success');
+      } else {
+        throw new Error(data.error || (isAr ? 'فشل الاتصال' : 'Échec de connexion'));
+      }
+    } catch (err) {
+      alertBox.className = 'alert alert-error';
+      alertBox.style.display = 'flex';
+      alertBox.innerHTML = `
+        <i class="fa-solid fa-circle-xmark" style="color: #ef4444; font-size: 18px;"></i>
+        <div>
+          <strong>${isAr ? 'فشل الاتصال بالسحابة' : 'Échec de la connexion'}</strong>
+          <div style="font-size: 12px; margin-top: 2px;">${err.message}</div>
+        </div>
+      `;
+      this.showToast(err.message, 'error');
+    } finally {
+      if (btnTest) {
+        btnTest.disabled = false;
+        btnTest.innerHTML = '<i class="fa-solid fa-plug"></i> <span>' + (isAr ? 'اختبار الاتصال بالرابط' : 'Tester la connexion') + '</span>';
+      }
+    }
+  }
+
+  async saveCloudSettings() {
+    const urlInput = document.getElementById('settingCloudScriptUrl');
+    const switchEl = document.getElementById('switchCloudSync');
+    const url = urlInput ? urlInput.value.trim() : '';
+    const enabled = switchEl ? switchEl.checked : true;
+    const isAr = (this.lang || localStorage.getItem('edumind_lang') || 'ar') === 'ar';
+
+    try {
+      const res = await fetch('/api/sync/sheets/config', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ url, enabled })
+      });
+      const data = await res.json();
+      if (data.success) {
+        this.showToast(isAr ? 'تم حفظ إعدادات الربط السحابي بنجاح ✓' : 'Paramètres Cloud enregistrés avec succès ✓', 'success');
+        if (enabled && url) {
+          this.renderSchoolQrCode(url);
+        }
+      }
+    } catch (e) {
+      this.showToast(isAr ? 'خطأ أثناء حفظ الإعدادات' : 'Erreur de sauvegarde', 'error');
+    }
+  }
+
+  renderSchoolQrCode(url, schoolName) {
+    const container = document.getElementById('schoolQrCodeContainer');
+    if (!container) return;
+    container.innerHTML = '';
+
+    const name = schoolName || (document.getElementById('settingSchoolName') ? document.getElementById('settingSchoolName').value : '') || 'EDUMIND';
+    
+    // Clean URL payload
+    const payload = JSON.stringify({
+      type: 'edumind_school_sync',
+      url: url,
+      school: name,
+      v: 2
+    });
+
+    if (window.QRCode) {
+      new QRCode(container, {
+        text: payload,
+        width: 190,
+        height: 190,
+        colorDark: '#0f172a',
+        colorLight: '#ffffff',
+        correctLevel: QRCode.CorrectLevel.M
+      });
+    } else {
+      container.innerHTML = '<img src="https://api.qrserver.com/v1/create-qr-code/?size=190x190&data=' + encodeURIComponent(payload) + '" alt="QR Code" style="border-radius: 8px;">';
+    }
+  }
+
+  copyCloudUrl() {
+    const urlInput = document.getElementById('settingCloudScriptUrl');
+    const isAr = (this.lang || localStorage.getItem('edumind_lang') || 'ar') === 'ar';
+    if (!urlInput || !urlInput.value) {
+      this.showToast(isAr ? 'لا يوجد رابط لنسخه' : 'Aucun lien à copier', 'warning');
+      return;
+    }
+    navigator.clipboard.writeText(urlInput.value.trim()).then(() => {
+      this.showToast(isAr ? 'تم نسخ الرابط بنجاح ✓' : 'Lien copié dans le presse-papiers ✓', 'success');
+    }).catch(() => {
+      urlInput.select();
+      document.execCommand('copy');
+      this.showToast(isAr ? 'تم نسخ الرابط بنجاح ✓' : 'Lien copié ✓', 'success');
+    });
+  }
+
+  printSchoolQrCard() {
+    const container = document.getElementById('schoolQrCodeContainer');
+    const schoolName = (document.getElementById('settingSchoolName') ? document.getElementById('settingSchoolName').value : '') || 'EDUMIND';
+    const isAr = (this.lang || localStorage.getItem('edumind_lang') || 'ar') === 'ar';
+    if (!container || !container.innerHTML) {
+      this.showToast(isAr ? 'يرجى توليد رمز QR أولاً' : 'Veuillez générer le QR Code d abord', 'warning');
+      return;
+    }
+
+    const qrImg = container.querySelector('img') ? container.querySelector('img').src : (container.querySelector('canvas') ? container.querySelector('canvas').toDataURL() : '');
+
+    const printWin = window.open('', '_blank', 'width=700,height=800');
+    printWin.document.write(`
+      <!DOCTYPE html>
+      <html dir="${isAr ? 'rtl' : 'ltr'}">
+      <head>
+        <meta charset="UTF-8">
+        <title>${isAr ? 'بطاقة ربط تطبيق الأساتذة' : 'Fiche de Liaison Application Mobile'}</title>
+        <style>
+          body { font-family: system-ui, -apple-system, sans-serif; text-align: center; padding: 40px; background: #fff; color: #1e293b; }
+          .card { border: 2px dashed #0284c7; border-radius: 20px; padding: 30px; max-width: 480px; margin: 0 auto; box-shadow: 0 4px 20px rgba(0,0,0,0.06); }
+          .logo { font-size: 26px; font-weight: 900; color: #0284c7; margin-bottom: 6px; }
+          .school { font-size: 20px; font-weight: 700; margin-bottom: 16px; color: #0f172a; }
+          .qr { margin: 20px auto; padding: 14px; background: #fff; border: 1px solid #e2e8f0; border-radius: 14px; display: inline-block; }
+          .qr img { display: block; width: 220px; height: 220px; }
+          .instructions { font-size: 14px; color: #475569; line-height: 1.6; margin-top: 16px; }
+          .step { background: #f8fafc; border-radius: 10px; padding: 10px 14px; margin-top: 8px; font-weight: 600; text-align: start; }
+          @media print { button { display: none; } body { padding: 0; } }
+        </style>
+      </head>
+      <body>
+        <div class="card">
+          <div class="logo">EDUMIND Presence</div>
+          <div class="school">${schoolName}</div>
+          <div style="font-size: 14px; color: #64748b; font-weight: 600;">${isAr ? 'بطاقة ربط هاتف الأستاذ بالمؤسسة' : 'Fiche de liaison mobile Enseignant'}</div>
+          <div class="qr">
+            <img src="${qrImg}" alt="QR Code">
+          </div>
+          <div class="instructions">
+            <div class="step">1. ${isAr ? 'افتح تطبيق EDUMIND Presence على هاتفك.' : 'Ouvrez l application EDUMIND Presence.'}</div>
+            <div class="step">2. ${isAr ? 'اضغط على زر (مسح رمز QR) قبل تسجيل الدخول.' : 'Scannez ce code QR avant la connexion.'}</div>
+            <div class="step">3. ${isAr ? 'قم بتوجيه الكاميرا نحو هذا الرمز ليتم ربط حسابك بالمؤسسة فوراً.' : 'Votre téléphone sera directement lié à l établissement.'}</div>
+          </div>
+        </div>
+        <script>
+          window.onload = function() { window.print(); };
+        </script>
+      </body>
+      </html>
+    `);
+    printWin.document.close();
   }
 
   // -------------------------------------------------------------
@@ -19378,6 +20702,670 @@ class EdumindApp {
       alert('خطأ أثناء إعداد ورقة الحضور للطباعة');
     }
   }
+
+  // =============================================================
+  // DISCIPLINE & ABSENCES MANAGEMENT
+  // =============================================================
+
+  async loadDisciplineAbsences() {
+    try {
+      // 1. Populate Groups dropdowns if not already populated
+      await this.ensureAbsenceGroupsPopulated();
+
+      // 2. Fetch stats & update KPI cards
+      this.fetchDisciplineAbsenceStats();
+
+      // 3. Collect filter parameters
+      const search = document.getElementById('searchAbsenceInput')?.value?.trim() || '';
+      const preset = document.getElementById('filterAbsenceDatePreset')?.value || 'today';
+      const groupId = document.getElementById('filterAbsenceGroup')?.value || 'all';
+      const type = document.getElementById('filterAbsenceType')?.value || 'all';
+      const justified = document.getElementById('filterAbsenceJustified')?.value || 'all';
+
+      const queryParams = new URLSearchParams();
+      if (search) queryParams.set('search', search);
+      if (groupId !== 'all') queryParams.set('group_id', groupId);
+      if (type !== 'all') queryParams.set('period_type', type);
+      if (justified !== 'all') queryParams.set('is_justified', justified);
+
+      // Date ranges based on preset (using local calendar date)
+      const today = new Date();
+      const y = today.getFullYear();
+      const m = String(today.getMonth() + 1).padStart(2, '0');
+      const d = String(today.getDate()).padStart(2, '0');
+      const todayStr = `${y}-${m}-${d}`;
+
+      if (preset === 'today') {
+        queryParams.set('date', todayStr);
+      } else if (preset === 'yesterday') {
+        const yest = new Date(today);
+        yest.setDate(yest.getDate() - 1);
+        const yY = yest.getFullYear();
+        const yM = String(yest.getMonth() + 1).padStart(2, '0');
+        const yD = String(yest.getDate()).padStart(2, '0');
+        queryParams.set('date', `${yY}-${yM}-${yD}`);
+      } else if (preset === 'week') {
+        const weekStart = new Date(today);
+        weekStart.setDate(weekStart.getDate() - 7);
+        const wY = weekStart.getFullYear();
+        const wM = String(weekStart.getMonth() + 1).padStart(2, '0');
+        const wD = String(weekStart.getDate()).padStart(2, '0');
+        queryParams.set('start_date', `${wY}-${wM}-${wD}`);
+        queryParams.set('end_date', todayStr);
+      } else if (preset === 'month') {
+        const monthStart = `${y}-${m}-01`;
+        const lastDay = new Date(y, today.getMonth() + 1, 0).getDate();
+        const monthEnd = `${y}-${m}-${String(lastDay).padStart(2, '0')}`;
+        queryParams.set('start_date', monthStart);
+        queryParams.set('end_date', monthEnd);
+      } else if (preset === 'custom') {
+        const customDate = document.getElementById('filterAbsenceCustomDate')?.value;
+        if (customDate) queryParams.set('date', customDate);
+      }
+
+      // 4. Fetch list from backend API
+      const res = await fetch(`/api/discipline-absences?${queryParams.toString()}`);
+      const data = await res.json();
+
+      if (data.success) {
+        this._cachedAbsences = data.absences || [];
+        this.renderDisciplineAbsencesTable(this._cachedAbsences);
+      } else {
+        console.error('loadDisciplineAbsences failed:', data.error);
+      }
+    } catch (err) {
+      console.error('loadDisciplineAbsences error:', err);
+    }
+  }
+
+  async fetchDisciplineAbsenceStats() {
+    try {
+      const res = await fetch('/api/discipline-absences/stats');
+      const data = await res.json();
+      if (data.success && data.stats) {
+        const s = data.stats;
+        const elToday = document.getElementById('kpiAbsTodayCount');
+        const elUnjustified = document.getElementById('kpiAbsUnjustifiedCount');
+        const elLates = document.getElementById('kpiAbsLatesCount');
+        const elMonth = document.getElementById('kpiAbsMonthCount');
+
+        if (elToday) elToday.textContent = s.todayAbsences || 0;
+        if (elUnjustified) elUnjustified.textContent = s.todayUnjustified || 0;
+        if (elLates) elLates.textContent = s.todayLates || 0;
+        if (elMonth) elMonth.textContent = s.monthTotal || 0;
+
+        // Update sidebar badge
+        const badge = document.getElementById('sidebarAbsencesBadge');
+        if (badge) {
+          if (s.todayUnjustified > 0) {
+            badge.textContent = s.todayUnjustified;
+            badge.style.display = 'inline-block';
+          } else if (s.todayAbsences > 0) {
+            badge.textContent = s.todayAbsences;
+            badge.style.display = 'inline-block';
+          } else {
+            badge.style.display = 'none';
+          }
+        }
+      }
+    } catch (err) {
+      console.error('fetchDisciplineAbsenceStats error:', err);
+    }
+  }
+
+  async ensureAbsenceGroupsPopulated() {
+    const filterSelect = document.getElementById('filterAbsenceGroup');
+    const manualSelect = document.getElementById('manualAbsenceGroupSelect');
+    if (!filterSelect || filterSelect.options.length > 1) return;
+
+    try {
+      const res = await fetch('/api/groups');
+      const data = await res.json();
+      const groups = data.groups || data || [];
+
+      this._groupsCache = groups;
+
+      groups.forEach(g => {
+        const opt = document.createElement('option');
+        opt.value = g.id;
+        opt.textContent = `${g.name || ''} ${g.level_name ? '(' + g.level_name + ')' : ''}`;
+        filterSelect.appendChild(opt);
+
+        if (manualSelect) {
+          const opt2 = opt.cloneNode(true);
+          manualSelect.appendChild(opt2);
+        }
+      });
+    } catch (err) {
+      console.error('ensureAbsenceGroupsPopulated error:', err);
+    }
+  }
+
+  handleAbsenceDatePresetChange(val) {
+    const picker = document.getElementById('absenceCustomDatePicker');
+    if (picker) {
+      if (val === 'custom') {
+        picker.style.display = 'block';
+        const dateInput = document.getElementById('filterAbsenceCustomDate');
+        if (dateInput && !dateInput.value) {
+          dateInput.value = new Date().toISOString().slice(0, 10);
+        }
+      } else {
+        picker.style.display = 'none';
+      }
+    }
+    this.loadDisciplineAbsences();
+  }
+
+  filterDisciplineAbsences() {
+    clearTimeout(this._filterAbsTimeout);
+    this._filterAbsTimeout = setTimeout(() => {
+      this.loadDisciplineAbsences();
+    }, 250);
+  }
+
+  resetAbsenceFilters() {
+    const sInput = document.getElementById('searchAbsenceInput');
+    const pSelect = document.getElementById('filterAbsenceDatePreset');
+    const gSelect = document.getElementById('filterAbsenceGroup');
+    const tSelect = document.getElementById('filterAbsenceType');
+    const jSelect = document.getElementById('filterAbsenceJustified');
+    const picker = document.getElementById('absenceCustomDatePicker');
+
+    if (sInput) sInput.value = '';
+    if (pSelect) pSelect.value = 'today';
+    if (gSelect) gSelect.value = 'all';
+    if (tSelect) tSelect.value = 'all';
+    if (jSelect) jSelect.value = 'all';
+    if (picker) picker.style.display = 'none';
+
+    this.loadDisciplineAbsences();
+  }
+
+  quickFilterAbsences(mode) {
+    const pSelect = document.getElementById('filterAbsenceDatePreset');
+    const tSelect = document.getElementById('filterAbsenceType');
+    const jSelect = document.getElementById('filterAbsenceJustified');
+    const sInput = document.getElementById('searchAbsenceInput');
+    const gSelect = document.getElementById('filterAbsenceGroup');
+    const picker = document.getElementById('absenceCustomDatePicker');
+
+    if (sInput) sInput.value = '';
+    if (gSelect) gSelect.value = 'all';
+    if (picker) picker.style.display = 'none';
+
+    if (mode === 'today_absences') {
+      if (pSelect) pSelect.value = 'today';
+      if (tSelect) tSelect.value = 'absence';
+      if (jSelect) jSelect.value = 'all';
+    } else if (mode === 'today_unjustified') {
+      if (pSelect) pSelect.value = 'today';
+      if (tSelect) tSelect.value = 'all';
+      if (jSelect) jSelect.value = '0';
+    } else if (mode === 'today_lates') {
+      if (pSelect) pSelect.value = 'today';
+      if (tSelect) tSelect.value = 'late';
+      if (jSelect) jSelect.value = 'all';
+    } else if (mode === 'month_all') {
+      if (pSelect) pSelect.value = 'month';
+      if (tSelect) tSelect.value = 'all';
+      if (jSelect) jSelect.value = 'all';
+    }
+    this.loadDisciplineAbsences();
+  }
+
+  renderDisciplineAbsencesTable(absences) {
+    const table = document.getElementById('absencesTable');
+    if (!table) return;
+
+    let tbody = table.querySelector('tbody');
+    if (!tbody) {
+      tbody = document.createElement('tbody');
+      table.appendChild(tbody);
+    }
+
+    if (!absences || absences.length === 0) {
+      tbody.innerHTML = `
+        <tr>
+          <td colspan="8" style="text-align: center; padding: 45px 20px; color: var(--text-muted);">
+            <div style="font-size: 40px; margin-bottom: 10px; color: #10b981;">
+              <i class="fa-solid fa-clipboard-check"></i>
+            </div>
+            <div style="font-size: 16px; font-weight: 700; color: var(--text-heading); margin-bottom: 4px;">
+              لا توجد غيابات مسجلة لهذه المعايير
+            </div>
+            <div style="font-size: 12.5px;">
+              جميع التلاميذ حاضرون أو لم يتم تسجيل أي غياب في الفترة المحددة.
+            </div>
+          </td>
+        </tr>
+      `;
+      return;
+    }
+
+    tbody.innerHTML = absences.map(row => {
+      const isLate = row.period_type === 'late';
+      const isJustified = !!row.is_justified;
+      const studentName = `${row.first_name || ''} ${row.last_name || ''}`.trim() || 'تلميذ غير معروف';
+      const matricule = row.matricule ? `<span style="font-family: monospace; font-size: 11px; color: var(--text-muted);">${row.matricule}</span>` : '';
+      const groupName = row.group_name || 'غير محدد';
+      const levelName = row.level_name ? `<span style="font-size: 11px; color: var(--text-muted);">${row.level_name}</span>` : '';
+      
+      const typeBadge = isLate 
+        ? `<span class="badge" style="background: rgba(245, 158, 11, 0.15); color: #f59e0b; border: 1px solid rgba(245, 158, 11, 0.3); font-weight: 700; padding: 4px 10px; border-radius: 20px;"><i class="fa-solid fa-clock"></i> متأخر</span>`
+        : `<span class="badge" style="background: rgba(239, 68, 68, 0.15); color: #ef4444; border: 1px solid rgba(239, 68, 68, 0.3); font-weight: 700; padding: 4px 10px; border-radius: 20px;"><i class="fa-solid fa-user-xmark"></i> غياب</span>`;
+
+      let justBadge = '';
+      if (isJustified) {
+        justBadge = `
+          <div>
+            <span class="badge" style="background: rgba(16, 185, 129, 0.15); color: #10b981; border: 1px solid rgba(16, 185, 129, 0.3); font-weight: 700; padding: 4px 10px; border-radius: 20px;" title="${row.justification_reason || 'مبرر'}">
+              <i class="fa-solid fa-check-double"></i> مبرر
+            </span>
+            ${row.billet_number ? `<div style="font-size: 10px; color: var(--text-muted); font-family: monospace; margin-top: 3px;">${row.billet_number}</div>` : ''}
+          </div>
+        `;
+      } else {
+        justBadge = `
+          <span class="badge" style="background: rgba(239, 68, 68, 0.1); color: #f87171; border: 1px solid rgba(239, 68, 68, 0.25); font-weight: 700; padding: 4px 10px; border-radius: 20px;">
+            <i class="fa-solid fa-triangle-exclamation"></i> غير مبرر
+          </span>
+        `;
+      }
+
+      // Contact info
+      const parentName = row.parent_name || '';
+      const phone = row.parent_phone || row.student_phone || '';
+      let contactHtml = '<span style="color: var(--text-muted); font-size: 12px;">-</span>';
+      if (phone) {
+        const cleanPhone = phone.replace(/[^0-9+]/g, '');
+        contactHtml = `
+          <div style="font-size: 12px;">
+            ${parentName ? `<div style="font-weight: 600; margin-bottom: 2px;">${parentName}</div>` : ''}
+            <div style="display: flex; align-items: center; gap: 6px;">
+              <span style="font-family: monospace; direction: ltr;">${phone}</span>
+              <a href="tel:${cleanPhone}" class="btn-icon" style="width: 26px; height: 26px; font-size: 11px; color: #38bdf8;" title="اتصال">
+                <i class="fa-solid fa-phone"></i>
+              </a>
+              <a href="https://wa.me/${cleanPhone.replace('+', '')}" target="_blank" class="btn-icon" style="width: 26px; height: 26px; font-size: 12px; color: #22c55e;" title="مراسلة عبر واتساب">
+                <i class="fa-brands fa-whatsapp"></i>
+              </a>
+            </div>
+          </div>
+        `;
+      }
+
+      const avatarBg = row.gender === 'F' ? 'linear-gradient(135deg, #ec4899, #be185d)' : 'linear-gradient(135deg, #3b82f6, #1d4ed8)';
+      const initial = (row.first_name || 'T')[0]?.toUpperCase();
+
+      const displayDate = (row.absence_date || '').split('T')[0];
+
+      return `
+        <tr data-absence-id="${row.id}">
+          <td>
+            <div style="font-weight: 700; font-size: 13px;">${displayDate}</div>
+            <div style="font-size: 11.5px; color: var(--text-muted); margin-top: 2px;">
+              <i class="fa-solid fa-clock" style="font-size: 10px;"></i> ${row.time_slot || 'كامل اليوم'}
+            </div>
+          </td>
+          <td>
+            <div style="display: flex; align-items: center; gap: 10px;">
+              <div style="width: 36px; height: 36px; border-radius: 10px; background: ${avatarBg}; color: #fff; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 14px; flex-shrink: 0;">
+                ${initial}
+              </div>
+              <div>
+                <div style="font-weight: 700; font-size: 13.5px; color: var(--text-heading);">${studentName}</div>
+                <div style="display: flex; gap: 6px; align-items: center; margin-top: 1px;">
+                  ${matricule}
+                  ${levelName}
+                </div>
+              </div>
+            </div>
+          </td>
+          <td>
+            <span class="badge" style="background: rgba(59, 130, 246, 0.12); color: #3b82f6; border: 1px solid rgba(59, 130, 246, 0.25); font-weight: 600; border-radius: 8px;">
+              ${groupName}
+            </span>
+          </td>
+          <td>
+            <div style="font-size: 13px; font-weight: 600;">${row.subject_name || 'حصة تدريس'}</div>
+            ${row.notes ? `<div style="font-size: 11px; color: var(--text-muted); margin-top: 2px;">${row.notes}</div>` : ''}
+          </td>
+          <td style="text-align: center;">${typeBadge}</td>
+          <td style="text-align: center;">${justBadge}</td>
+          <td>${contactHtml}</td>
+          <td style="text-align: center;">
+            <div style="display: flex; gap: 4px; justify-content: center;">
+              <button class="btn-icon" style="color: #10b981;" title="تبرير الغياب" onclick="app.openJustifyAbsenceModal(${row.id})">
+                <i class="fa-solid fa-stamp"></i>
+              </button>
+              <button class="btn-icon" style="color: #38bdf8;" title="تصريح بالدخول" onclick="app.printBilletDirect(${row.id})">
+                <i class="fa-solid fa-ticket"></i>
+              </button>
+              <button class="btn-icon" style="color: #ef4444;" title="حذف" onclick="app.deleteAbsence(${row.id})">
+                <i class="fa-solid fa-trash-can"></i>
+              </button>
+            </div>
+          </td>
+        </tr>
+      `;
+    }).join('');
+  }
+
+  openJustifyAbsenceModal(id) {
+    const row = (this._cachedAbsences || []).find(a => a.id === id);
+    if (!row) return;
+
+    const elId = document.getElementById('justifyAbsenceId');
+    const elName = document.getElementById('justifyStudentName');
+    const elDetails = document.getElementById('justifyAbsenceDetails');
+
+    if (elId) elId.value = row.id;
+    if (elName) elName.textContent = `${row.first_name || ''} ${row.last_name || ''} (${row.matricule || ''})`;
+    if (elDetails) elDetails.textContent = `${row.absence_date} | ${row.time_slot || 'كامل اليوم'} | ${row.group_name || ''} | ${row.period_type === 'late' ? 'تأخر' : 'غياب'}`;
+
+    const reasonSelect = document.getElementById('justifyReasonSelect');
+    const customReasonInput = document.getElementById('justifyCustomReasonInput');
+    const customReasonWrapper = document.getElementById('customReasonWrapper');
+    const notesInput = document.getElementById('justifyNotesInput');
+
+    if (row.justification_reason) {
+      const knownReasons = [
+        'شهادة طبية (Certificat Médical)',
+        'عذر عائلي قاهر (Motif familial impérieux)',
+        'استدعاء رسمي / مسابقة (Convocation officielle)',
+        'إشعار مسبق من الولي (Autorisation préalable)'
+      ];
+      if (knownReasons.includes(row.justification_reason)) {
+        if (reasonSelect) reasonSelect.value = row.justification_reason;
+        if (customReasonWrapper) customReasonWrapper.style.display = 'none';
+      } else {
+        if (reasonSelect) reasonSelect.value = 'أخرى (Autre motif)';
+        if (customReasonWrapper) customReasonWrapper.style.display = 'block';
+        if (customReasonInput) customReasonInput.value = row.justification_reason;
+      }
+    } else {
+      if (reasonSelect) reasonSelect.selectedIndex = 0;
+      if (customReasonWrapper) customReasonWrapper.style.display = 'none';
+      if (customReasonInput) customReasonInput.value = '';
+    }
+
+    if (notesInput) notesInput.value = row.notes || '';
+
+    document.getElementById('modalJustifyAbsence')?.classList.add('active');
+  }
+
+  handleJustifyReasonChange(val) {
+    const customWrapper = document.getElementById('customReasonWrapper');
+    if (customWrapper) {
+      customWrapper.style.display = (val && val.includes('أخرى')) ? 'block' : 'none';
+    }
+  }
+
+  async saveJustifyAbsence() {
+    const id = document.getElementById('justifyAbsenceId')?.value;
+    if (!id) return;
+
+    const reasonSelect = document.getElementById('justifyReasonSelect')?.value;
+    const customReason = document.getElementById('justifyCustomReasonInput')?.value?.trim();
+    const notes = document.getElementById('justifyNotesInput')?.value?.trim();
+    const issueBillet = document.getElementById('justifyIssueBilletCheckbox')?.checked;
+
+    let finalReason = reasonSelect;
+    if (reasonSelect && reasonSelect.includes('أخرى') && customReason) {
+      finalReason = customReason;
+    }
+
+    try {
+      const res = await fetch(`/api/discipline-absences/${id}/justify`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          justification_reason: finalReason,
+          issue_billet: issueBillet,
+          notes: notes
+        })
+      });
+
+      const data = await res.json();
+      if (data.success) {
+        this.showToast('تم تبرير الغياب بنجاح ✓', 'success');
+        this.closeModals();
+
+        if (issueBillet) {
+          this.printBilletDirect(parseInt(id, 10));
+        }
+        this.loadDisciplineAbsences();
+      } else {
+        this.showToast(data.error || 'Erreur lors de la justification', 'error');
+      }
+    } catch (err) {
+      console.error('saveJustifyAbsence error:', err);
+      this.showToast('حدث خطأ أثناء حفظ التبرير', 'error');
+    }
+  }
+
+  async openAddManualAbsenceModal() {
+    const form = document.getElementById('formAddManualAbsence');
+    if (form) form.reset();
+
+    const dateInput = document.getElementById('manualAbsenceDate');
+    if (dateInput) dateInput.value = new Date().toISOString().slice(0, 10);
+
+    await this.ensureAbsenceGroupsPopulated();
+
+    // Trigger initial students populate if first group selected
+    const groupSelect = document.getElementById('manualAbsenceGroupSelect');
+    if (groupSelect && groupSelect.value) {
+      this.handleManualAbsenceGroupChange(groupSelect.value);
+    }
+
+    document.getElementById('modalAddManualAbsence')?.classList.add('active');
+  }
+
+  async handleManualAbsenceGroupChange(groupId) {
+    const studentSelect = document.getElementById('manualAbsenceStudentSelect');
+    if (!studentSelect) return;
+
+    studentSelect.innerHTML = '<option value="">-- جاري التحميل... --</option>';
+
+    if (!groupId) {
+      studentSelect.innerHTML = '<option value="">-- اختر القسم أولاً --</option>';
+      return;
+    }
+
+    try {
+      const res = await fetch(`/api/students?group_id=${groupId}`);
+      const data = await res.json();
+      const students = data.students || data || [];
+
+      if (students.length === 0) {
+        studentSelect.innerHTML = '<option value="">لا يوجد تلاميذ في هذا الفوج</option>';
+        return;
+      }
+
+      studentSelect.innerHTML = '<option value="">-- اختر التلميذ --</option>' + 
+        students.map(s => `<option value="${s.id}">${s.first_name || ''} ${s.last_name || ''} (${s.matricule || s.id})</option>`).join('');
+    } catch (err) {
+      console.error('handleManualAbsenceGroupChange error:', err);
+      studentSelect.innerHTML = '<option value="">فشل تحميل التلاميذ</option>';
+    }
+  }
+
+  async saveManualAbsence() {
+    const groupId = document.getElementById('manualAbsenceGroupSelect')?.value;
+    const studentId = document.getElementById('manualAbsenceStudentSelect')?.value;
+    const date = document.getElementById('manualAbsenceDate')?.value;
+    const type = document.getElementById('manualAbsenceType')?.value || 'absence';
+    const slot = document.getElementById('manualAbsenceTimeSlot')?.value || '08:00 - 09:00';
+    const subject = document.getElementById('manualAbsenceSubject')?.value || '';
+    const notes = document.getElementById('manualAbsenceNotes')?.value || '';
+
+    if (!studentId || !date) {
+      this.showToast('يرجى اختيار التلميذ وتاريخ الغياب', 'warning');
+      return;
+    }
+
+    try {
+      const res = await fetch('/api/discipline-absences', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          student_id: studentId,
+          group_id: groupId,
+          absence_date: date,
+          time_slot: slot,
+          period_type: type,
+          subject_name: subject,
+          notes: notes
+        })
+      });
+
+      const data = await res.json();
+      if (data.success) {
+        this.showToast('تم تسجيل الغياب بنجاح ✓', 'success');
+        this.closeModals();
+        this.loadDisciplineAbsences();
+      } else {
+        this.showToast(data.error || 'Erreur lors de l\'enregistrement', 'error');
+      }
+    } catch (err) {
+      console.error('saveManualAbsence error:', err);
+      this.showToast('حدث خطأ أثناء تسجيل الغياب', 'error');
+    }
+  }
+
+  async deleteAbsence(id) {
+    if (!confirm('هل أنت متأكد من رغبتك في حذف هذا الغياب؟')) return;
+
+    try {
+      const res = await fetch(`/api/discipline-absences/${id}`, { method: 'DELETE' });
+      const data = await res.json();
+      if (data.success) {
+        this.showToast('تم حذف الغياب بنجاح', 'info');
+        this.loadDisciplineAbsences();
+      } else {
+        this.showToast(data.error || 'Erreur lors de la suppression', 'error');
+      }
+    } catch (err) {
+      console.error('deleteAbsence error:', err);
+      this.showToast('حدث خطأ أثناء الحذف', 'error');
+    }
+  }
+
+  printBilletDirect(id) {
+    const row = (this._cachedAbsences || []).find(a => a.id === id);
+    if (!row) return;
+
+    const schoolName = this.settings?.school_name || 'EDUMIND ACADEMY';
+    const elSchool = document.getElementById('billetSchoolName');
+    const elName = document.getElementById('billetStudentName');
+    const elMatricule = document.getElementById('billetStudentMatricule');
+    const elGroup = document.getElementById('billetGroupName');
+    const elDate = document.getElementById('billetAbsenceDate');
+    const elSlot = document.getElementById('billetTimeSlot');
+    const elReason = document.getElementById('billetReason');
+    const elIssued = document.getElementById('billetIssuedDate');
+    const elNum = document.getElementById('billetNumberBadge');
+
+    if (elSchool) elSchool.textContent = schoolName;
+    if (elName) elName.textContent = `${row.first_name || ''} ${row.last_name || ''}`;
+    if (elMatricule) elMatricule.textContent = row.matricule || '-';
+    if (elGroup) elGroup.textContent = row.group_name || '-';
+    if (elDate) elDate.textContent = row.absence_date || '-';
+    if (elSlot) elSlot.textContent = `${row.time_slot || 'كامل اليوم'} ${row.subject_name ? '(' + row.subject_name + ')' : ''}`;
+    if (elReason) elReason.textContent = row.justification_reason || 'تم التبرير والموافقة من الإدارة';
+
+    const now = new Date();
+    const dateFormatted = `${now.toLocaleDateString('fr-FR')} à ${now.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}`;
+    if (elIssued) elIssued.textContent = dateFormatted;
+    if (elNum) elNum.textContent = row.billet_number || `BIL-${now.getFullYear()}-${String(row.id).padStart(4, '0')}`;
+
+    document.getElementById('modalBilletEntree')?.classList.add('active');
+  }
+
+  printBilletContent() {
+    const printArea = document.getElementById('billetPrintArea');
+    if (!printArea) return;
+
+    const w = window.open('', '_blank', 'width=650,height=600');
+    if (!w) {
+      window.print();
+      return;
+    }
+
+    w.document.write(`
+      <!DOCTYPE html>
+      <html dir="rtl" lang="ar">
+      <head>
+        <meta charset="utf-8">
+        <title>تصريح بالدخول - Billet d'Entrée</title>
+        <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800&display=swap" rel="stylesheet">
+        <style>
+          body { font-family: 'Cairo', sans-serif; margin: 20px; background: #fff; color: #000; }
+          .ticket-card { border: 2px dashed #334155; padding: 20px; border-radius: 12px; max-width: 420px; margin: 0 auto; }
+          @media print {
+            body { margin: 0; }
+            .ticket-card { border: 2px dashed #000; }
+          }
+        </style>
+      </head>
+      <body>
+        <div class="ticket-card">
+          ${printArea.innerHTML}
+        </div>
+        <script>
+          window.onload = function() {
+            window.focus();
+            window.print();
+            setTimeout(function() { window.close(); }, 500);
+          };
+        </script>
+      </body>
+      </html>
+    `);
+    w.document.close();
+  }
+
+  exportAbsencesToExcel() {
+    if (!this._cachedAbsences || this._cachedAbsences.length === 0) {
+      this.showToast('لا توجد بيانات غيابات للتصدير', 'warning');
+      return;
+    }
+
+    try {
+      const rows = this._cachedAbsences.map(a => ({
+        'التاريخ': a.absence_date,
+        'التوقيت': a.time_slot || '',
+        'رقم القيد': a.matricule || '',
+        'اسم التلميذ': `${a.first_name || ''} ${a.last_name || ''}`.trim(),
+        'القسم / الفوج': a.group_name || '',
+        'المادة': a.subject_name || '',
+        'النوع': a.period_type === 'late' ? 'تأخر' : 'غياب',
+        'الحالة': a.is_justified ? 'مبرر' : 'غير مبرر',
+        'سبب التبرير': a.justification_reason || '',
+        'رقم التصريح': a.billet_number || '',
+        'ولي الأمر': a.parent_name || '',
+        'هاتف الولي': a.parent_phone || a.student_phone || '',
+        'ملاحظات': a.notes || ''
+      }));
+
+      const ws = XLSX.utils.json_to_sheet(rows);
+      const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, ws, 'الغيابات');
+      const todayStr = new Date().toISOString().slice(0, 10);
+      XLSX.writeFile(wb, `سجل_الغيابات_${todayStr}.xlsx`);
+      this.showToast('تم تصدير ملف Excel بنجاح', 'success');
+    } catch (err) {
+      console.error('exportAbsencesToExcel error:', err);
+      this.showToast('فشل تصدير Excel', 'error');
+    }
+  }
+
+  printAbsencesReport() {
+    window.print();
+  }
+
 
   closeModals() {
     document.querySelectorAll('.modal-overlay').forEach(m => m.classList.remove('active'));

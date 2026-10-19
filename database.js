@@ -1022,6 +1022,9 @@ function initDatabase() {
     try { db.exec("ALTER TABLE teachers ADD COLUMN grade TEXT DEFAULT 'prof_titulaire';"); } catch(e){}
     try { db.exec("ALTER TABLE teachers ADD COLUMN employee_type TEXT DEFAULT 'teacher';"); } catch(e){}
     try { db.exec("ALTER TABLE teachers ADD COLUMN job_title TEXT;"); } catch(e){}
+    try { db.exec("ALTER TABLE teachers ADD COLUMN password TEXT;"); } catch(e){}
+    try { db.exec("ALTER TABLE teachers ADD COLUMN mobile_pin TEXT;"); } catch(e){}
+    try { db.exec("ALTER TABLE discipline_absences ADD COLUMN group_id INTEGER;"); } catch(e){}
 
     // Ensure Preparatoire level exists for primary education
     try {
@@ -1100,8 +1103,104 @@ function initDatabase() {
         FOREIGN KEY (room_id) REFERENCES rooms(id) ON DELETE SET NULL
       );
     `);
+
+    // Auto-migrate & sanitize dates in discipline_absences and attendance if any stored in ISO format
+    try {
+      db.exec("UPDATE discipline_absences SET period_type = 'absence' WHERE period_type = 'absent';");
+      const isoAbs = db.prepare("SELECT id, absence_date FROM discipline_absences WHERE absence_date LIKE '%T%'").all();
+      if (isoAbs && isoAbs.length > 0) {
+        const updateStmt = db.prepare("UPDATE discipline_absences SET absence_date = ? WHERE id = ?");
+        for (const row of isoAbs) {
+          const d = new Date(row.absence_date);
+          if (!isNaN(d.getTime())) {
+            const clean = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+            updateStmt.run(clean, row.id);
+          }
+        }
+      }
+      db.exec("DELETE FROM discipline_absences WHERE id NOT IN (SELECT MIN(id) FROM discipline_absences GROUP BY student_id, absence_date, time_slot);");
+      const isoAtt = db.prepare("SELECT id, session_date FROM attendance WHERE session_date LIKE '%T%'").all();
+      if (isoAtt && isoAtt.length > 0) {
+        const updateStmt2 = db.prepare("UPDATE OR IGNORE attendance SET session_date = ? WHERE id = ?");
+        for (const row of isoAtt) {
+          try {
+            const d = new Date(row.session_date);
+            if (!isNaN(d.getTime())) {
+              const clean = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+              updateStmt2.run(clean, row.id);
+            }
+          } catch (attErr) {}
+        }
+      }
+    } catch (sanitizeErr) {
+      console.warn('Auto-sanitize dates migration warning:', sanitizeErr.message);
+    }
   } catch (pubErr) {
     console.warn('Public school extensions migration:', pubErr.message);
+  }
+
+  // Room Schedules & Classrooms Timetable System (نظام استعمال القاعات وجداول التوقيت)
+  try {
+    addColumnIfNotExists('rooms', 'description', 'TEXT');
+
+    db.exec(`
+      CREATE TABLE IF NOT EXISTS room_schedules (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        room_id INTEGER NOT NULL,
+        group_id INTEGER,
+        subject_id INTEGER,
+        teacher_id INTEGER,
+        day_of_week TEXT NOT NULL,
+        start_time TEXT NOT NULL,
+        end_time TEXT NOT NULL,
+        notes TEXT,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY (room_id) REFERENCES rooms(id) ON DELETE CASCADE,
+        FOREIGN KEY (group_id) REFERENCES groups(id) ON DELETE SET NULL,
+        FOREIGN KEY (subject_id) REFERENCES subjects(id) ON DELETE SET NULL,
+        FOREIGN KEY (teacher_id) REFERENCES teachers(id) ON DELETE SET NULL
+      );
+      CREATE INDEX IF NOT EXISTS idx_room_sched_room_day ON room_schedules(room_id, day_of_week);
+      CREATE INDEX IF NOT EXISTS idx_room_sched_teacher_day ON room_schedules(teacher_id, day_of_week);
+      CREATE INDEX IF NOT EXISTS idx_room_sched_group ON room_schedules(group_id);
+    `);
+
+    // room_schedules table is now managed cleanly via class schedule interface
+
+    // Class Teachers Assignment Table (إسناد أساتذة المواد للأقسام)
+    db.exec(`
+      CREATE TABLE IF NOT EXISTS class_subject_teachers (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        group_id INTEGER NOT NULL,
+        subject_id INTEGER NOT NULL,
+        teacher_id INTEGER NOT NULL,
+        school_year TEXT DEFAULT '2026-2027',
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY (group_id) REFERENCES groups(id) ON DELETE CASCADE,
+        FOREIGN KEY (subject_id) REFERENCES subjects(id) ON DELETE CASCADE,
+        FOREIGN KEY (teacher_id) REFERENCES teachers(id) ON DELETE CASCADE,
+        UNIQUE(group_id, subject_id)
+      );
+      CREATE INDEX IF NOT EXISTS idx_cst_group ON class_subject_teachers(group_id);
+      CREATE INDEX IF NOT EXISTS idx_cst_subject ON class_subject_teachers(subject_id);
+      CREATE INDEX IF NOT EXISTS idx_cst_teacher ON class_subject_teachers(teacher_id);
+    `);
+
+    // Auto-populate class subject teachers from existing groups and schedules
+    try {
+      db.exec(`
+        INSERT OR IGNORE INTO class_subject_teachers (group_id, subject_id, teacher_id)
+        SELECT id, subject_id, teacher_id FROM groups 
+        WHERE subject_id IS NOT NULL AND teacher_id IS NOT NULL AND active = 1;
+
+        INSERT OR IGNORE INTO class_subject_teachers (group_id, subject_id, teacher_id)
+        SELECT group_id, subject_id, teacher_id FROM room_schedules 
+        WHERE group_id IS NOT NULL AND subject_id IS NOT NULL AND teacher_id IS NOT NULL;
+      `);
+    } catch (cstErr) {}
+
+  } catch (rsErr) {
+    console.warn('Room schedules migration error:', rsErr.message);
   }
 
   console.log('✅ EDUMIND Scolaire Database tables verified successfully!');
