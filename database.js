@@ -1022,6 +1022,9 @@ function initDatabase() {
     try { db.exec("ALTER TABLE teachers ADD COLUMN grade TEXT DEFAULT 'prof_titulaire';"); } catch(e){}
     try { db.exec("ALTER TABLE teachers ADD COLUMN employee_type TEXT DEFAULT 'teacher';"); } catch(e){}
     try { db.exec("ALTER TABLE teachers ADD COLUMN job_title TEXT;"); } catch(e){}
+    try { db.exec("ALTER TABLE teachers ADD COLUMN password TEXT;"); } catch(e){}
+    try { db.exec("ALTER TABLE teachers ADD COLUMN mobile_pin TEXT;"); } catch(e){}
+    try { db.exec("ALTER TABLE discipline_absences ADD COLUMN group_id INTEGER;"); } catch(e){}
 
     // Ensure Preparatoire level exists for primary education
     try {

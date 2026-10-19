@@ -1,7 +1,1 @@
-{
-  "version": "1.0.7",
-  "releaseDate": "2026-10-15",
-  "zipUrl": "https://raw.githubusercontent.com/BELMAHDI6/EDUMIND-SCOLAIRE/main/updates/edumind_scolaire_patch_v1.0.7.zip",
-  "notes": "Correction: Decodage automatique des codes-barres AZERTY et arabe pour la cantine scolaire",
-  "notes_ar": "إصلاح التعرف التلقائي على قارئ الباركود (AZERTY / عربي) في المطعم المدرسي"
-}
+﻿{"version":"1.0.8","releaseDate":"2026-10-18","zipUrl":"https://raw.githubusercontent.com/BELMAHDI6/EDUMIND-SCOLAIRE/main/updates/edumind_scolaire_patch_v1.0.8.zip","notes":"Ajout emplois du temps","notes_ar":""}

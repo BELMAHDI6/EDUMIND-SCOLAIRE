@@ -575,6 +575,15 @@ const i18n = {
     th_code: "CODE",
     th_cycle: "CYCLE SCOLAIRE",
     school_year_badge: "Année Scolaire 2026-2027",
+    btn_header_sync: "Synchroniser le Cloud",
+    abs_kpi_today: "Absences du Jour",
+    abs_kpi_today_sub: "Élèves absents aujourd'hui",
+    abs_kpi_unjustified: "Non Justifiées (Jour)",
+    abs_kpi_unjustified_sub: "En attente de justificatif",
+    abs_kpi_lates: "Retards du Jour",
+    abs_kpi_lates_sub: "Entrées en retard en classe",
+    abs_kpi_month: "Cumul Absences du Mois",
+    abs_kpi_month_sub: "Total du mois en cours",
     th_regime_cantine: "Régime / Cantine",
     btn_fiche_student: "Fiche de l'élève",
     btn_badge_student: "Carte scolaire",
@@ -1322,6 +1331,15 @@ const i18n = {
     th_code: "الرمز",
     th_cycle: "الطور التعليمي",
     school_year_badge: "السنة الدراسية 2026-2027",
+    btn_header_sync: "مزامنة السحابة",
+    abs_kpi_today: "غيابات اليوم",
+    abs_kpi_today_sub: "تلاميذ غائبون اليوم",
+    abs_kpi_unjustified: "غير مبررة (اليوم)",
+    abs_kpi_unjustified_sub: "تتطلب اتصال بالولي وتبرير",
+    abs_kpi_lates: "تأخرات اليوم",
+    abs_kpi_lates_sub: "دخول متأخر عن الحصة",
+    abs_kpi_month: "إجمالي غيابات الشهر",
+    abs_kpi_month_sub: "مجموع الغيابات للشهر الحالي",
     th_regime_cantine: "الصفة / المطعم",
     btn_fiche_student: "استمارة التلميذ",
     btn_badge_student: "بطاقة التلميذ",
@@ -3323,7 +3341,7 @@ class EdumindApp {
     const now = Date.now();
     const lastLoad = this._lastViewLoads[viewName] || 0;
     // Always reload pointage, cantine and enseignants so live status is accurate; buffer other views for 15s
-    const shouldReload = forceReload || viewName === 'pointage' || viewName === 'cantine' || viewName === 'enseignants' || (now - lastLoad > 15000);
+    const shouldReload = forceReload || viewName === 'pointage' || viewName === 'cantine' || viewName === 'enseignants' || viewName === 'absences' || (now - lastLoad > 15000);
 
     if (!shouldReload) {
       return; // Instant view toggle with zero network lag
@@ -3356,6 +3374,9 @@ class EdumindApp {
     }
     else if (viewName === 'cantine') {
       this.loadCantineData();
+    }
+    else if (viewName === 'absences') {
+      this.loadDisciplineAbsences();
     }
   }
 
@@ -3412,6 +3433,7 @@ class EdumindApp {
   }
 
   async loadDashboardData() {
+    this.fetchDisciplineAbsenceStats();
     try {
       const res = await fetch('/api/dashboard/stats');
       const data = await res.json();
@@ -9145,6 +9167,127 @@ class EdumindApp {
     });
   }
 
+  // -------------------------------------------------------------
+  // CLOUD GOOGLE SHEETS & TEACHER MOBILE APP MANAGEMENT
+  // -------------------------------------------------------------
+  async openTeacherMobileModal(teacherId) {
+    const isAr = this.lang === 'ar';
+    try {
+      const res = await fetch(`/api/teachers/${teacherId}`);
+      const data = await res.json();
+      if (!data.success || !data.teacher) {
+        this.showToast(isAr ? 'تعذر جلب بيانات الأستاذ' : 'Impossible de charger l\'enseignant', 'error');
+        return;
+      }
+      const t = data.teacher;
+      document.getElementById('mobileTeacherId').value = t.id;
+      document.getElementById('mobileTeacherName').textContent = `${t.first_name || ''} ${t.last_name || ''} (${t.matricule || '-'})`;
+      document.getElementById('mobileTeacherSub').textContent = `${t.subject_name || t.job_title || 'هيئة التدريس'}`;
+      document.getElementById('mobileTeacherPhone').value = t.phone || '';
+      document.getElementById('mobileTeacherPin').value = t.mobile_pin || t.password || '';
+
+      document.getElementById('modalTeacherMobile')?.classList.add('active');
+    } catch (err) {
+      console.error('openTeacherMobileModal error:', err);
+      this.showToast(isAr ? 'حدث خطأ أثناء فتح النافذة' : 'Erreur d\'ouverture du modal', 'error');
+    }
+  }
+
+  generateRandomPin() {
+    const randomPin = Math.floor(1000 + Math.random() * 9000).toString();
+    const pinInput = document.getElementById('mobileTeacherPin');
+    if (pinInput) pinInput.value = randomPin;
+  }
+
+  async saveTeacherMobileCredentials() {
+    const isAr = this.lang === 'ar';
+    const id = document.getElementById('mobileTeacherId')?.value;
+    const phone = document.getElementById('mobileTeacherPhone')?.value?.trim();
+    const pin = document.getElementById('mobileTeacherPin')?.value?.trim();
+
+    if (!id || !phone) {
+      this.showToast(isAr ? 'يرجى إدخال رقم الهاتف' : 'Veuillez renseigner le numéro de téléphone', 'warning');
+      return;
+    }
+    if (!pin) {
+      this.showToast(isAr ? 'يرجى إدخال كلمة المرور أو رمز PIN' : 'Veuillez définir un mot de passe ou code PIN', 'warning');
+      return;
+    }
+
+    try {
+      const res = await fetch(`/api/teachers/${id}/mobile-credentials`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ phone, password: pin, mobile_pin: pin })
+      });
+      const data = await res.json();
+      if (data.success) {
+        this.showToast(isAr ? 'تم حفظ ومزامنة بيانات حساب الأستاذ بنجاح' : 'Compte mobile enseignant enregistré et synchronisé', 'success');
+        this.closeModals();
+        await this.loadTeachers();
+      } else {
+        this.showToast(data.error || 'Erreur lors de l\'enregistrement', 'error');
+      }
+    } catch (err) {
+      console.error('saveTeacherMobileCredentials error:', err);
+      this.showToast(isAr ? 'حدث خطأ أثناء الحفظ' : 'Erreur lors de la sauvegarde', 'error');
+    }
+  }
+
+  async syncAllWithCloud(interactive = true) {
+    const isAr = this.lang === 'ar';
+    const btn = document.getElementById('btnHeaderSync');
+
+    if (btn) btn.classList.add('is-syncing');
+    if (interactive) {
+      this.showToast(isAr ? 'جاري المزامنة الشاملة مع السحابة وهواتف الأساتذة...' : 'Synchronisation globale avec Google Sheets en cours...', 'info');
+    }
+
+    try {
+      const res = await fetch('/api/sync/sheets/full-sync', { method: 'POST' });
+      const data = await res.json();
+
+      if (data.success) {
+        const impCount = data.import?.count || 0;
+        const expCounts = data.export?.counts || {};
+        if (interactive) {
+          const msg = isAr
+            ? `اكتملت المزامنة بنجاح! (${expCounts.teachers || 0} أستاذ، ${expCounts.groups || 0} قسم، ${expCounts.students || 0} تلميذ، ${impCount} غياب جديد)`
+            : `Synchronisation réussie ! (${expCounts.teachers || 0} profs, ${expCounts.groups || 0} classes, ${impCount} absence(s) importée(s))`;
+          this.showToast(msg, 'success');
+        }
+
+        // Refresh view if on relevant screen
+        if (this.currentView === 'teachers') {
+          await this.loadTeachers?.();
+        } else if (this.currentView === 'absences') {
+          await this.loadDisciplineAbsences?.();
+        } else if (this.currentView === 'pointage' || this.currentView === 'vie-scolaire') {
+          await this.loadAttendanceData?.();
+        }
+      } else {
+        if (interactive) {
+          this.showToast(data.error || 'Erreur de synchronisation', 'error');
+        }
+      }
+    } catch (err) {
+      console.error('syncAllWithCloud error:', err);
+      if (interactive) {
+        this.showToast(isAr ? 'فشلت المزامنة مع Google Sheets' : 'Échec de la synchronisation cloud', 'error');
+      }
+    } finally {
+      if (btn) btn.classList.remove('is-syncing');
+    }
+  }
+
+  async exportDataToCloudSheets() {
+    return this.syncAllWithCloud(true);
+  }
+
+  async syncCloudAttendances() {
+    return this.syncAllWithCloud(true);
+  }
+
   printSingleTeacherCard() {
     const t = this.currentCardTeacher;
     if (!t) return;
@@ -12569,6 +12712,9 @@ class EdumindApp {
               <div style="display: flex; gap: 8px; align-items: center;">
                 <button class="btn-action-badge" title="${isEmployee ? (isAr ? 'بطاقة الموظف' : 'Badge Employé') : (isAr ? 'بطاقة الأستاذ' : 'Badge Enseignant')}" onclick="app.showTeacherCard(${t.id})">
                   <i class="fa-solid fa-id-badge"></i>
+                </button>
+                <button class="btn-action-badge" style="background: rgba(6, 182, 212, 0.15); color: #06b6d4;" title="${isAr ? 'حساب تطبيق الحضور المحمول (PIN / الهاتف)' : 'Compte App Mobile (Téléphone / PIN)'}" onclick="app.openTeacherMobileModal(${t.id})">
+                  <i class="fa-solid fa-mobile-screen"></i>
                 </button>
                 <button class="btn-icon" title="${isAr ? 'تعديل' : 'Modifier'}" onclick="${isEmployee ? `app.editEmployee(${t.id})` : `app.editTeacher(${t.id})`}">
                   <i class="fa-solid fa-pen-to-square"></i>
@@ -19491,6 +19637,625 @@ class EdumindApp {
       alert('خطأ أثناء إعداد ورقة الحضور للطباعة');
     }
   }
+
+  // =============================================================
+  // DISCIPLINE & ABSENCES MANAGEMENT
+  // =============================================================
+
+  async loadDisciplineAbsences() {
+    try {
+      // 1. Populate Groups dropdowns if not already populated
+      await this.ensureAbsenceGroupsPopulated();
+
+      // 2. Fetch stats & update KPI cards
+      this.fetchDisciplineAbsenceStats();
+
+      // 3. Collect filter parameters
+      const search = document.getElementById('searchAbsenceInput')?.value?.trim() || '';
+      const preset = document.getElementById('filterAbsenceDatePreset')?.value || 'today';
+      const groupId = document.getElementById('filterAbsenceGroup')?.value || 'all';
+      const type = document.getElementById('filterAbsenceType')?.value || 'all';
+      const justified = document.getElementById('filterAbsenceJustified')?.value || 'all';
+
+      const queryParams = new URLSearchParams();
+      if (search) queryParams.set('search', search);
+      if (groupId !== 'all') queryParams.set('group_id', groupId);
+      if (type !== 'all') queryParams.set('period_type', type);
+      if (justified !== 'all') queryParams.set('is_justified', justified);
+
+      // Date ranges based on preset
+      const today = new Date();
+      const todayStr = today.toISOString().slice(0, 10);
+
+      if (preset === 'today') {
+        queryParams.set('date', todayStr);
+      } else if (preset === 'yesterday') {
+        const yest = new Date(today);
+        yest.setDate(yest.getDate() - 1);
+        queryParams.set('date', yest.toISOString().slice(0, 10));
+      } else if (preset === 'week') {
+        const weekStart = new Date(today);
+        weekStart.setDate(weekStart.getDate() - 7);
+        queryParams.set('start_date', weekStart.toISOString().slice(0, 10));
+        queryParams.set('end_date', todayStr);
+      } else if (preset === 'month') {
+        const monthStart = todayStr.slice(0, 7) + '-01';
+        queryParams.set('start_date', monthStart);
+        queryParams.set('end_date', todayStr);
+      } else if (preset === 'custom') {
+        const customDate = document.getElementById('filterAbsenceCustomDate')?.value;
+        if (customDate) queryParams.set('date', customDate);
+      }
+
+      // 4. Fetch list from backend API
+      const res = await fetch(`/api/discipline-absences?${queryParams.toString()}`);
+      const data = await res.json();
+
+      if (data.success) {
+        this._cachedAbsences = data.absences || [];
+        this.renderDisciplineAbsencesTable(this._cachedAbsences);
+      } else {
+        console.error('loadDisciplineAbsences failed:', data.error);
+      }
+    } catch (err) {
+      console.error('loadDisciplineAbsences error:', err);
+    }
+  }
+
+  async fetchDisciplineAbsenceStats() {
+    try {
+      const res = await fetch('/api/discipline-absences/stats');
+      const data = await res.json();
+      if (data.success && data.stats) {
+        const s = data.stats;
+        const elToday = document.getElementById('kpiAbsTodayCount');
+        const elUnjustified = document.getElementById('kpiAbsUnjustifiedCount');
+        const elLates = document.getElementById('kpiAbsLatesCount');
+        const elMonth = document.getElementById('kpiAbsMonthCount');
+
+        if (elToday) elToday.textContent = s.todayAbsences || 0;
+        if (elUnjustified) elUnjustified.textContent = s.todayUnjustified || 0;
+        if (elLates) elLates.textContent = s.todayLates || 0;
+        if (elMonth) elMonth.textContent = s.monthTotal || 0;
+
+        // Update sidebar badge
+        const badge = document.getElementById('sidebarAbsencesBadge');
+        if (badge) {
+          if (s.todayUnjustified > 0) {
+            badge.textContent = s.todayUnjustified;
+            badge.style.display = 'inline-block';
+          } else if (s.todayAbsences > 0) {
+            badge.textContent = s.todayAbsences;
+            badge.style.display = 'inline-block';
+          } else {
+            badge.style.display = 'none';
+          }
+        }
+      }
+    } catch (err) {
+      console.error('fetchDisciplineAbsenceStats error:', err);
+    }
+  }
+
+  async ensureAbsenceGroupsPopulated() {
+    const filterSelect = document.getElementById('filterAbsenceGroup');
+    const manualSelect = document.getElementById('manualAbsenceGroupSelect');
+    if (!filterSelect || filterSelect.options.length > 1) return;
+
+    try {
+      const res = await fetch('/api/groups');
+      const data = await res.json();
+      const groups = data.groups || data || [];
+
+      this._groupsCache = groups;
+
+      groups.forEach(g => {
+        const opt = document.createElement('option');
+        opt.value = g.id;
+        opt.textContent = `${g.name || ''} ${g.level_name ? '(' + g.level_name + ')' : ''}`;
+        filterSelect.appendChild(opt);
+
+        if (manualSelect) {
+          const opt2 = opt.cloneNode(true);
+          manualSelect.appendChild(opt2);
+        }
+      });
+    } catch (err) {
+      console.error('ensureAbsenceGroupsPopulated error:', err);
+    }
+  }
+
+  handleAbsenceDatePresetChange(val) {
+    const picker = document.getElementById('absenceCustomDatePicker');
+    if (picker) {
+      if (val === 'custom') {
+        picker.style.display = 'block';
+        const dateInput = document.getElementById('filterAbsenceCustomDate');
+        if (dateInput && !dateInput.value) {
+          dateInput.value = new Date().toISOString().slice(0, 10);
+        }
+      } else {
+        picker.style.display = 'none';
+      }
+    }
+    this.loadDisciplineAbsences();
+  }
+
+  filterDisciplineAbsences() {
+    clearTimeout(this._filterAbsTimeout);
+    this._filterAbsTimeout = setTimeout(() => {
+      this.loadDisciplineAbsences();
+    }, 250);
+  }
+
+  resetAbsenceFilters() {
+    const sInput = document.getElementById('searchAbsenceInput');
+    const pSelect = document.getElementById('filterAbsenceDatePreset');
+    const gSelect = document.getElementById('filterAbsenceGroup');
+    const tSelect = document.getElementById('filterAbsenceType');
+    const jSelect = document.getElementById('filterAbsenceJustified');
+    const picker = document.getElementById('absenceCustomDatePicker');
+
+    if (sInput) sInput.value = '';
+    if (pSelect) pSelect.value = 'today';
+    if (gSelect) gSelect.value = 'all';
+    if (tSelect) tSelect.value = 'all';
+    if (jSelect) jSelect.value = 'all';
+    if (picker) picker.style.display = 'none';
+
+    this.loadDisciplineAbsences();
+  }
+
+  renderDisciplineAbsencesTable(absences) {
+    const table = document.getElementById('absencesTable');
+    if (!table) return;
+
+    let tbody = table.querySelector('tbody');
+    if (!tbody) {
+      tbody = document.createElement('tbody');
+      table.appendChild(tbody);
+    }
+
+    if (!absences || absences.length === 0) {
+      tbody.innerHTML = `
+        <tr>
+          <td colspan="8" style="text-align: center; padding: 45px 20px; color: var(--text-muted);">
+            <div style="font-size: 40px; margin-bottom: 10px; color: #10b981;">
+              <i class="fa-solid fa-clipboard-check"></i>
+            </div>
+            <div style="font-size: 16px; font-weight: 700; color: var(--text-heading); margin-bottom: 4px;">
+              لا توجد غيابات مسجلة لهذه المعايير
+            </div>
+            <div style="font-size: 12.5px;">
+              جميع التلاميذ حاضرون أو لم يتم تسجيل أي غياب في الفترة المحددة.
+            </div>
+          </td>
+        </tr>
+      `;
+      return;
+    }
+
+    tbody.innerHTML = absences.map(row => {
+      const isLate = row.period_type === 'late';
+      const isJustified = !!row.is_justified;
+      const studentName = `${row.first_name || ''} ${row.last_name || ''}`.trim() || 'تلميذ غير معروف';
+      const matricule = row.matricule ? `<span style="font-family: monospace; font-size: 11px; color: var(--text-muted);">${row.matricule}</span>` : '';
+      const groupName = row.group_name || 'غير محدد';
+      const levelName = row.level_name ? `<span style="font-size: 11px; color: var(--text-muted);">${row.level_name}</span>` : '';
+      
+      const typeBadge = isLate 
+        ? `<span class="badge" style="background: rgba(245, 158, 11, 0.15); color: #f59e0b; border: 1px solid rgba(245, 158, 11, 0.3); font-weight: 700; padding: 4px 10px; border-radius: 20px;"><i class="fa-solid fa-clock"></i> متأخر</span>`
+        : `<span class="badge" style="background: rgba(239, 68, 68, 0.15); color: #ef4444; border: 1px solid rgba(239, 68, 68, 0.3); font-weight: 700; padding: 4px 10px; border-radius: 20px;"><i class="fa-solid fa-user-xmark"></i> غياب</span>`;
+
+      let justBadge = '';
+      if (isJustified) {
+        justBadge = `
+          <div>
+            <span class="badge" style="background: rgba(16, 185, 129, 0.15); color: #10b981; border: 1px solid rgba(16, 185, 129, 0.3); font-weight: 700; padding: 4px 10px; border-radius: 20px;" title="${row.justification_reason || 'مبرر'}">
+              <i class="fa-solid fa-check-double"></i> مبرر
+            </span>
+            ${row.billet_number ? `<div style="font-size: 10px; color: var(--text-muted); font-family: monospace; margin-top: 3px;">${row.billet_number}</div>` : ''}
+          </div>
+        `;
+      } else {
+        justBadge = `
+          <span class="badge" style="background: rgba(239, 68, 68, 0.1); color: #f87171; border: 1px solid rgba(239, 68, 68, 0.25); font-weight: 700; padding: 4px 10px; border-radius: 20px;">
+            <i class="fa-solid fa-triangle-exclamation"></i> غير مبرر
+          </span>
+        `;
+      }
+
+      // Contact info
+      const parentName = row.parent_name || '';
+      const phone = row.parent_phone || row.student_phone || '';
+      let contactHtml = '<span style="color: var(--text-muted); font-size: 12px;">-</span>';
+      if (phone) {
+        const cleanPhone = phone.replace(/[^0-9+]/g, '');
+        contactHtml = `
+          <div style="font-size: 12px;">
+            ${parentName ? `<div style="font-weight: 600; margin-bottom: 2px;">${parentName}</div>` : ''}
+            <div style="display: flex; align-items: center; gap: 6px;">
+              <span style="font-family: monospace; direction: ltr;">${phone}</span>
+              <a href="tel:${cleanPhone}" class="btn-icon" style="width: 26px; height: 26px; font-size: 11px; color: #38bdf8;" title="اتصال">
+                <i class="fa-solid fa-phone"></i>
+              </a>
+              <a href="https://wa.me/${cleanPhone.replace('+', '')}" target="_blank" class="btn-icon" style="width: 26px; height: 26px; font-size: 12px; color: #22c55e;" title="مراسلة عبر واتساب">
+                <i class="fa-brands fa-whatsapp"></i>
+              </a>
+            </div>
+          </div>
+        `;
+      }
+
+      const avatarBg = row.gender === 'F' ? 'linear-gradient(135deg, #ec4899, #be185d)' : 'linear-gradient(135deg, #3b82f6, #1d4ed8)';
+      const initial = (row.first_name || 'T')[0]?.toUpperCase();
+
+      return `
+        <tr data-absence-id="${row.id}">
+          <td>
+            <div style="font-weight: 700; font-size: 13px;">${row.absence_date}</div>
+            <div style="font-size: 11.5px; color: var(--text-muted); margin-top: 2px;">
+              <i class="fa-solid fa-clock" style="font-size: 10px;"></i> ${row.time_slot || 'كامل اليوم'}
+            </div>
+          </td>
+          <td>
+            <div style="display: flex; align-items: center; gap: 10px;">
+              <div style="width: 36px; height: 36px; border-radius: 10px; background: ${avatarBg}; color: #fff; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 14px; flex-shrink: 0;">
+                ${initial}
+              </div>
+              <div>
+                <div style="font-weight: 700; font-size: 13.5px; color: var(--text-heading);">${studentName}</div>
+                <div style="display: flex; gap: 6px; align-items: center; margin-top: 1px;">
+                  ${matricule}
+                  ${levelName}
+                </div>
+              </div>
+            </div>
+          </td>
+          <td>
+            <span class="badge" style="background: rgba(59, 130, 246, 0.12); color: #3b82f6; border: 1px solid rgba(59, 130, 246, 0.25); font-weight: 600; border-radius: 8px;">
+              ${groupName}
+            </span>
+          </td>
+          <td>
+            <div style="font-size: 13px; font-weight: 600;">${row.subject_name || 'حصة تدريس'}</div>
+            ${row.notes ? `<div style="font-size: 11px; color: var(--text-muted); margin-top: 2px;">${row.notes}</div>` : ''}
+          </td>
+          <td style="text-align: center;">${typeBadge}</td>
+          <td style="text-align: center;">${justBadge}</td>
+          <td>${contactHtml}</td>
+          <td style="text-align: center;">
+            <div style="display: flex; gap: 4px; justify-content: center;">
+              <button class="btn-icon" style="color: #10b981;" title="تبرير الغياب" onclick="app.openJustifyAbsenceModal(${row.id})">
+                <i class="fa-solid fa-stamp"></i>
+              </button>
+              <button class="btn-icon" style="color: #38bdf8;" title="تصريح بالدخول" onclick="app.printBilletDirect(${row.id})">
+                <i class="fa-solid fa-ticket"></i>
+              </button>
+              <button class="btn-icon" style="color: #ef4444;" title="حذف" onclick="app.deleteAbsence(${row.id})">
+                <i class="fa-solid fa-trash-can"></i>
+              </button>
+            </div>
+          </td>
+        </tr>
+      `;
+    }).join('');
+  }
+
+  openJustifyAbsenceModal(id) {
+    const row = (this._cachedAbsences || []).find(a => a.id === id);
+    if (!row) return;
+
+    const elId = document.getElementById('justifyAbsenceId');
+    const elName = document.getElementById('justifyStudentName');
+    const elDetails = document.getElementById('justifyAbsenceDetails');
+
+    if (elId) elId.value = row.id;
+    if (elName) elName.textContent = `${row.first_name || ''} ${row.last_name || ''} (${row.matricule || ''})`;
+    if (elDetails) elDetails.textContent = `${row.absence_date} | ${row.time_slot || 'كامل اليوم'} | ${row.group_name || ''} | ${row.period_type === 'late' ? 'تأخر' : 'غياب'}`;
+
+    const reasonSelect = document.getElementById('justifyReasonSelect');
+    const customReasonInput = document.getElementById('justifyCustomReasonInput');
+    const customReasonWrapper = document.getElementById('customReasonWrapper');
+    const notesInput = document.getElementById('justifyNotesInput');
+
+    if (row.justification_reason) {
+      const knownReasons = [
+        'شهادة طبية (Certificat Médical)',
+        'عذر عائلي قاهر (Motif familial impérieux)',
+        'استدعاء رسمي / مسابقة (Convocation officielle)',
+        'إشعار مسبق من الولي (Autorisation préalable)'
+      ];
+      if (knownReasons.includes(row.justification_reason)) {
+        if (reasonSelect) reasonSelect.value = row.justification_reason;
+        if (customReasonWrapper) customReasonWrapper.style.display = 'none';
+      } else {
+        if (reasonSelect) reasonSelect.value = 'أخرى (Autre motif)';
+        if (customReasonWrapper) customReasonWrapper.style.display = 'block';
+        if (customReasonInput) customReasonInput.value = row.justification_reason;
+      }
+    } else {
+      if (reasonSelect) reasonSelect.selectedIndex = 0;
+      if (customReasonWrapper) customReasonWrapper.style.display = 'none';
+      if (customReasonInput) customReasonInput.value = '';
+    }
+
+    if (notesInput) notesInput.value = row.notes || '';
+
+    document.getElementById('modalJustifyAbsence')?.classList.add('active');
+  }
+
+  handleJustifyReasonChange(val) {
+    const customWrapper = document.getElementById('customReasonWrapper');
+    if (customWrapper) {
+      customWrapper.style.display = (val && val.includes('أخرى')) ? 'block' : 'none';
+    }
+  }
+
+  async saveJustifyAbsence() {
+    const id = document.getElementById('justifyAbsenceId')?.value;
+    if (!id) return;
+
+    const reasonSelect = document.getElementById('justifyReasonSelect')?.value;
+    const customReason = document.getElementById('justifyCustomReasonInput')?.value?.trim();
+    const notes = document.getElementById('justifyNotesInput')?.value?.trim();
+    const issueBillet = document.getElementById('justifyIssueBilletCheckbox')?.checked;
+
+    let finalReason = reasonSelect;
+    if (reasonSelect && reasonSelect.includes('أخرى') && customReason) {
+      finalReason = customReason;
+    }
+
+    try {
+      const res = await fetch(`/api/discipline-absences/${id}/justify`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          justification_reason: finalReason,
+          issue_billet: issueBillet,
+          notes: notes
+        })
+      });
+
+      const data = await res.json();
+      if (data.success) {
+        this.showToast('تم تبرير الغياب بنجاح ✓', 'success');
+        this.closeModals();
+
+        if (issueBillet) {
+          this.printBilletDirect(parseInt(id, 10));
+        }
+        this.loadDisciplineAbsences();
+      } else {
+        this.showToast(data.error || 'Erreur lors de la justification', 'error');
+      }
+    } catch (err) {
+      console.error('saveJustifyAbsence error:', err);
+      this.showToast('حدث خطأ أثناء حفظ التبرير', 'error');
+    }
+  }
+
+  async openAddManualAbsenceModal() {
+    const form = document.getElementById('formAddManualAbsence');
+    if (form) form.reset();
+
+    const dateInput = document.getElementById('manualAbsenceDate');
+    if (dateInput) dateInput.value = new Date().toISOString().slice(0, 10);
+
+    await this.ensureAbsenceGroupsPopulated();
+
+    // Trigger initial students populate if first group selected
+    const groupSelect = document.getElementById('manualAbsenceGroupSelect');
+    if (groupSelect && groupSelect.value) {
+      this.handleManualAbsenceGroupChange(groupSelect.value);
+    }
+
+    document.getElementById('modalAddManualAbsence')?.classList.add('active');
+  }
+
+  async handleManualAbsenceGroupChange(groupId) {
+    const studentSelect = document.getElementById('manualAbsenceStudentSelect');
+    if (!studentSelect) return;
+
+    studentSelect.innerHTML = '<option value="">-- جاري التحميل... --</option>';
+
+    if (!groupId) {
+      studentSelect.innerHTML = '<option value="">-- اختر القسم أولاً --</option>';
+      return;
+    }
+
+    try {
+      const res = await fetch(`/api/students?group_id=${groupId}`);
+      const data = await res.json();
+      const students = data.students || data || [];
+
+      if (students.length === 0) {
+        studentSelect.innerHTML = '<option value="">لا يوجد تلاميذ في هذا الفوج</option>';
+        return;
+      }
+
+      studentSelect.innerHTML = '<option value="">-- اختر التلميذ --</option>' + 
+        students.map(s => `<option value="${s.id}">${s.first_name || ''} ${s.last_name || ''} (${s.matricule || s.id})</option>`).join('');
+    } catch (err) {
+      console.error('handleManualAbsenceGroupChange error:', err);
+      studentSelect.innerHTML = '<option value="">فشل تحميل التلاميذ</option>';
+    }
+  }
+
+  async saveManualAbsence() {
+    const groupId = document.getElementById('manualAbsenceGroupSelect')?.value;
+    const studentId = document.getElementById('manualAbsenceStudentSelect')?.value;
+    const date = document.getElementById('manualAbsenceDate')?.value;
+    const type = document.getElementById('manualAbsenceType')?.value || 'absence';
+    const slot = document.getElementById('manualAbsenceTimeSlot')?.value || '08:00 - 09:00';
+    const subject = document.getElementById('manualAbsenceSubject')?.value || '';
+    const notes = document.getElementById('manualAbsenceNotes')?.value || '';
+
+    if (!studentId || !date) {
+      this.showToast('يرجى اختيار التلميذ وتاريخ الغياب', 'warning');
+      return;
+    }
+
+    try {
+      const res = await fetch('/api/discipline-absences', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          student_id: studentId,
+          group_id: groupId,
+          absence_date: date,
+          time_slot: slot,
+          period_type: type,
+          subject_name: subject,
+          notes: notes
+        })
+      });
+
+      const data = await res.json();
+      if (data.success) {
+        this.showToast('تم تسجيل الغياب بنجاح ✓', 'success');
+        this.closeModals();
+        this.loadDisciplineAbsences();
+      } else {
+        this.showToast(data.error || 'Erreur lors de l\'enregistrement', 'error');
+      }
+    } catch (err) {
+      console.error('saveManualAbsence error:', err);
+      this.showToast('حدث خطأ أثناء تسجيل الغياب', 'error');
+    }
+  }
+
+  async deleteAbsence(id) {
+    if (!confirm('هل أنت متأكد من رغبتك في حذف هذا الغياب؟')) return;
+
+    try {
+      const res = await fetch(`/api/discipline-absences/${id}`, { method: 'DELETE' });
+      const data = await res.json();
+      if (data.success) {
+        this.showToast('تم حذف الغياب بنجاح', 'info');
+        this.loadDisciplineAbsences();
+      } else {
+        this.showToast(data.error || 'Erreur lors de la suppression', 'error');
+      }
+    } catch (err) {
+      console.error('deleteAbsence error:', err);
+      this.showToast('حدث خطأ أثناء الحذف', 'error');
+    }
+  }
+
+  printBilletDirect(id) {
+    const row = (this._cachedAbsences || []).find(a => a.id === id);
+    if (!row) return;
+
+    const schoolName = this.settings?.school_name || 'EDUMIND ACADEMY';
+    const elSchool = document.getElementById('billetSchoolName');
+    const elName = document.getElementById('billetStudentName');
+    const elMatricule = document.getElementById('billetStudentMatricule');
+    const elGroup = document.getElementById('billetGroupName');
+    const elDate = document.getElementById('billetAbsenceDate');
+    const elSlot = document.getElementById('billetTimeSlot');
+    const elReason = document.getElementById('billetReason');
+    const elIssued = document.getElementById('billetIssuedDate');
+    const elNum = document.getElementById('billetNumberBadge');
+
+    if (elSchool) elSchool.textContent = schoolName;
+    if (elName) elName.textContent = `${row.first_name || ''} ${row.last_name || ''}`;
+    if (elMatricule) elMatricule.textContent = row.matricule || '-';
+    if (elGroup) elGroup.textContent = row.group_name || '-';
+    if (elDate) elDate.textContent = row.absence_date || '-';
+    if (elSlot) elSlot.textContent = `${row.time_slot || 'كامل اليوم'} ${row.subject_name ? '(' + row.subject_name + ')' : ''}`;
+    if (elReason) elReason.textContent = row.justification_reason || 'تم التبرير والموافقة من الإدارة';
+
+    const now = new Date();
+    const dateFormatted = `${now.toLocaleDateString('fr-FR')} à ${now.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}`;
+    if (elIssued) elIssued.textContent = dateFormatted;
+    if (elNum) elNum.textContent = row.billet_number || `BIL-${now.getFullYear()}-${String(row.id).padStart(4, '0')}`;
+
+    document.getElementById('modalBilletEntree')?.classList.add('active');
+  }
+
+  printBilletContent() {
+    const printArea = document.getElementById('billetPrintArea');
+    if (!printArea) return;
+
+    const w = window.open('', '_blank', 'width=650,height=600');
+    if (!w) {
+      window.print();
+      return;
+    }
+
+    w.document.write(`
+      <!DOCTYPE html>
+      <html dir="rtl" lang="ar">
+      <head>
+        <meta charset="utf-8">
+        <title>تصريح بالدخول - Billet d'Entrée</title>
+        <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800&display=swap" rel="stylesheet">
+        <style>
+          body { font-family: 'Cairo', sans-serif; margin: 20px; background: #fff; color: #000; }
+          .ticket-card { border: 2px dashed #334155; padding: 20px; border-radius: 12px; max-width: 420px; margin: 0 auto; }
+          @media print {
+            body { margin: 0; }
+            .ticket-card { border: 2px dashed #000; }
+          }
+        </style>
+      </head>
+      <body>
+        <div class="ticket-card">
+          ${printArea.innerHTML}
+        </div>
+        <script>
+          window.onload = function() {
+            window.focus();
+            window.print();
+            setTimeout(function() { window.close(); }, 500);
+          };
+        </script>
+      </body>
+      </html>
+    `);
+    w.document.close();
+  }
+
+  exportAbsencesToExcel() {
+    if (!this._cachedAbsences || this._cachedAbsences.length === 0) {
+      this.showToast('لا توجد بيانات غيابات للتصدير', 'warning');
+      return;
+    }
+
+    try {
+      const rows = this._cachedAbsences.map(a => ({
+        'التاريخ': a.absence_date,
+        'التوقيت': a.time_slot || '',
+        'رقم القيد': a.matricule || '',
+        'اسم التلميذ': `${a.first_name || ''} ${a.last_name || ''}`.trim(),
+        'القسم / الفوج': a.group_name || '',
+        'المادة': a.subject_name || '',
+        'النوع': a.period_type === 'late' ? 'تأخر' : 'غياب',
+        'الحالة': a.is_justified ? 'مبرر' : 'غير مبرر',
+        'سبب التبرير': a.justification_reason || '',
+        'رقم التصريح': a.billet_number || '',
+        'ولي الأمر': a.parent_name || '',
+        'هاتف الولي': a.parent_phone || a.student_phone || '',
+        'ملاحظات': a.notes || ''
+      }));
+
+      const ws = XLSX.utils.json_to_sheet(rows);
+      const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, ws, 'الغيابات');
+      const todayStr = new Date().toISOString().slice(0, 10);
+      XLSX.writeFile(wb, `سجل_الغيابات_${todayStr}.xlsx`);
+      this.showToast('تم تصدير ملف Excel بنجاح', 'success');
+    } catch (err) {
+      console.error('exportAbsencesToExcel error:', err);
+      this.showToast('فشل تصدير Excel', 'error');
+    }
+  }
+
+  printAbsencesReport() {
+    window.print();
+  }
+
 
   closeModals() {
     document.querySelectorAll('.modal-overlay').forEach(m => m.classList.remove('active'));
