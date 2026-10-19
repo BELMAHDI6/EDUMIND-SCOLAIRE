@@ -19920,25 +19920,36 @@ class EdumindApp {
       if (type !== 'all') queryParams.set('period_type', type);
       if (justified !== 'all') queryParams.set('is_justified', justified);
 
-      // Date ranges based on preset
+      // Date ranges based on preset (using local calendar date)
       const today = new Date();
-      const todayStr = today.toISOString().slice(0, 10);
+      const y = today.getFullYear();
+      const m = String(today.getMonth() + 1).padStart(2, '0');
+      const d = String(today.getDate()).padStart(2, '0');
+      const todayStr = `${y}-${m}-${d}`;
 
       if (preset === 'today') {
         queryParams.set('date', todayStr);
       } else if (preset === 'yesterday') {
         const yest = new Date(today);
         yest.setDate(yest.getDate() - 1);
-        queryParams.set('date', yest.toISOString().slice(0, 10));
+        const yY = yest.getFullYear();
+        const yM = String(yest.getMonth() + 1).padStart(2, '0');
+        const yD = String(yest.getDate()).padStart(2, '0');
+        queryParams.set('date', `${yY}-${yM}-${yD}`);
       } else if (preset === 'week') {
         const weekStart = new Date(today);
         weekStart.setDate(weekStart.getDate() - 7);
-        queryParams.set('start_date', weekStart.toISOString().slice(0, 10));
+        const wY = weekStart.getFullYear();
+        const wM = String(weekStart.getMonth() + 1).padStart(2, '0');
+        const wD = String(weekStart.getDate()).padStart(2, '0');
+        queryParams.set('start_date', `${wY}-${wM}-${wD}`);
         queryParams.set('end_date', todayStr);
       } else if (preset === 'month') {
-        const monthStart = todayStr.slice(0, 7) + '-01';
+        const monthStart = `${y}-${m}-01`;
+        const lastDay = new Date(y, today.getMonth() + 1, 0).getDate();
+        const monthEnd = `${y}-${m}-${String(lastDay).padStart(2, '0')}`;
         queryParams.set('start_date', monthStart);
-        queryParams.set('end_date', todayStr);
+        queryParams.set('end_date', monthEnd);
       } else if (preset === 'custom') {
         const customDate = document.getElementById('filterAbsenceCustomDate')?.value;
         if (customDate) queryParams.set('date', customDate);
@@ -20063,6 +20074,38 @@ class EdumindApp {
     this.loadDisciplineAbsences();
   }
 
+  quickFilterAbsences(mode) {
+    const pSelect = document.getElementById('filterAbsenceDatePreset');
+    const tSelect = document.getElementById('filterAbsenceType');
+    const jSelect = document.getElementById('filterAbsenceJustified');
+    const sInput = document.getElementById('searchAbsenceInput');
+    const gSelect = document.getElementById('filterAbsenceGroup');
+    const picker = document.getElementById('absenceCustomDatePicker');
+
+    if (sInput) sInput.value = '';
+    if (gSelect) gSelect.value = 'all';
+    if (picker) picker.style.display = 'none';
+
+    if (mode === 'today_absences') {
+      if (pSelect) pSelect.value = 'today';
+      if (tSelect) tSelect.value = 'absence';
+      if (jSelect) jSelect.value = 'all';
+    } else if (mode === 'today_unjustified') {
+      if (pSelect) pSelect.value = 'today';
+      if (tSelect) tSelect.value = 'all';
+      if (jSelect) jSelect.value = '0';
+    } else if (mode === 'today_lates') {
+      if (pSelect) pSelect.value = 'today';
+      if (tSelect) tSelect.value = 'late';
+      if (jSelect) jSelect.value = 'all';
+    } else if (mode === 'month_all') {
+      if (pSelect) pSelect.value = 'month';
+      if (tSelect) tSelect.value = 'all';
+      if (jSelect) jSelect.value = 'all';
+    }
+    this.loadDisciplineAbsences();
+  }
+
   renderDisciplineAbsencesTable(absences) {
     const table = document.getElementById('absencesTable');
     if (!table) return;
@@ -20147,10 +20190,12 @@ class EdumindApp {
       const avatarBg = row.gender === 'F' ? 'linear-gradient(135deg, #ec4899, #be185d)' : 'linear-gradient(135deg, #3b82f6, #1d4ed8)';
       const initial = (row.first_name || 'T')[0]?.toUpperCase();
 
+      const displayDate = (row.absence_date || '').split('T')[0];
+
       return `
         <tr data-absence-id="${row.id}">
           <td>
-            <div style="font-weight: 700; font-size: 13px;">${row.absence_date}</div>
+            <div style="font-weight: 700; font-size: 13px;">${displayDate}</div>
             <div style="font-size: 11.5px; color: var(--text-muted); margin-top: 2px;">
               <i class="fa-solid fa-clock" style="font-size: 10px;"></i> ${row.time_slot || 'كامل اليوم'}
             </div>

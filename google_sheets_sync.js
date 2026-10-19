@@ -348,7 +348,22 @@ class GoogleSheetsSync {
         const groupId = parseInt(att.group_id, 10);
         if (!studentId || Number.isNaN(studentId)) continue;
 
-        const date = att.session_date || new Date().toISOString().slice(0, 10);
+        // Normalize session_date to local YYYY-MM-DD string
+        let date = att.session_date;
+        if (!date) {
+          const now = new Date();
+          date = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+        } else if (typeof date === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(date.trim())) {
+          date = date.trim();
+        } else {
+          const d = new Date(date);
+          if (!isNaN(d.getTime())) {
+            date = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+          } else {
+            date = String(date).slice(0, 10);
+          }
+        }
+
         const timeSlot = att.time_slot || '08:00 - 09:00';
         const status = (att.status || 'present').toLowerCase();
         const note = att.note || '';
@@ -356,6 +371,8 @@ class GoogleSheetsSync {
 
         // 1. Record into discipline_absences if status is absent or late
         if (status === 'absent' || status === 'late') {
+          const periodType = (status === 'late') ? 'late' : 'absence';
+
           // Check if already exists for this student on this date and time_slot
           const existing = DB.queryOne(`
             SELECT id FROM discipline_absences
@@ -367,7 +384,7 @@ class GoogleSheetsSync {
               INSERT INTO discipline_absences
               (student_id, group_id, absence_date, time_slot, period_type, subject_name, notes, created_at)
               VALUES (?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
-            `, [studentId, groupId || null, date, timeSlot, status, subjectName, note]);
+            `, [studentId, groupId || null, date, timeSlot, periodType, subjectName, note]);
             importedAbsences++;
           }
         }

@@ -1086,6 +1086,38 @@ function initDatabase() {
         FOREIGN KEY (student_id) REFERENCES students(id) ON DELETE CASCADE
       );
     `);
+
+    // Auto-migrate & sanitize dates in discipline_absences and attendance if any stored in ISO format
+    try {
+      db.exec("UPDATE discipline_absences SET period_type = 'absence' WHERE period_type = 'absent';");
+      const isoAbs = db.prepare("SELECT id, absence_date FROM discipline_absences WHERE absence_date LIKE '%T%'").all();
+      if (isoAbs && isoAbs.length > 0) {
+        const updateStmt = db.prepare("UPDATE discipline_absences SET absence_date = ? WHERE id = ?");
+        for (const row of isoAbs) {
+          const d = new Date(row.absence_date);
+          if (!isNaN(d.getTime())) {
+            const clean = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+            updateStmt.run(clean, row.id);
+          }
+        }
+      }
+      db.exec("DELETE FROM discipline_absences WHERE id NOT IN (SELECT MIN(id) FROM discipline_absences GROUP BY student_id, absence_date, time_slot);");
+      const isoAtt = db.prepare("SELECT id, session_date FROM attendance WHERE session_date LIKE '%T%'").all();
+      if (isoAtt && isoAtt.length > 0) {
+        const updateStmt2 = db.prepare("UPDATE OR IGNORE attendance SET session_date = ? WHERE id = ?");
+        for (const row of isoAtt) {
+          try {
+            const d = new Date(row.session_date);
+            if (!isNaN(d.getTime())) {
+              const clean = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+              updateStmt2.run(clean, row.id);
+            }
+          } catch (attErr) {}
+        }
+      }
+    } catch (sanitizeErr) {
+      console.warn('Auto-sanitize dates migration warning:', sanitizeErr.message);
+    }
   } catch (pubErr) {
     console.warn('Public school extensions migration:', pubErr.message);
   }

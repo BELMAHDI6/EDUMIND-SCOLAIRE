@@ -1922,10 +1922,10 @@
         </div>
       </div>
 
-      <!-- Absence KPI Stats Cards (Matched with Home Screen Design) -->
+      <!-- Absence KPI Stats Cards (Matched with Home Screen Design - Clickable for Instant Filter) -->
       <div class="stats-grid" style="grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); margin-bottom: 24px;">
         <!-- 1. غيابات اليوم -->
-        <div class="stat-card" style="border-inline-start: 4px solid #ef4444;">
+        <div class="stat-card" style="border-inline-start: 4px solid #ef4444; cursor: pointer; transition: transform 0.2s, box-shadow 0.2s;" onclick="app.quickFilterAbsences('today_absences')" title="عرض غيابات اليوم">
           <div class="stat-top">
             <span class="stat-title" data-i18n="abs_kpi_today">غيابات اليوم</span>
             <div class="stat-icon-badge" style="background: rgba(239, 68, 68, 0.15); color: #ef4444;">
@@ -1939,7 +1939,7 @@
         </div>
 
         <!-- 2. غير مبررة (اليوم) -->
-        <div class="stat-card" style="border-inline-start: 4px solid #f59e0b;">
+        <div class="stat-card" style="border-inline-start: 4px solid #f59e0b; cursor: pointer; transition: transform 0.2s, box-shadow 0.2s;" onclick="app.quickFilterAbsences('today_unjustified')" title="عرض الغيابات والتأخرات غير المبررة لليوم">
           <div class="stat-top">
             <span class="stat-title" data-i18n="abs_kpi_unjustified">غير مبررة (اليوم)</span>
             <div class="stat-icon-badge" style="background: rgba(245, 158, 11, 0.15); color: #f59e0b;">
@@ -1953,7 +1953,7 @@
         </div>
 
         <!-- 3. تأخرات اليوم -->
-        <div class="stat-card" style="border-inline-start: 4px solid #06b6d4;">
+        <div class="stat-card" style="border-inline-start: 4px solid #06b6d4; cursor: pointer; transition: transform 0.2s, box-shadow 0.2s;" onclick="app.quickFilterAbsences('today_lates')" title="عرض تأخرات اليوم">
           <div class="stat-top">
             <span class="stat-title" data-i18n="abs_kpi_lates">تأخرات اليوم</span>
             <div class="stat-icon-badge" style="background: rgba(6, 182, 212, 0.15); color: #06b6d4;">
@@ -1967,7 +1967,7 @@
         </div>
 
         <!-- 4. إجمالي غيابات الشهر -->
-        <div class="stat-card" style="border-inline-start: 4px solid #8b5cf6;">
+        <div class="stat-card" style="border-inline-start: 4px solid #8b5cf6; cursor: pointer; transition: transform 0.2s, box-shadow 0.2s;" onclick="app.quickFilterAbsences('month_all')" title="عرض جميع غيابات هذا الشهر">
           <div class="stat-top">
             <span class="stat-title" data-i18n="abs_kpi_month">إجمالي غيابات الشهر</span>
             <div class="stat-icon-badge" style="background: rgba(139, 92, 246, 0.15); color: #8b5cf6;">

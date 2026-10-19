@@ -6167,16 +6167,16 @@ app.get('/api/discipline-absences', (req, res) => {
     const params = [];
 
     if (date) {
-      query += ` AND da.absence_date = ?`;
-      params.push(date);
+      query += ` AND (da.absence_date = ? OR da.absence_date LIKE ? OR substr(da.absence_date, 1, 10) = ?)`;
+      params.push(date, `${date}%`, date);
     } else {
       if (start_date) {
-        query += ` AND da.absence_date >= ?`;
-        params.push(start_date);
+        query += ` AND (da.absence_date >= ? OR substr(da.absence_date, 1, 10) >= ?)`;
+        params.push(start_date, start_date);
       }
       if (end_date) {
-        query += ` AND da.absence_date <= ?`;
-        params.push(end_date);
+        query += ` AND (da.absence_date <= ? OR substr(da.absence_date, 1, 10) <= ?)`;
+        params.push(end_date, end_date);
       }
     }
 
@@ -6186,8 +6186,12 @@ app.get('/api/discipline-absences', (req, res) => {
     }
 
     if (period_type && period_type !== 'all') {
-      query += ` AND da.period_type = ?`;
-      params.push(period_type);
+      if (period_type === 'absence') {
+        query += ` AND da.period_type IN ('absence', 'absent')`;
+      } else {
+        query += ` AND da.period_type = ?`;
+        params.push(period_type);
+      }
     }
 
     if (is_justified !== undefined && is_justified !== 'all') {
@@ -6214,16 +6218,39 @@ app.get('/api/discipline-absences', (req, res) => {
 // 2. Absence Statistics (Today & This Month)
 app.get('/api/discipline-absences/stats', (req, res) => {
   try {
-    const today = new Date().toISOString().slice(0, 10);
-    const monthStart = today.slice(0, 7) + '-01';
+    const now = new Date();
+    const today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+    const monthStart = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-01`;
 
-    const todayTotal = DB.queryOne(`SELECT COUNT(*) as count FROM discipline_absences WHERE absence_date = ?`, [today]).count;
-    const todayAbsences = DB.queryOne(`SELECT COUNT(*) as count FROM discipline_absences WHERE absence_date = ? AND period_type = 'absence'`, [today]).count;
-    const todayLates = DB.queryOne(`SELECT COUNT(*) as count FROM discipline_absences WHERE absence_date = ? AND period_type = 'late'`, [today]).count;
-    const todayUnjustified = DB.queryOne(`SELECT COUNT(*) as count FROM discipline_absences WHERE absence_date = ? AND is_justified = 0`, [today]).count;
+    const todayTotal = DB.queryOne(
+      `SELECT COUNT(*) as count FROM discipline_absences WHERE (absence_date = ? OR substr(absence_date, 1, 10) = ?)`,
+      [today, today]
+    ).count;
 
-    const monthTotal = DB.queryOne(`SELECT COUNT(*) as count FROM discipline_absences WHERE absence_date >= ?`, [monthStart]).count;
-    const monthUnjustified = DB.queryOne(`SELECT COUNT(*) as count FROM discipline_absences WHERE absence_date >= ? AND is_justified = 0`, [monthStart]).count;
+    const todayAbsences = DB.queryOne(
+      `SELECT COUNT(*) as count FROM discipline_absences WHERE (absence_date = ? OR substr(absence_date, 1, 10) = ?) AND period_type IN ('absence', 'absent')`,
+      [today, today]
+    ).count;
+
+    const todayLates = DB.queryOne(
+      `SELECT COUNT(*) as count FROM discipline_absences WHERE (absence_date = ? OR substr(absence_date, 1, 10) = ?) AND period_type = 'late'`,
+      [today, today]
+    ).count;
+
+    const todayUnjustified = DB.queryOne(
+      `SELECT COUNT(*) as count FROM discipline_absences WHERE (absence_date = ? OR substr(absence_date, 1, 10) = ?) AND is_justified = 0`,
+      [today, today]
+    ).count;
+
+    const monthTotal = DB.queryOne(
+      `SELECT COUNT(*) as count FROM discipline_absences WHERE (absence_date >= ? OR substr(absence_date, 1, 10) >= ?)`,
+      [monthStart, monthStart]
+    ).count;
+
+    const monthUnjustified = DB.queryOne(
+      `SELECT COUNT(*) as count FROM discipline_absences WHERE (absence_date >= ? OR substr(absence_date, 1, 10) >= ?) AND is_justified = 0`,
+      [monthStart, monthStart]
+    ).count;
 
     res.json({
       success: true,
