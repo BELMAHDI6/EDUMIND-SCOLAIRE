@@ -2995,6 +2995,11 @@
             <i class="fa-solid fa-database"></i>
             <span data-i18n="tab_donnees">Données</span>
           </button>
+          <button type="button" class="settings-nav-btn" data-settings-tab="cloud_mobile"
+            onclick="app.switchSettingsTab('cloud_mobile'); app.loadCloudMobileSettings();">
+            <i class="fa-solid fa-cloud-arrow-up" style="color: #06b6d4;"></i>
+            <span data-i18n="tab_cloud_mobile">تطبيق الأساتذة (Google Sheets)</span>
+          </button>
 
           <div class="settings-nav-divider"></div>
 
@@ -3623,6 +3628,133 @@
             </div>
           </div>
 
+          <!-- 9. TAB: CLOUD & APPLICATION MOBILE DES ENSEIGNANTS -->
+          <div class="settings-tab-panel" id="settingsTab-cloud_mobile">
+            <h3 class="settings-panel-title" style="color: #06b6d4; display: flex; align-items: center; gap: 10px;">
+              <i class="fa-solid fa-cloud-arrow-up"></i>
+              <span>الربط السحابي مع Google Sheets وتطبيق الأساتذة (EDUMIND Presence)</span>
+            </h3>
+
+            <!-- Switcher Card (Enable / Disable) -->
+            <div class="cloud-switch-wrapper">
+              <div style="display: flex; align-items: center; gap: 14px;">
+                <div style="width: 44px; height: 44px; border-radius: 12px; background: rgba(6, 182, 212, 0.12); color: #06b6d4; display: flex; align-items: center; justify-content: center; font-size: 20px;">
+                  <i class="fa-solid fa-tower-broadcast"></i>
+                </div>
+                <div>
+                  <strong style="font-size: 15px; color: var(--text-heading); display: block; margin-bottom: 2px;">
+                    تفعيل المزامنة السحابية وتطبيق الأساتذة (Google Sheets)
+                  </strong>
+                  <span style="font-size: 12.5px; color: var(--text-muted);">
+                    عند التفعيل، يتم مزامنة بيانات الأفواج والأساتذة تلقائياً، وتوليد رمز QR لربط تطبيق الهاتف.
+                  </span>
+                </div>
+              </div>
+              <label class="toggle-switch-ios" title="تفعيل / تعطيل الربط السحابي">
+                <input type="checkbox" id="switchCloudSync" onchange="app.toggleCloudSyncEnabled(this.checked)">
+                <span class="toggle-switch-slider"></span>
+              </label>
+            </div>
+
+            <!-- Main Config Body (Visible when Switch is ON) -->
+            <div id="cloudSyncSettingsBody" style="display: none;">
+              <!-- Google Sheet URL Configuration Card -->
+              <div class="settings-card" style="margin-bottom: 20px;">
+                <h4 style="font-size: 15px; font-weight: 700; color: var(--text-heading); margin-bottom: 14px; display: flex; align-items: center; gap: 8px;">
+                  <i class="fa-brands fa-google-drive" style="color: #10b981;"></i>
+                  <span>إعداد رابط السحابة (Google Apps Script Web App URL)</span>
+                </h4>
+
+                <p style="font-size: 13px; color: var(--text-muted); line-height: 1.6; margin-bottom: 16px;">
+                  أدخل هنا رابط تطبيق الويب (Web App URL) المنتهي بـ <code>/exec</code> المنشور من جدول Google Sheets الخاص بالمؤسسة.
+                </p>
+
+                <div class="form-group" style="margin-bottom: 16px;">
+                  <label class="form-label" style="font-weight: 700;">رابط السكربت السحابي (Web App URL) :</label>
+                  <div style="position: relative;">
+                    <input type="url" id="settingCloudScriptUrl" class="form-control" style="font-family: monospace; font-size: 13px; padding-left: 36px; direction: ltr; text-align: left;"
+                      placeholder="https://script.google.com/macros/s/AKfy.../exec" required>
+                    <i class="fa-solid fa-link" style="position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: var(--text-muted);"></i>
+                  </div>
+                </div>
+
+                <!-- Test Alert Banner -->
+                <div id="cloudConnectionStatusAlert" class="alert" style="display: none; margin-bottom: 16px; align-items: center; gap: 12px; padding: 12px 16px; border-radius: 10px;"></div>
+
+                <!-- Action Buttons -->
+                <div style="display: flex; gap: 10px; flex-wrap: wrap; justify-content: flex-end;">
+                  <button type="button" class="btn-secondary" id="btnTestCloudConnection" onclick="app.testCloudConnection()"
+                    style="display: inline-flex; align-items: center; gap: 8px; font-weight: 600; padding: 10px 18px; border-radius: 8px;">
+                    <i class="fa-solid fa-plug"></i>
+                    <span>اختبار الاتصال بالرابط</span>
+                  </button>
+                  <button type="button" class="btn-primary" id="btnSaveCloudScriptUrl" onclick="app.saveCloudSettings()"
+                    style="display: inline-flex; align-items: center; gap: 8px; font-weight: 600; padding: 10px 20px; border-radius: 8px;">
+                    <i class="fa-solid fa-floppy-disk"></i>
+                    <span>حفظ الرابط</span>
+                  </button>
+                  <button type="button" class="btn-primary" id="btnManualSyncNow" onclick="app.syncAllWithCloud(true)"
+                    style="background: linear-gradient(135deg, #0ea5e9, #2563eb); display: inline-flex; align-items: center; gap: 8px; font-weight: 700; padding: 10px 20px; border-radius: 8px;">
+                    <i class="fa-solid fa-arrows-rotate"></i>
+                    <span>مزامنة فورية شاملة</span>
+                  </button>
+                </div>
+              </div>
+
+              <!-- QR Code Card for Mobile App Linking -->
+              <div class="settings-card" style="margin-bottom: 20px;">
+                <div class="cloud-qr-card">
+                  <!-- White box for the QR Code -->
+                  <div class="cloud-qr-box">
+                    <div id="schoolQrCodeContainer"></div>
+                    <div style="margin-top: 10px; font-size: 11.5px; font-weight: 700; color: #0f172a; text-align: center;" id="qrSchoolNameDisplay">
+                      EDUMIND
+                    </div>
+                  </div>
+
+                  <!-- QR Info & Instructions -->
+                  <div>
+                    <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 8px;">
+                      <span class="badge" style="background: rgba(16, 185, 129, 0.15); color: #10b981; font-weight: 700; padding: 4px 10px; border-radius: 12px; font-size: 11.5px;">
+                        <i class="fa-solid fa-circle-check"></i> جاهز للمسح
+                      </span>
+                      <span style="font-size: 12px; color: var(--text-muted);">تطبيق الهاتف المحمول</span>
+                    </div>
+
+                    <h4 style="font-size: 17px; font-weight: 800; color: var(--text-heading); margin-bottom: 8px;">
+                      📱 ربط تطبيق هاتف الأستاذ (EDUMIND Presence)
+                    </h4>
+
+                    <p style="font-size: 13px; color: var(--text-muted); line-height: 1.6; margin-bottom: 16px;">
+                      قبل تسجيل الدخول في تطبيق الهاتف، يقوم الأستاذ بمسح هذا الرمز بواسطة كاميرا التطبيق ليتم ربط هاتفه تلقائياً بمؤسستكم ومزامنة جداول التوقيت والأفواج والغيابات.
+                    </p>
+
+                    <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+                      <button type="button" class="btn-secondary" onclick="app.copyCloudUrl()" style="font-size: 12px; padding: 8px 14px; border-radius: 8px;">
+                        <i class="fa-solid fa-copy"></i> نسخ الرابط
+                      </button>
+                      <button type="button" class="btn-secondary" onclick="app.printSchoolQrCard()" style="font-size: 12px; padding: 8px 14px; border-radius: 8px;">
+                        <i class="fa-solid fa-print"></i> طباعة بطاقة الرمز للأساتذة
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Quick Setup Guide Card -->
+              <div class="settings-card" style="border: 1px dashed var(--border-color); background: rgba(255, 255, 255, 0.02);">
+                <h4 style="font-size: 14px; font-weight: 700; color: var(--text-heading); margin-bottom: 12px; display: flex; align-items: center; gap: 8px;">
+                  <i class="fa-solid fa-circle-question" style="color: #38bdf8;"></i>
+                  <span>كيفية إعداد جدول Google Sheet الخاص بمؤسستك (في 3 خطوات):</span>
+                </h4>
+                <ol style="font-size: 12.5px; color: var(--text-muted); line-height: 1.8; margin-right: 20px; padding: 0;">
+                  <li>أنشئ جدول Google Sheets جديد على حساب Google الخاص بالإدارة.</li>
+                  <li>افتح <strong>Extensions (الإضافات) ➔ Apps Script</strong>، والصق كود السكربت <code>google_apps_script.js</code> المرفق مع البرنامج.</li>
+                  <li>اضغط <strong>Deploy (نشر) ➔ New deployment (نشر جديد) ➔ Web app</strong>، واضبط خيار <em>Who has access</em> على <strong>Anyone (أي شخص)</strong>، ثم انسخ رابط الـ Web App وضعه في الحقل أعلاه.</li>
+                </ol>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     </section>

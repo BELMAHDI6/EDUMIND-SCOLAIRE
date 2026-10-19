@@ -465,6 +465,7 @@ const i18n = {
     tab_facturation: "Facturation & Échéances",
     tab_caisse: "Catégories de Caisse",
     tab_donnees: "Sauvegardes & Restauration",
+    tab_cloud_mobile: "Application Mobile (Google Sheets)",
     tab_reseau: "Réseau & Multi-Postes",
     tab_administration: "Administration & Année",
     tab_apropos: "À propos & Support",
@@ -1221,6 +1222,7 @@ const i18n = {
     tab_facturation: "الفوترة ومواعيد الاستحقاق",
     tab_caisse: "تصنيفات الصندوق",
     tab_donnees: "النسخ الاحتياطي والاسترجاع",
+    tab_cloud_mobile: "تطبيق الأساتذة (Google Sheets)",
     tab_reseau: "الشبكة والربط المتعدد",
     tab_administration: "الإدارة والسنة الدراسية",
     tab_apropos: "حول البرنامج والدعم",
@@ -18476,6 +18478,9 @@ class EdumindApp {
     document.querySelectorAll('.settings-panels-container .settings-tab-panel').forEach(panel => {
       panel.classList.toggle('active', panel.id === `settingsTab-${tabName}`);
     });
+    if (tabName === 'cloud_mobile') {
+      this.loadCloudMobileSettings();
+    }
     if (tabName === 'securite') {
       this.loadSchoolCyclesInputs();
     }

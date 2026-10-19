@@ -6049,7 +6049,10 @@ app.get('/api/cantine/report', (req, res) => {
 app.get('/api/sync/sheets/config', (req, res) => {
   try {
     const url = GoogleSheetsSync.getScriptUrl();
-    res.json({ success: true, url });
+    const enabled = GoogleSheetsSync.isSyncEnabled();
+    const schoolRow = DB.queryOne("SELECT value FROM settings WHERE key = 'school_name'");
+    const schoolName = (schoolRow && schoolRow.value) ? schoolRow.value : 'مؤسسة EDUMIND التربوية';
+    res.json({ success: true, url, enabled, schoolName });
   } catch (err) {
     res.status(500).json({ success: false, error: err.message });
   }
@@ -6057,11 +6060,28 @@ app.get('/api/sync/sheets/config', (req, res) => {
 
 app.post('/api/sync/sheets/config', (req, res) => {
   try {
-    const { url } = req.body;
-    const saved = GoogleSheetsSync.setScriptUrl(url);
-    res.json({ success: true, url: saved });
+    const { url, enabled } = req.body;
+    let saved = url;
+    if (url !== undefined) {
+      saved = GoogleSheetsSync.setScriptUrl(url);
+    }
+    if (enabled !== undefined) {
+      GoogleSheetsSync.setSyncEnabled(!!enabled);
+    }
+    const currentEnabled = GoogleSheetsSync.isSyncEnabled();
+    res.json({ success: true, url: saved || GoogleSheetsSync.getScriptUrl(), enabled: currentEnabled });
   } catch (err) {
     res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+app.post('/api/sync/sheets/test', async (req, res) => {
+  try {
+    const { url } = req.body;
+    const testResult = await GoogleSheetsSync.testConnection(url);
+    res.json(testResult);
+  } catch (err) {
+    res.status(400).json({ success: false, error: err.message });
   }
 });
 

@@ -16,6 +16,9 @@ class GoogleSheetsSync {
    * Debounced automatic export to Google Sheets whenever relevant school data changes
    */
   static scheduleAutoSync(delayMs = 2500) {
+    if (!this.isSyncEnabled()) {
+      return;
+    }
     if (this._syncTimer) {
       clearTimeout(this._syncTimer);
     }
@@ -28,6 +31,27 @@ class GoogleSheetsSync {
         console.warn('⚠️ [GoogleSheetsSync] Échec de l\'auto-export vers Google Sheets:', err.message);
       }
     }, delayMs);
+  }
+
+  static isSyncEnabled() {
+    try {
+      const row = DB.queryOne("SELECT value FROM settings WHERE key = 'google_sheets_enabled'");
+      if (!row || row.value === null || row.value === undefined) {
+        return true;
+      }
+      return row.value === '1' || row.value === 'true';
+    } catch (_) {
+      return true;
+    }
+  }
+
+  static setSyncEnabled(enabled) {
+    const val = enabled ? '1' : '0';
+    DB.run(`
+      INSERT INTO settings (key, value) VALUES ('google_sheets_enabled', ?)
+      ON CONFLICT(key) DO UPDATE SET value = excluded.value
+    `, [val]);
+    return enabled;
   }
 
   static getScriptUrl() {
@@ -46,6 +70,65 @@ class GoogleSheetsSync {
       ON CONFLICT(key) DO UPDATE SET value = excluded.value
     `, [cleanUrl]);
     return cleanUrl;
+  }
+
+  /**
+   * Tests connection with the Google Apps Script Web App
+   */
+  static async testConnection(targetUrl) {
+    const url = (targetUrl || this.getScriptUrl() || '').trim();
+    if (!url) {
+      throw new Error('رابط السحابة غير محدد (Google Apps Script URL manquant)');
+    }
+    if (!url.startsWith('http://') && !url.startsWith('https://')) {
+      throw new Error('رابط غير صالح. يجب أن يبدأ بـ https://');
+    }
+
+    const startTime = Date.now();
+    const testUrl = url.includes('?') ? `${url}&action=ping` : `${url}?action=ping`;
+
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 10000);
+
+    try {
+      const res = await fetch(testUrl, {
+        method: 'GET',
+        headers: { 'Accept': 'application/json' },
+        signal: controller.signal
+      });
+      clearTimeout(timeoutId);
+
+      if (!res.ok && res.status !== 302) {
+        throw new Error(`استجابة غير صالحة من السيرفر (HTTP ${res.status})`);
+      }
+
+      const text = await res.text();
+      let data = {};
+      try {
+        data = JSON.parse(text);
+      } catch (_) {
+        throw new Error('الرابط لا يرجع بيانات JSON صالحة. تأكد من نشر Web App بصلاحية "Anyone"');
+      }
+
+      if (data.status !== 'ok') {
+        throw new Error(data.message || 'فشل الاتصال: السكربت لم يستجب بالحالة المطلوبة');
+      }
+
+      const latencyMs = Date.now() - startTime;
+      return {
+        success: true,
+        latencyMs,
+        app: data.app || 'EDUMIND Presence',
+        version: data.version || '2.0.0',
+        message: 'تم التحقق من الاتصال بنجاح مع السحابة'
+      };
+    } catch (err) {
+      clearTimeout(timeoutId);
+      if (err.name === 'AbortError') {
+        throw new Error('انتهت مهلة الاتصال (10 ثوان). تحقق من اتصال الإنترنت والرابط.');
+      }
+      throw err;
+    }
   }
 
   /**
