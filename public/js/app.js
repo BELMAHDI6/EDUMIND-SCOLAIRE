@@ -18489,6 +18489,258 @@ class EdumindApp {
   // -------------------------------------------------------------
   // SCHOOL CYCLES & EDUCATIONAL LEVELS FILTERING
   // -------------------------------------------------------------
+
+  // -------------------------------------------------------------
+  // CLOUD SYNC & TEACHER MOBILE APP LINKING (GOOGLE SHEETS)
+  // -------------------------------------------------------------
+  async loadCloudMobileSettings() {
+    try {
+      const res = await fetch('/api/sync/sheets/config');
+      const data = await res.json();
+      if (data.success) {
+        const switchEl = document.getElementById('switchCloudSync');
+        const urlInput = document.getElementById('settingCloudScriptUrl');
+        const container = document.getElementById('cloudSyncSettingsBody');
+        const schoolNameEl = document.getElementById('qrSchoolNameDisplay');
+
+        const isEnabled = !!data.enabled;
+        if (switchEl) switchEl.checked = isEnabled;
+        if (urlInput) urlInput.value = data.url || '';
+        if (container) container.style.display = isEnabled ? 'block' : 'none';
+        if (schoolNameEl) schoolNameEl.textContent = data.schoolName || 'مؤسسة EDUMIND التربوية';
+
+        if (isEnabled && data.url) {
+          this.renderSchoolQrCode(data.url, data.schoolName);
+        }
+      }
+    } catch (e) {
+      console.warn('Erreur chargement config cloud:', e);
+    }
+  }
+
+  async toggleCloudSyncEnabled(enabled) {
+    const container = document.getElementById('cloudSyncSettingsBody');
+    if (container) {
+      container.style.display = enabled ? 'block' : 'none';
+    }
+    const isAr = (this.lang || localStorage.getItem('edumind_lang') || 'ar') === 'ar';
+    try {
+      const urlInput = document.getElementById('settingCloudScriptUrl');
+      const url = urlInput ? urlInput.value.trim() : '';
+      await fetch('/api/sync/sheets/config', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ enabled, url })
+      });
+      if (enabled && url) {
+        this.renderSchoolQrCode(url);
+      }
+      this.showToast(enabled ? (isAr ? 'تم تفعيل الربط السحابي ومزامنة التطبيق' : 'Synchronisation Cloud activée') : (isAr ? 'تم تعطيل الربط السحابي' : 'Synchronisation Cloud désactivée'), 'info');
+    } catch (e) {
+      this.showToast(isAr ? 'تعذر حفظ حالة الربط' : 'Erreur de sauvegarde', 'error');
+    }
+  }
+
+  async testCloudConnection() {
+    const urlInput = document.getElementById('settingCloudScriptUrl');
+    const alertBox = document.getElementById('cloudConnectionStatusAlert');
+    const btnTest = document.getElementById('btnTestCloudConnection');
+    const isAr = (this.lang || localStorage.getItem('edumind_lang') || 'ar') === 'ar';
+    if (!urlInput || !alertBox) return;
+
+    const url = urlInput.value.trim();
+    if (!url) {
+      alertBox.className = 'alert alert-error';
+      alertBox.style.display = 'flex';
+      alertBox.innerHTML = '<i class="fa-solid fa-triangle-exclamation"></i> <span>' + (isAr ? 'يرجى إدخال رابط الـ Web App الخاص بـ Google Apps Script أولاً.' : 'Veuillez saisir l URL du Web App Google Apps Script.') + '</span>';
+      return;
+    }
+
+    if (btnTest) {
+      btnTest.disabled = true;
+      btnTest.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin"></i> <span>' + (isAr ? 'جاري اختبار الاتصال...' : 'Test de connexion...') + '</span>';
+    }
+
+    alertBox.className = 'alert alert-info';
+    alertBox.style.display = 'flex';
+    alertBox.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin"></i> <span>' + (isAr ? 'جاري اختبار الربط مع السحابة...' : 'Test en cours...') + '</span>';
+
+    try {
+      const res = await fetch('/api/sync/sheets/test', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ url })
+      });
+      const data = await res.json();
+
+      if (data.success) {
+        alertBox.className = 'alert alert-success';
+        alertBox.style.display = 'flex';
+        alertBox.innerHTML = `
+          <i class="fa-solid fa-circle-check" style="color: #10b981; font-size: 18px;"></i>
+          <div>
+            <strong>${isAr ? 'تم الاتصال بنجاح مع السحابة!' : 'Connexion Cloud réussie !'}</strong>
+            <div style="font-size: 12px; margin-top: 2px;">${isAr ? 'زمن الاستجابة' : 'Latence'}: ${data.latencyMs}ms · ${isAr ? 'إصدار API' : 'Version'}: ${data.version}</div>
+          </div>
+        `;
+        // Auto-save on successful test
+        await fetch('/api/sync/sheets/config', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ url, enabled: true })
+        });
+        const switchEl = document.getElementById('switchCloudSync');
+        if (switchEl) switchEl.checked = true;
+        this.renderSchoolQrCode(url);
+        this.showToast(isAr ? 'تم التحقق من الاتصال وتحديث الرمز بنجاح ✓' : 'Connexion validée et QR code généré ✓', 'success');
+      } else {
+        throw new Error(data.error || (isAr ? 'فشل الاتصال' : 'Échec de connexion'));
+      }
+    } catch (err) {
+      alertBox.className = 'alert alert-error';
+      alertBox.style.display = 'flex';
+      alertBox.innerHTML = `
+        <i class="fa-solid fa-circle-xmark" style="color: #ef4444; font-size: 18px;"></i>
+        <div>
+          <strong>${isAr ? 'فشل الاتصال بالسحابة' : 'Échec de la connexion'}</strong>
+          <div style="font-size: 12px; margin-top: 2px;">${err.message}</div>
+        </div>
+      `;
+      this.showToast(err.message, 'error');
+    } finally {
+      if (btnTest) {
+        btnTest.disabled = false;
+        btnTest.innerHTML = '<i class="fa-solid fa-plug"></i> <span>' + (isAr ? 'اختبار الاتصال بالرابط' : 'Tester la connexion') + '</span>';
+      }
+    }
+  }
+
+  async saveCloudSettings() {
+    const urlInput = document.getElementById('settingCloudScriptUrl');
+    const switchEl = document.getElementById('switchCloudSync');
+    const url = urlInput ? urlInput.value.trim() : '';
+    const enabled = switchEl ? switchEl.checked : true;
+    const isAr = (this.lang || localStorage.getItem('edumind_lang') || 'ar') === 'ar';
+
+    try {
+      const res = await fetch('/api/sync/sheets/config', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ url, enabled })
+      });
+      const data = await res.json();
+      if (data.success) {
+        this.showToast(isAr ? 'تم حفظ إعدادات الربط السحابي بنجاح ✓' : 'Paramètres Cloud enregistrés avec succès ✓', 'success');
+        if (enabled && url) {
+          this.renderSchoolQrCode(url);
+        }
+      }
+    } catch (e) {
+      this.showToast(isAr ? 'خطأ أثناء حفظ الإعدادات' : 'Erreur de sauvegarde', 'error');
+    }
+  }
+
+  renderSchoolQrCode(url, schoolName) {
+    const container = document.getElementById('schoolQrCodeContainer');
+    if (!container) return;
+    container.innerHTML = '';
+
+    const name = schoolName || (document.getElementById('settingSchoolName') ? document.getElementById('settingSchoolName').value : '') || 'EDUMIND';
+    
+    // Clean URL payload
+    const payload = JSON.stringify({
+      type: 'edumind_school_sync',
+      url: url,
+      school: name,
+      v: 2
+    });
+
+    if (window.QRCode) {
+      new QRCode(container, {
+        text: payload,
+        width: 190,
+        height: 190,
+        colorDark: '#0f172a',
+        colorLight: '#ffffff',
+        correctLevel: QRCode.CorrectLevel.M
+      });
+    } else {
+      container.innerHTML = '<img src="https://api.qrserver.com/v1/create-qr-code/?size=190x190&data=' + encodeURIComponent(payload) + '" alt="QR Code" style="border-radius: 8px;">';
+    }
+  }
+
+  copyCloudUrl() {
+    const urlInput = document.getElementById('settingCloudScriptUrl');
+    const isAr = (this.lang || localStorage.getItem('edumind_lang') || 'ar') === 'ar';
+    if (!urlInput || !urlInput.value) {
+      this.showToast(isAr ? 'لا يوجد رابط لنسخه' : 'Aucun lien à copier', 'warning');
+      return;
+    }
+    navigator.clipboard.writeText(urlInput.value.trim()).then(() => {
+      this.showToast(isAr ? 'تم نسخ الرابط بنجاح ✓' : 'Lien copié dans le presse-papiers ✓', 'success');
+    }).catch(() => {
+      urlInput.select();
+      document.execCommand('copy');
+      this.showToast(isAr ? 'تم نسخ الرابط بنجاح ✓' : 'Lien copié ✓', 'success');
+    });
+  }
+
+  printSchoolQrCard() {
+    const container = document.getElementById('schoolQrCodeContainer');
+    const schoolName = (document.getElementById('settingSchoolName') ? document.getElementById('settingSchoolName').value : '') || 'EDUMIND';
+    const isAr = (this.lang || localStorage.getItem('edumind_lang') || 'ar') === 'ar';
+    if (!container || !container.innerHTML) {
+      this.showToast(isAr ? 'يرجى توليد رمز QR أولاً' : 'Veuillez générer le QR Code d abord', 'warning');
+      return;
+    }
+
+    const qrImg = container.querySelector('img') ? container.querySelector('img').src : (container.querySelector('canvas') ? container.querySelector('canvas').toDataURL() : '');
+
+    const printWin = window.open('', '_blank', 'width=700,height=800');
+    printWin.document.write(`
+      <!DOCTYPE html>
+      <html dir="${isAr ? 'rtl' : 'ltr'}">
+      <head>
+        <meta charset="UTF-8">
+        <title>${isAr ? 'بطاقة ربط تطبيق الأساتذة' : 'Fiche de Liaison Application Mobile'}</title>
+        <style>
+          body { font-family: system-ui, -apple-system, sans-serif; text-align: center; padding: 40px; background: #fff; color: #1e293b; }
+          .card { border: 2px dashed #0284c7; border-radius: 20px; padding: 30px; max-width: 480px; margin: 0 auto; box-shadow: 0 4px 20px rgba(0,0,0,0.06); }
+          .logo { font-size: 26px; font-weight: 900; color: #0284c7; margin-bottom: 6px; }
+          .school { font-size: 20px; font-weight: 700; margin-bottom: 16px; color: #0f172a; }
+          .qr { margin: 20px auto; padding: 14px; background: #fff; border: 1px solid #e2e8f0; border-radius: 14px; display: inline-block; }
+          .qr img { display: block; width: 220px; height: 220px; }
+          .instructions { font-size: 14px; color: #475569; line-height: 1.6; margin-top: 16px; }
+          .step { background: #f8fafc; border-radius: 10px; padding: 10px 14px; margin-top: 8px; font-weight: 600; text-align: start; }
+          @media print { button { display: none; } body { padding: 0; } }
+        </style>
+      </head>
+      <body>
+        <div class="card">
+          <div class="logo">EDUMIND Presence</div>
+          <div class="school">${schoolName}</div>
+          <div style="font-size: 14px; color: #64748b; font-weight: 600;">${isAr ? 'بطاقة ربط هاتف الأستاذ بالمؤسسة' : 'Fiche de liaison mobile Enseignant'}</div>
+          <div class="qr">
+            <img src="${qrImg}" alt="QR Code">
+          </div>
+          <div class="instructions">
+            <div class="step">1. ${isAr ? 'افتح تطبيق EDUMIND Presence على هاتفك.' : 'Ouvrez l application EDUMIND Presence.'}</div>
+            <div class="step">2. ${isAr ? 'اضغط على زر (مسح رمز QR) قبل تسجيل الدخول.' : 'Scannez ce code QR avant la connexion.'}</div>
+            <div class="step">3. ${isAr ? 'قم بتوجيه الكاميرا نحو هذا الرمز ليتم ربط حسابك بالمؤسسة فوراً.' : 'Votre téléphone sera directement lié à l établissement.'}</div>
+          </div>
+        </div>
+        <script>
+          window.onload = function() { window.print(); };
+        </script>
+      </body>
+      </html>
+    `);
+    printWin.document.close();
+  }
+
+  // -------------------------------------------------------------
+  // SCHOOL CYCLES & EDUCATIONAL LEVELS FILTERING
+  // -------------------------------------------------------------
   loadSchoolCyclesInputs() {
     let cycles = ['CEM']; // default
     if (this.settings && this.settings.school_cycles) {
