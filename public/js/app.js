@@ -431,6 +431,17 @@ const i18n = {
     th_statut_col: "STATUT",
     import_btn_confirm: "Confirmer et enregistrer l'importation",
     import_btn_executing: "Importation en cours...",
+    btn_import_teachers: "Importer (Excel / CSV)",
+    import_teacher_modal_title: "Importer Enseignants & Personnel (Excel)",
+    import_teacher_modal_subtitle: "Importation et mise à jour automatique des matricules, matières et postes depuis Excel ou CSV",
+    import_teacher_info_text: "Reconnaissance automatique des colonnes : Matricule, Nom, Prénom, Catégorie (Enseignant/Employé), Matière, Poste, Téléphone, Email, Grade et Rémunération.",
+    import_teacher_download_template: "Télécharger le modèle Excel (Vierge)",
+    import_teacher_drop_prompt: "Glissez-déposez le fichier Excel Enseignants & Personnel ici",
+    import_teacher_lbl_cat: "Catégorie par défaut",
+    import_teacher_opt_cat_auto: "Auto-détection selon le fichier (Recommandé)",
+    import_teacher_opt_cat_teachers: "Importer comme Enseignants (Professeurs)",
+    import_teacher_opt_cat_employees: "Importer comme Personnel / Employés",
+    import_teacher_opt_mat_gen: "Générer de nouveaux matricules (ENS-xxx / EMP-xxx)",
     btn_bulk_enrollment: "Affectation dans les divisions",
     bulk_enroll_title: "Affectation des Élèves dans les Divisions",
     bulk_enroll_subtitle: "Sélectionnez les élèves et les divisions pour les affecter en un clic",
@@ -1189,6 +1200,17 @@ const i18n = {
     th_statut_col: "الحالة",
     import_btn_confirm: "تأكيد وحفظ الاستيراد",
     import_btn_executing: "جاري الاستيراد والحفظ...",
+    btn_import_teachers: "استيراد من Excel",
+    import_teacher_modal_title: "استيراد قائمة الأساتذة والموظفين (Excel)",
+    import_teacher_modal_subtitle: "استيراد وتحديث تلقائي لبيانات الأساتذة، المعرف الوظيفي، المواد، والوظائف من ملفات Excel أو CSV",
+    import_teacher_info_text: "يتعرف البرنامج تلقائياً على الأعمدة: الرقم التعريفي الوظيفي (Matricule)، اللقب، الاسم، الصفة (أستاذ/موظف)، المادة/التخصص، المنصب/الوظيفة، الهاتف، البريد الإلكتروني، الرتبة، وطريقة الأجرة.",
+    import_teacher_download_template: "تحميل نموذج Excel الجاهز (Vierge)",
+    import_teacher_drop_prompt: "اسحب وأفلت ملف Excel للأساتذة والموظفين هنا",
+    import_teacher_lbl_cat: "الفئة الافتراضية",
+    import_teacher_opt_cat_auto: "تعرف تلقائي حسب محتوى الملف (مستحسن)",
+    import_teacher_opt_cat_teachers: "استيراد الكل كطاقم تدريس (أساتذة)",
+    import_teacher_opt_cat_employees: "استيراد الكل كموظفين وإداريين",
+    import_teacher_opt_mat_gen: "توليد أرقام وظيفية جديدة دائماً (ENS-xxx / EMP-xxx)",
     btn_bulk_enrollment: "توزيع التلاميذ في الأقسام التربوية",
     bulk_enroll_title: "توزيع التلاميذ على الأقسام التربوية",
     bulk_enroll_subtitle: "اختر قائمة التلاميذ والأقسام التربوية لتوزيعهم دفعة واحدة",
@@ -5841,6 +5863,511 @@ class EdumindApp {
       if (btnExec) {
         btnExec.disabled = false;
         btnExec.innerHTML = `<i class="fa-solid fa-cloud-arrow-up"></i> <span id="btnExecuteImportText">${originalText}</span>`;
+      }
+    }
+  }
+
+  // -------------------------------------------------------------
+  // TEACHERS & STAFF EXCEL IMPORTATION (استيراد الأساتذة والموظفين)
+  // -------------------------------------------------------------
+  openTeacherImportModal() {
+    this.closeModals();
+    if (!this.teachers || this.teachers.length === 0) {
+      this.loadTeachers();
+    }
+    this._importedTeachersData = [];
+
+    const fileInput = document.getElementById('importTeacherFileInput');
+    if (fileInput) fileInput.value = '';
+
+    const prompt = document.getElementById('teacherDropZonePrompt');
+    if (prompt) prompt.style.display = 'block';
+
+    const info = document.getElementById('teacherDropZoneFileInfo');
+    if (info) info.style.display = 'none';
+
+    const preview = document.getElementById('teacherImportPreviewSection');
+    if (preview) preview.style.display = 'none';
+
+    const tbody = document.getElementById('teacherImportPreviewBody');
+    if (tbody) tbody.innerHTML = '';
+
+    const defType = document.getElementById('importTeacherDefaultType');
+    if (defType) defType.value = 'auto';
+
+    const dupOpt = document.getElementById('importTeacherDuplicate');
+    if (dupOpt) dupOpt.value = 'skip';
+
+    const matOpt = document.getElementById('importTeacherMatriculeOpt');
+    if (matOpt) matOpt.value = 'keep';
+
+    const btnText = document.getElementById('teacherImportBtnText');
+    if (btnText) btnText.textContent = this.lang === 'ar' ? 'تأكيد وحفظ الاستيراد' : 'Confirmer et enregistrer';
+
+    const modal = document.getElementById('modalImportTeachers');
+    if (modal) modal.classList.add('active');
+  }
+
+  resetTeacherImportFile() {
+    const fileInput = document.getElementById('importTeacherFileInput');
+    if (fileInput) fileInput.value = '';
+
+    const prompt = document.getElementById('teacherDropZonePrompt');
+    if (prompt) prompt.style.display = 'block';
+
+    const info = document.getElementById('teacherDropZoneFileInfo');
+    if (info) info.style.display = 'none';
+
+    const preview = document.getElementById('teacherImportPreviewSection');
+    if (preview) preview.style.display = 'none';
+
+    const tbody = document.getElementById('teacherImportPreviewBody');
+    if (tbody) tbody.innerHTML = '';
+
+    this._importedTeachersData = [];
+  }
+
+  downloadTeacherExcelTemplate() {
+    if (typeof XLSX === 'undefined') {
+      this.showToast(this.lang === 'ar' ? 'تعذر تحميل مكتبة XLSX' : 'Bibliothèque XLSX introuvable', 'error');
+      return;
+    }
+
+    const headers = [
+      'الرقم التعريفي الوظيفي (Matricule)',
+      'اللقب (Nom)',
+      'الاسم (Prénom)',
+      'الصفة (أستاذ / موظف)',
+      'المادة أو التخصص (Matière)',
+      'الوظيفة أو المنصب (Poste / Métier)',
+      'رقم الهاتف (Téléphone)',
+      'البريد الإلكتروني (Email)',
+      'الرتبة (Grade)',
+      'نوع الأجرة (Type Rémunération)',
+      'قيمة الأجرة أو النسبة (Montant / Taux)'
+    ];
+
+    const sampleRows = [
+      headers,
+      ['ENS-010', 'بن علي', 'ياسين', 'أستاذ', 'الرياضيات', 'أستاذ التعليم الثانوي', '0550123456', 'y.benali@edumind.dz', 'أستاذ رئيسي', 'نسبة مئوية', 50],
+      ['ENS-011', 'بوزيدي', 'أمينة', 'أستاذ', 'العلوم الفيزيائية', 'أستاذة التعليم المتوسط', '0661234567', 'a.bouzidi@edumind.dz', 'أستاذ مرسم', 'نسبة مئوية', 50],
+      ['ENS-012', 'قادري', 'فريد', 'أستاذ', 'اللغة الفرنسية', 'أستاذ لغات', '0770334455', 'f.kadri@edumind.dz', 'أستاذ متعاقد', 'بالساعة', 1500],
+      ['EMP-005', 'منصوري', 'سمير', 'موظف', '', 'سكرتير عام وإداري', '0555889900', 's.mansouri@edumind.dz', 'مرسم', 'راتب شهري ثابت', 38000],
+      ['EMP-006', 'بلحاج', 'كريم', 'موظف', '', 'مشرف تربوي', '0666778899', 'k.belhadj@edumind.dz', 'مرسم', 'راتب شهري ثابت', 35000]
+    ];
+
+    const ws = XLSX.utils.aoa_to_sheet(sampleRows);
+    ws['!cols'] = [
+      { wch: 22 },
+      { wch: 18 },
+      { wch: 18 },
+      { wch: 16 },
+      { wch: 22 },
+      { wch: 24 },
+      { wch: 16 },
+      { wch: 26 },
+      { wch: 20 },
+      { wch: 22 },
+      { wch: 20 }
+    ];
+
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, 'Enseignants_Personnel');
+
+    XLSX.writeFile(wb, 'modele_import_enseignants_personnel.xlsx');
+    this.showToast(this.lang === 'ar' ? 'تم تحميل نموذج Excel الجاهز للأساتذة والموظفين بنجاح!' : 'Modèle Excel Enseignants & Personnel téléchargé !', 'success');
+  }
+
+  handleTeacherFileDrop(event) {
+    event.preventDefault();
+    const zone = document.getElementById('teacherDropZone');
+    if (zone) {
+      zone.style.borderColor = 'rgba(16, 185, 129, 0.45)';
+      zone.style.background = 'rgba(16, 185, 129, 0.03)';
+    }
+    if (event.dataTransfer && event.dataTransfer.files && event.dataTransfer.files.length > 0) {
+      this.parseTeacherImportFile(event.dataTransfer.files[0]);
+    }
+  }
+
+  handleTeacherFileSelected(event) {
+    if (event.target && event.target.files && event.target.files.length > 0) {
+      this.parseTeacherImportFile(event.target.files[0]);
+    }
+  }
+
+  async parseTeacherImportFile(file) {
+    if (!file) return;
+    if (typeof XLSX === 'undefined') {
+      this.showToast(this.lang === 'ar' ? 'خطأ: تعذر تحميل مكتبة قراءة ملفات الإكسل (XLSX)' : 'Erreur: Bibliothèque XLSX introuvable', 'error');
+      return;
+    }
+
+    const prompt = document.getElementById('teacherDropZonePrompt');
+    if (prompt) prompt.style.display = 'none';
+
+    const info = document.getElementById('teacherDropZoneFileInfo');
+    if (info) info.style.display = 'flex';
+
+    const fName = document.getElementById('importTeacherFileName');
+    if (fName) fName.textContent = file.name;
+
+    const fSize = document.getElementById('importTeacherFileSize');
+    if (fSize) fSize.textContent = `${(file.size / 1024).toFixed(1)} KB`;
+
+    try {
+      let workbook;
+      try {
+        const arrayBuffer = await file.arrayBuffer();
+        workbook = XLSX.read(arrayBuffer, { type: 'array', cellDates: true });
+      } catch (eBuf) {
+        const text = await file.text();
+        workbook = XLSX.read(text, { type: 'string', cellDates: true });
+      }
+
+      if (!workbook || !workbook.SheetNames || workbook.SheetNames.length === 0) {
+        throw new Error(this.lang === 'ar' ? 'الملف لا يحتوي على أوراق عمل صالحة' : 'Fichier Excel invalide ou vide');
+      }
+
+      const norm = (s) => String(s || '')
+        .replace(/[٠-٩]/g, d => '٠١٢٣٤٥٦٧٨٩'.indexOf(d))
+        .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+        .toLowerCase()
+        .replace(/[أإآٱ]/g, 'ا')
+        .replace(/ة/g, 'ه')
+        .replace(/ى/g, 'ي')
+        .replace(/[\u064B-\u065F\u0670]/g, '')
+        .replace(/[\s\-_]+/g, ' ')
+        .trim();
+
+      // Find the best sheet
+      let chosenSheet = workbook.Sheets[workbook.SheetNames[0]];
+      let bestScore = -1;
+      for (const sName of workbook.SheetNames) {
+        const ws = workbook.Sheets[sName];
+        if (!ws) continue;
+        const rows = XLSX.utils.sheet_to_json(ws, { header: 1, defval: '' });
+        if (!rows || rows.length === 0) continue;
+        let score = rows.length;
+        for (let r = 0; r < Math.min(rows.length, 20); r++) {
+          const rStr = norm((rows[r] || []).join(' '));
+          if (rStr.includes('لقب') || rStr.includes('nom')) score += 100;
+          if (rStr.includes('اسم') || rStr.includes('prenom')) score += 100;
+          if (rStr.includes('استاذ') || rStr.includes('enseignant') || rStr.includes('prof')) score += 80;
+          if (rStr.includes('موظف') || rStr.includes('employe') || rStr.includes('personnel')) score += 80;
+          if (rStr.includes('تعريف') || rStr.includes('معرف') || rStr.includes('matricule')) score += 60;
+          if (rStr.includes('مادة') || rStr.includes('matiere')) score += 60;
+        }
+        if (score > bestScore) {
+          bestScore = score;
+          chosenSheet = ws;
+        }
+      }
+
+      const allRows = XLSX.utils.sheet_to_json(chosenSheet, { header: 1, defval: '' });
+      if (!allRows || allRows.length === 0) {
+        throw new Error(this.lang === 'ar' ? 'الجدول المختار فارغ' : 'Feuille vide');
+      }
+
+      // Detect header row index
+      let headerRowIndex = 0;
+      let maxHeaderScore = -1;
+      for (let r = 0; r < Math.min(allRows.length, 25); r++) {
+        const row = allRows[r] || [];
+        const rowStr = norm(row.join(' '));
+        let hScore = 0;
+        if (rowStr.includes('لقب') || rowStr.includes('nom')) hScore += 3;
+        if (rowStr.includes('اسم') || rowStr.includes('prenom')) hScore += 3;
+        if (rowStr.includes('تعريف') || rowStr.includes('معرف') || rowStr.includes('matricule') || rowStr.includes('id')) hScore += 2;
+        if (rowStr.includes('مادة') || rowStr.includes('matiere') || rowStr.includes('specialite') || rowStr.includes('تخصص')) hScore += 2;
+        if (rowStr.includes('هاتف') || rowStr.includes('tel') || rowStr.includes('phone')) hScore += 2;
+        if (rowStr.includes('وظيفة') || rowStr.includes('منصب') || rowStr.includes('مهنة') || rowStr.includes('poste') || rowStr.includes('metier')) hScore += 2;
+        if (rowStr.includes('صفة') || rowStr.includes('فئة') || rowStr.includes('categorie') || rowStr.includes('role')) hScore += 2;
+
+        if (hScore > maxHeaderScore) {
+          maxHeaderScore = hScore;
+          headerRowIndex = r;
+        }
+      }
+
+      const headerRow = allRows[headerRowIndex] || [];
+      const colMap = {};
+      headerRow.forEach((hCell, colIdx) => {
+        const colTitle = norm(hCell);
+        if (!colTitle) return;
+
+        if ((colTitle.includes('معرف') || colTitle.includes('تعريف') || colTitle.includes('وظيف') || colTitle.includes('matricule') || colTitle.includes('code') || colTitle === 'id') && colMap.matricule === undefined) {
+          colMap.matricule = colIdx;
+        } else if ((colTitle.includes('لقب') || colTitle.includes('عائل') || colTitle.includes('nom de famille') || colTitle === 'nom' || colTitle.includes('last name') || colTitle.includes('family name')) && colMap.lastName === undefined) {
+          colMap.lastName = colIdx;
+        } else if ((colTitle.includes('شخصي') || colTitle.includes('prenom') || colTitle === 'اسم' || colTitle.includes('first name')) && colMap.firstName === undefined) {
+          colMap.firstName = colIdx;
+        } else if ((colTitle.includes('كامل') || colTitle.includes('الاسم واللقب') || colTitle.includes('اللقب والاسم') || colTitle.includes('nom complet') || colTitle.includes('full name') || colTitle.includes('nom et prenom')) && colMap.fullName === undefined) {
+          colMap.fullName = colIdx;
+        } else if ((colTitle.includes('صفة') || colTitle.includes('فئة') || colTitle.includes('نوع') || colTitle.includes('categorie') || colTitle.includes('role') || colTitle.includes('type')) && colMap.category === undefined) {
+          colMap.category = colIdx;
+        } else if ((colTitle.includes('مادة') || colTitle.includes('تخصص') || colTitle.includes('matiere') || colTitle.includes('specialite') || colTitle.includes('subject') || colTitle.includes('discipline')) && colMap.subject === undefined) {
+          colMap.subject = colIdx;
+        } else if ((colTitle.includes('وظيفة') || colTitle.includes('منصب') || colTitle.includes('مهنة') || colTitle.includes('عمل') || colTitle.includes('poste') || colTitle.includes('metier') || colTitle.includes('fonction') || colTitle.includes('job')) && colMap.jobTitle === undefined) {
+          colMap.jobTitle = colIdx;
+        } else if ((colTitle.includes('هاتف') || colTitle.includes('جوال') || colTitle.includes('محمول') || colTitle.includes('tel') || colTitle.includes('phone') || colTitle.includes('mobile')) && colMap.phone === undefined) {
+          colMap.phone = colIdx;
+        } else if ((colTitle.includes('بريد') || colTitle.includes('ايميل') || colTitle.includes('email') || colTitle.includes('mail') || colTitle.includes('courriel')) && colMap.email === undefined) {
+          colMap.email = colIdx;
+        } else if ((colTitle.includes('رتبة') || colTitle.includes('درجة') || colTitle.includes('grade') || colTitle.includes('statut')) && colMap.grade === undefined) {
+          colMap.grade = colIdx;
+        } else if ((colTitle.includes('نوع الاجرة') || colTitle.includes('طريقة الدفع') || colTitle.includes('type remuneration')) && colMap.remType === undefined) {
+          colMap.remType = colIdx;
+        } else if ((colTitle.includes('اجرة') || colTitle.includes('مبلغ') || colTitle.includes('نسبة') || colTitle.includes('راتب') || colTitle.includes('tarif') || colTitle.includes('taux') || colTitle.includes('salaire')) && colMap.remRate === undefined) {
+          colMap.remRate = colIdx;
+        }
+      });
+
+      // Existing teachers cache for duplicate check
+      const existingList = Array.isArray(this.teachers) ? this.teachers : [];
+      const existingMatricules = new Set(existingList.map(t => (t.matricule || '').trim().toLowerCase()).filter(Boolean));
+      const existingNames = new Set(existingList.map(t => `${norm(t.last_name)}_${norm(t.first_name)}`).filter(s => s !== '_'));
+      const existingPhones = new Set(existingList.map(t => (t.phone || '').replace(/\D/g, '')).filter(Boolean));
+
+      const parsedItems = [];
+      let validCount = 0;
+      let duplicateCount = 0;
+
+      for (let r = headerRowIndex + 1; r < allRows.length; r++) {
+        const row = allRows[r];
+        if (!row || row.length === 0) continue;
+
+        let matricule = colMap.matricule !== undefined ? String(row[colMap.matricule] || '').trim() : '';
+        let lastName = colMap.lastName !== undefined ? String(row[colMap.lastName] || '').trim() : '';
+        let firstName = colMap.firstName !== undefined ? String(row[colMap.firstName] || '').trim() : '';
+        let fullName = colMap.fullName !== undefined ? String(row[colMap.fullName] || '').trim() : '';
+
+        if (!lastName && !firstName && fullName) {
+          const parts = fullName.split(/\s+/);
+          if (parts.length >= 2) {
+            lastName = parts[0];
+            firstName = parts.slice(1).join(' ');
+          } else if (parts.length === 1) {
+            lastName = parts[0];
+            firstName = parts[0];
+          }
+        }
+
+        // Ignore completely empty row
+        if (!lastName && !firstName && !matricule) continue;
+
+        let categoryRaw = colMap.category !== undefined ? String(row[colMap.category] || '').trim() : '';
+        let subject = colMap.subject !== undefined ? String(row[colMap.subject] || '').trim() : '';
+        let jobTitle = colMap.jobTitle !== undefined ? String(row[colMap.jobTitle] || '').trim() : '';
+        let phone = colMap.phone !== undefined ? String(row[colMap.phone] || '').replace(/\D/g, '').slice(0, 10) : '';
+        let email = colMap.email !== undefined ? String(row[colMap.email] || '').trim() : '';
+        let grade = colMap.grade !== undefined ? String(row[colMap.grade] || '').trim() : '';
+        let remType = colMap.remType !== undefined ? String(row[colMap.remType] || '').trim() : '';
+        let remRate = colMap.remRate !== undefined ? parseFloat(String(row[colMap.remRate] || '').replace(',', '.')) || 0 : 0;
+
+        // Auto detect category
+        let isEmp = false;
+        const catNorm = norm(categoryRaw);
+        const jobNorm = norm(jobTitle);
+        if (catNorm.includes('emp') || catNorm.includes('موظف') || catNorm.includes('عامل') || catNorm.includes('اداري') ||
+            /سائق|حارس|سكرتير|عامل|نظاف|طباخ|agent|chauffeur|secretaire|gardien|comptable/i.test(jobNorm)) {
+          isEmp = true;
+        } else {
+          isEmp = false;
+        }
+
+        const employeeType = isEmp ? 'employee' : 'teacher';
+
+        // Duplicate check
+        const isMatDuplicate = matricule && existingMatricules.has(matricule.toLowerCase());
+        const isNameDuplicate = lastName && firstName && existingNames.has(`${norm(lastName)}_${norm(firstName)}`);
+        const isPhoneDuplicate = phone && phone.length >= 9 && existingPhones.has(phone);
+
+        const isDuplicate = Boolean(isMatDuplicate || (isNameDuplicate && (isPhoneDuplicate || !phone)));
+        const isValid = Boolean(lastName || firstName);
+
+        if (isDuplicate) duplicateCount++;
+        if (isValid && !isDuplicate) validCount++;
+
+        parsedItems.push({
+          matricule,
+          first_name: firstName,
+          last_name: lastName,
+          full_name: `${lastName} ${firstName}`.trim(),
+          employee_type: employeeType,
+          subject_name: subject,
+          job_title: jobTitle,
+          phone,
+          email,
+          grade,
+          remuneration_type: remType || (isEmp ? 'fixed' : 'percent'),
+          remuneration_rate: remRate,
+          isDuplicate,
+          isValid
+        });
+      }
+
+      this._importedTeachersData = parsedItems;
+
+      // Update badge counts
+      const bTotal = document.getElementById('teacherImportBadgeTotal');
+      if (bTotal) bTotal.textContent = `${this.lang === 'ar' ? 'الإجمالي' : 'Total'}: ${parsedItems.length}`;
+
+      const bReady = document.getElementById('teacherImportBadgeReady');
+      if (bReady) bReady.textContent = `${this.lang === 'ar' ? 'جاهز' : 'Prêts'}: ${validCount}`;
+
+      const bWarn = document.getElementById('teacherImportBadgeWarn');
+      if (bWarn) {
+        if (duplicateCount > 0) {
+          bWarn.style.display = 'inline-block';
+          bWarn.textContent = `${this.lang === 'ar' ? 'مكرر' : 'Doublons'}: ${duplicateCount}`;
+        } else {
+          bWarn.style.display = 'none';
+        }
+      }
+
+      // Render Preview Table
+      const tbody = document.getElementById('teacherImportPreviewBody');
+      if (tbody) {
+        if (parsedItems.length === 0) {
+          tbody.innerHTML = `<tr><td colspan="8" style="text-align: center; color: var(--text-muted); padding: 25px;">
+            ${this.lang === 'ar' ? 'لم يتم العثور على أي صفوف تحتوي على بيانات صالحة' : 'Aucune ligne valide trouvée'}
+          </td></tr>`;
+        } else {
+          tbody.innerHTML = parsedItems.map((item, idx) => {
+            let statusBadge = '';
+            if (!item.isValid) {
+              statusBadge = `<span class="badge-pill" style="background: rgba(239, 68, 68, 0.15); color: #ef4444; font-size: 11px; padding: 2px 8px; border-radius: 6px;">${this.lang === 'ar' ? 'ناقص' : 'Incomplet'}</span>`;
+            } else if (item.isDuplicate) {
+              statusBadge = `<span class="badge-pill" style="background: rgba(245, 158, 11, 0.15); color: #f59e0b; font-size: 11px; padding: 2px 8px; border-radius: 6px;">${this.lang === 'ar' ? 'موجود مسبقاً' : 'Doublon'}</span>`;
+            } else {
+              statusBadge = `<span class="badge-pill" style="background: rgba(16, 185, 129, 0.15); color: #10b981; font-size: 11px; padding: 2px 8px; border-radius: 6px;">${this.lang === 'ar' ? 'جاهز' : 'Prêt'}</span>`;
+            }
+
+            const catBadge = item.employee_type === 'employee'
+              ? `<span style="color: #6366f1; font-weight: 700; display: inline-flex; align-items: center; gap: 5px;"><i class="fa-solid fa-user-tie"></i> ${this.lang === 'ar' ? 'موظف' : 'Employé'}</span>`
+              : `<span style="color: #f97316; font-weight: 700; display: inline-flex; align-items: center; gap: 5px;"><i class="fa-solid fa-chalkboard-user"></i> ${this.lang === 'ar' ? 'أستاذ' : 'Enseignant'}</span>`;
+
+            return `
+              <tr style="${item.isDuplicate ? 'background: rgba(245, 158, 11, 0.04);' : ''}">
+                <td style="color: var(--text-muted); font-size: 11.5px;">${idx + 1}</td>
+                <td>${statusBadge}</td>
+                <td>
+                  <span style="font-family: monospace; font-weight: 700; color: ${item.matricule ? '#38bdf8' : 'var(--text-muted)'};">
+                    ${item.matricule ? this.escapeHtml(item.matricule) : (this.lang === 'ar' ? '(توليد تلقائي)' : '(Auto)')}
+                  </span>
+                </td>
+                <td style="font-weight: 700; color: var(--text-heading);">${this.escapeHtml(item.full_name || '-')}</td>
+                <td>${catBadge}</td>
+                <td>${this.escapeHtml(item.subject_name || '-')}</td>
+                <td>${this.escapeHtml(item.job_title || (item.employee_type === 'employee' ? 'موظف' : 'أستاذ'))}</td>
+                <td style="font-family: monospace;">${this.escapeHtml(item.phone || '-')}</td>
+              </tr>
+            `;
+          }).join('');
+        }
+      }
+
+      const previewSec = document.getElementById('teacherImportPreviewSection');
+      if (previewSec) previewSec.style.display = 'block';
+
+      const btnText = document.getElementById('teacherImportBtnText');
+      if (btnText) {
+        btnText.textContent = this.lang === 'ar'
+          ? `تأكيد واستيراد (${validCount + duplicateCount} فرد)`
+          : `Confirmer l'importation (${validCount + duplicateCount})`;
+      }
+
+      this.showToast(
+        this.lang === 'ar'
+          ? `تمت قراءة الملف بنجاح: ${parsedItems.length} فرد (${validCount} جاهز، ${duplicateCount} مكرر)`
+          : `Fichier analysé avec succès: ${parsedItems.length} lignes (${validCount} prêts)`,
+        'success'
+      );
+
+    } catch (err) {
+      console.error('Teacher parse error:', err);
+      this.showToast(this.lang === 'ar' ? 'فشل قراءة الملف: ' + err.message : 'Erreur lecture fichier: ' + err.message, 'error');
+      this.resetTeacherImportFile();
+    }
+  }
+
+  async executeTeacherImport() {
+    if (!this._importedTeachersData || this._importedTeachersData.length === 0) {
+      this.showToast(this.lang === 'ar' ? 'يرجى اختيار ملف Excel أولاً' : 'Veuillez sélectionner un fichier', 'warning');
+      return;
+    }
+
+    const dupOptEl = document.getElementById('importTeacherDuplicate');
+    const duplicateAction = dupOptEl ? dupOptEl.value : 'skip';
+
+    const defTypeEl = document.getElementById('importTeacherDefaultType');
+    const defaultEmployeeType = defTypeEl ? defTypeEl.value : 'auto';
+
+    const matOptEl = document.getElementById('importTeacherMatriculeOpt');
+    const matriculeStrategy = matOptEl ? matOptEl.value : 'keep';
+
+    let eligible = this._importedTeachersData.filter(item => item.isValid);
+    if (duplicateAction === 'skip') {
+      eligible = eligible.filter(item => !item.isDuplicate);
+    }
+
+    if (eligible.length === 0) {
+      this.showToast(this.lang === 'ar' ? 'لا يوجد أساتذة أو موظفون مؤهلون للاستيراد وفق الخيارات المحددة' : 'Aucun enregistrement valide à importer', 'warning');
+      return;
+    }
+
+    const btnExec = document.getElementById('btnExecTeacherImport');
+    const btnText = document.getElementById('teacherImportBtnText');
+    const origText = btnText ? btnText.textContent : '';
+
+    if (btnExec) {
+      btnExec.disabled = true;
+      btnExec.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> <span>${this.lang === 'ar' ? 'جاري الاستيراد والتسجيل...' : 'Importation en cours...'}</span>`;
+    }
+
+    try {
+      const res = await fetch('/api/teachers/import-batch', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          teachers: eligible,
+          duplicateAction,
+          defaultEmployeeType,
+          matriculeStrategy
+        })
+      });
+
+      const data = await res.json();
+      if (!data.success) {
+        throw new Error(data.error || 'Erreur serveur inconnue');
+      }
+
+      this.closeModals();
+
+      const msg = this.lang === 'ar'
+        ? `✅ تم استيراد الأساتذة والموظفين بنجاح! (تم إدخال: ${data.imported} | تم تحديث: ${data.updated} | تم تخطي: ${data.skipped})`
+        : `✅ Importation réussie ! (${data.imported} insérés | ${data.updated} mis à jour | ${data.skipped} ignorés)`;
+      this.showToast(msg, 'success');
+
+      // Reload teachers list
+      await this.loadTeachers();
+      if (typeof this.loadStaffJobs === 'function') {
+        await this.loadStaffJobs();
+      }
+
+      // If user is not already on enseignants view, switch to it
+      if (this.currentView !== 'enseignants' && typeof this.switchView === 'function') {
+        this.switchView('enseignants');
+      }
+
+    } catch (err) {
+      console.error('Execute teacher import error:', err);
+      this.showToast(this.lang === 'ar' ? 'فشل استيراد الأساتذة والموظفين: ' + err.message : 'Échec de l\'importation: ' + err.message, 'error');
+    } finally {
+      if (btnExec) {
+        btnExec.disabled = false;
+        btnExec.innerHTML = `<i class="fa-solid fa-cloud-arrow-down"></i> <span id="teacherImportBtnText">${origText || (this.lang === 'ar' ? 'تأكيد وحفظ الاستيراد' : 'Confirmer')}</span>`;
       }
     }
   }
@@ -16459,7 +16986,9 @@ class EdumindApp {
     const modal = document.getElementById('modalStaffTypeChoice');
     if (modal) modal.classList.remove('active');
 
-    if (type === 'employee') {
+    if (type === 'import_excel') {
+      this.openTeacherImportModal();
+    } else if (type === 'employee') {
       this.openModalEmployee();
     } else {
       this.openModalTeacher();

@@ -4405,6 +4405,300 @@ app.get('/api/teachers', (req, res) => {
   }
 });
 
+// -------------------------------------------------------------
+// Batch import teachers and staff (Excel / CSV)
+// -------------------------------------------------------------
+app.post('/api/teachers/import-batch', (req, res) => {
+  try {
+    const {
+      teachers = [],
+      duplicateAction = 'skip',
+      defaultEmployeeType = 'auto',
+      matriculeStrategy = 'keep'
+    } = req.body;
+
+    if (!Array.isArray(teachers) || teachers.length === 0) {
+      return res.status(400).json({ success: false, error: 'Aucune donnée fournie pour l\'importation (لم يتم تقديم أي بيانات للاستيراد)' });
+    }
+
+    let allSubjects = DB.queryAll("SELECT id, name, code FROM subjects");
+
+    // Helper to find matching subject ID by name or code
+    function findMatchingSubjectId(subjectStr) {
+      if (!subjectStr || typeof subjectStr !== 'string') return null;
+      const clean = subjectStr.trim().toLowerCase();
+      if (!clean) return null;
+
+      // Exact or direct match
+      for (const s of allSubjects) {
+        if (s.name.toLowerCase() === clean || (s.code && s.code.toLowerCase() === clean)) {
+          return s.id;
+        }
+      }
+      // Partial match
+      for (const s of allSubjects) {
+        const sLower = s.name.toLowerCase();
+        if (sLower.includes(clean) || clean.includes(sLower)) {
+          return s.id;
+        }
+      }
+
+      // Keyword based mapping
+      if (/رياض|math/i.test(clean)) {
+        const f = allSubjects.find(s => /math|رياض/i.test(s.name));
+        if (f) return f.id;
+      }
+      if (/فيزياء|phys/i.test(clean)) {
+        const f = allSubjects.find(s => /phys|فيز/i.test(s.name));
+        if (f) return f.id;
+      }
+      if (/طبيع|علوم|snv|scien/i.test(clean)) {
+        const f = allSubjects.find(s => /snv|طبيع|علوم/i.test(s.name));
+        if (f) return f.id;
+      }
+      if (/عرب|arabe/i.test(clean)) {
+        const f = allSubjects.find(s => /arabe|عرب/i.test(s.name));
+        if (f) return f.id;
+      }
+      if (/فرنس|fran/i.test(clean)) {
+        const f = allSubjects.find(s => /fran|فرنس/i.test(s.name));
+        if (f) return f.id;
+      }
+      if (/إنجليز|انجليز|anglais|english/i.test(clean)) {
+        const f = allSubjects.find(s => /anglais|انجليز|إنجليز/i.test(s.name));
+        if (f) return f.id;
+      }
+      if (/فلسف|philo/i.test(clean)) {
+        const f = allSubjects.find(s => /philo|فلسف/i.test(s.name));
+        if (f) return f.id;
+      }
+      if (/إسلام|اسلام|islam/i.test(clean)) {
+        const f = allSubjects.find(s => /islam|إسلام|اسلام/i.test(s.name));
+        if (f) return f.id;
+      }
+      if (/تاريخ|جغراف|hist|geo/i.test(clean)) {
+        const f = allSubjects.find(s => /hist|geo|تاريخ|جغراف/i.test(s.name));
+        if (f) return f.id;
+      }
+      if (/محاسب|compta|gestion/i.test(clean)) {
+        const f = allSubjects.find(s => /compta|محاسب/i.test(s.name));
+        if (f) return f.id;
+      }
+      if (/إعلام|اعلام|info/i.test(clean)) {
+        const f = allSubjects.find(s => /info|إعلام|اعلام/i.test(s.name));
+        if (f) return f.id;
+      }
+
+      // If not found, create new subject automatically
+      try {
+        const newSubRes = DB.run(`
+          INSERT INTO subjects (name, code, category, color, icon)
+          VALUES (?, ?, 'all', '#6366f1', 'book')
+        `, [subjectStr.trim(), subjectStr.trim().slice(0, 6).toUpperCase()]);
+        const newId = newSubRes.lastInsertRowid;
+        allSubjects = DB.queryAll("SELECT id, name, code FROM subjects");
+        return newId;
+      } catch (e) {
+        return null;
+      }
+    }
+
+    let candTeacherNum = (DB.queryOne("SELECT MAX(id) as max_id FROM teachers WHERE employee_type != 'employee'")?.max_id || 0) + 1;
+    let candEmployeeNum = (DB.queryOne("SELECT MAX(id) as max_id FROM teachers WHERE employee_type = 'employee'")?.max_id || 0) + 1;
+
+    function generateUniqueMatricule(isEmp) {
+      const prefix = isEmp ? 'EMP-' : 'ENS-';
+      let num = isEmp ? candEmployeeNum++ : candTeacherNum++;
+      let cand = `${prefix}${String(num).padStart(3, '0')}`;
+      while (DB.queryOne("SELECT id FROM teachers WHERE matricule = ? COLLATE NOCASE", [cand])) {
+        num = isEmp ? candEmployeeNum++ : candTeacherNum++;
+        cand = `${prefix}${String(num).padStart(3, '0')}`;
+      }
+      return cand;
+    }
+
+    let importedCount = 0;
+    let updatedCount = 0;
+    let skippedCount = 0;
+    const errors = [];
+    const processed = [];
+
+    DB.exec('BEGIN IMMEDIATE;');
+
+    try {
+      for (let i = 0; i < teachers.length; i++) {
+        try {
+          const item = teachers[i];
+          let firstName = sanitizeLettersOnly(item.first_name);
+          let lastName = sanitizeLettersOnly(item.last_name);
+
+          // Fallback if full_name provided in one field
+          if ((!firstName || !lastName) && item.full_name) {
+            const parts = String(item.full_name).trim().split(/\s+/);
+            if (parts.length >= 2) {
+              lastName = sanitizeLettersOnly(parts[0]);
+              firstName = sanitizeLettersOnly(parts.slice(1).join(' '));
+            } else if (parts.length === 1) {
+              lastName = sanitizeLettersOnly(parts[0]);
+              firstName = lastName;
+            }
+          }
+
+          if (!firstName && !lastName) {
+            errors.push(`السطر ${i + 1}: الاسم واللقب مفقودان`);
+            skippedCount++;
+            continue;
+          }
+          if (!firstName) firstName = lastName;
+          if (!lastName) lastName = firstName;
+
+          const phone = sanitizePhone(item.phone);
+          const email = item.email ? String(item.email).trim() : null;
+
+          // Determine employee_type (teacher vs employee)
+          let empType = 'teacher';
+          if (defaultEmployeeType === 'employee') {
+            empType = 'employee';
+          } else if (defaultEmployeeType === 'teacher') {
+            empType = 'teacher';
+          } else {
+            // auto
+            const rawCat = String(item.employee_type || item.category || item.role || '').toLowerCase();
+            const rawJob = String(item.job_title || item.poste || item.metier || '').toLowerCase();
+            if (rawCat.includes('emp') || rawCat.includes('موظف') || rawCat.includes('عامل') || rawCat.includes('اداري') || rawCat.includes('إداري') ||
+                /سائق|حارس|سكرتير|عامل|نظاف|طباخ|agent|chauffeur|secretaire|gardien|comptable/i.test(rawJob)) {
+              empType = 'employee';
+            } else {
+              empType = 'teacher';
+            }
+          }
+
+          const isEmp = empType === 'employee';
+          const jobTitle = item.job_title ? String(item.job_title).trim() : (isEmp ? 'موظف' : 'أستاذ');
+
+          // Subject resolution
+          let subId = null;
+          if (!isEmp && (item.subject_id || item.subject_name || item.subject || item.specialite)) {
+            const subStr = item.subject_name || item.subject || item.specialite || '';
+            subId = toNullableId(item.subject_id) || findMatchingSubjectId(subStr);
+          }
+
+          // Grade
+          let grade = item.grade ? String(item.grade).trim() : (isEmp ? 'employe' : 'prof_titulaire');
+
+          // Remuneration
+          const remType = item.remuneration_type || (isEmp ? 'fixed' : 'percent');
+          const remRate = parseFloat(item.remuneration_rate) || (isEmp ? 0 : 50.0);
+          const salFixe = parseFloat(item.salaire_fixe || item.salary) || (isEmp ? (parseFloat(item.remuneration_rate) || 0) : 0);
+          const tarifHeure = parseFloat(item.tarif_heure) || 0;
+          const tarifSeance = parseFloat(item.tarif_seance) || 0;
+          const tarifParEleve = parseFloat(item.tarif_par_eleve) || 0;
+
+          // Matricule resolution
+          let customMat = item.matricule ? String(item.matricule).trim() : '';
+          let finalMatricule = '';
+
+          // Duplicate checking
+          let existing = null;
+          if (customMat) {
+            existing = DB.queryOne("SELECT * FROM teachers WHERE matricule = ? COLLATE NOCASE", [customMat]);
+          }
+          if (!existing && phone) {
+            existing = DB.queryOne("SELECT * FROM teachers WHERE first_name = ? AND last_name = ? AND phone = ?", [firstName, lastName, phone]);
+          }
+          if (!existing) {
+            existing = DB.queryOne("SELECT * FROM teachers WHERE first_name = ? AND last_name = ?", [firstName, lastName]);
+          }
+
+          if (existing) {
+            if (duplicateAction === 'skip') {
+              skippedCount++;
+              processed.push({ id: existing.id, matricule: existing.matricule, name: `${lastName} ${firstName}`, status: 'skipped' });
+              continue;
+            } else if (duplicateAction === 'update') {
+              DB.run(`
+                UPDATE teachers
+                SET phone = COALESCE(?, phone),
+                    email = COALESCE(?, email),
+                    subject_id = COALESCE(?, subject_id),
+                    grade = COALESCE(?, grade),
+                    remuneration_type = COALESCE(?, remuneration_type),
+                    remuneration_rate = CASE WHEN ? > 0 THEN ? ELSE remuneration_rate END,
+                    salaire_fixe = CASE WHEN ? > 0 THEN ? ELSE salaire_fixe END,
+                    tarif_heure = CASE WHEN ? > 0 THEN ? ELSE tarif_heure END,
+                    employee_type = ?,
+                    job_title = COALESCE(?, job_title),
+                    active = 1
+                WHERE id = ?
+              `, [
+                phone, email, subId, grade, remType,
+                remRate, remRate, salFixe, salFixe, tarifHeure, tarifHeure,
+                empType, jobTitle, existing.id
+              ]);
+              updatedCount++;
+              processed.push({ id: existing.id, matricule: existing.matricule, name: `${lastName} ${firstName}`, status: 'updated' });
+              continue;
+            }
+          }
+
+          // New teacher / employee insertion
+          if (matriculeStrategy === 'keep' && customMat) {
+            const coll = DB.queryOne("SELECT id FROM teachers WHERE matricule = ? COLLATE NOCASE", [customMat]);
+            if (coll) {
+              finalMatricule = generateUniqueMatricule(isEmp);
+            } else {
+              finalMatricule = customMat;
+            }
+          } else {
+            finalMatricule = generateUniqueMatricule(isEmp);
+          }
+
+          const insRes = DB.run(`
+            INSERT INTO teachers (
+              matricule, first_name, last_name, phone, email, subject_id, grade,
+              remuneration_type, remuneration_rate, tarif_heure, tarif_seance, salaire_fixe, tarif_par_eleve,
+              employee_type, job_title, active
+            )
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1)
+          `, [
+            finalMatricule, firstName, lastName, phone, email, subId, grade,
+            remType, remRate, tarifHeure, tarifSeance, salFixe, tarifParEleve,
+            empType, jobTitle
+          ]);
+
+          importedCount++;
+          processed.push({
+            id: insRes.lastInsertRowid,
+            matricule: finalMatricule,
+            name: `${lastName} ${firstName}`,
+            status: 'inserted'
+          });
+        } catch (rowErr) {
+          console.error(`Row ${i + 1} teacher import error:`, rowErr.message);
+          errors.push(`السطر ${i + 1}: ${rowErr.message}`);
+          skippedCount++;
+        }
+      }
+
+      DB.exec('COMMIT;');
+      res.json({
+        success: true,
+        imported: importedCount,
+        updated: updatedCount,
+        skipped: skippedCount,
+        total: teachers.length,
+        errors,
+        processed
+      });
+    } catch (txErr) {
+      try { DB.exec('ROLLBACK;'); } catch (rb) {}
+      throw txErr;
+    }
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
 app.post('/api/teachers', (req, res) => {
   try {
     const {
